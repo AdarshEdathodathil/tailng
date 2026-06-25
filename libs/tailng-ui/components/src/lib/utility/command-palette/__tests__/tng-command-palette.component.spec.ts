@@ -142,6 +142,43 @@ class TemplateCommandPaletteHost {
     option.description;
 }
 
+@Component({
+  imports: [TngCommandPaletteComponent],
+  template: `
+    <button type="button" data-testid="trigger" (click)="open.set(true)">Open palette</button>
+    <button type="button" data-testid="workspace-action">Workspace action</button>
+
+    <tng-command-palette
+      [open]="open()"
+      [options]="options()"
+      [getOptionValue]="getOptionValue"
+      [getOptionLabel]="getOptionLabel"
+      [getOptionDescription]="getOptionDescription"
+      (openChange)="open.set($event)"
+    />
+
+    <input data-testid="workspace-input" />
+  `,
+})
+class TriggeredCommandPaletteHost {
+  public readonly open = signal(false);
+  public readonly options = signal<readonly DeviceOption[]>(DEVICE_OPTIONS);
+
+  public readonly getOptionValue = (option: DeviceOption): DeviceId => option.id;
+  public readonly getOptionLabel = (option: DeviceOption): string => option.label;
+  public readonly getOptionDescription = (option: DeviceOption): string | null | undefined =>
+    option.description;
+}
+
+function getByTestId<T extends Element>(fixture: { nativeElement: HTMLElement }, testId: string): T {
+  const element = fixture.nativeElement.querySelector(`[data-testid="${testId}"]`) as T | null;
+  if (element === null) {
+    throw new Error(`Expected element [data-testid="${testId}"] to exist.`);
+  }
+
+  return element;
+}
+
 function getPanel(fixture: { nativeElement: HTMLElement }): HTMLElement | null {
   return fixture.nativeElement.querySelector('.tng-command-palette-panel');
 }
@@ -193,14 +230,19 @@ function inputText(input: HTMLInputElement, value: string): void {
   input.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
 }
 
-function keydown(element: HTMLElement, key: string): void {
-  element.dispatchEvent(
-    new KeyboardEvent('keydown', {
-      bubbles: true,
-      cancelable: true,
-      key,
-    }),
-  );
+function keydown(
+  element: EventTarget,
+  key: string,
+  init: Partial<KeyboardEventInit> = {},
+): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', {
+    bubbles: true,
+    cancelable: true,
+    key,
+    shiftKey: init.shiftKey ?? false,
+  });
+  element.dispatchEvent(event);
+  return event;
 }
 
 function pointerSelect(option: HTMLElement): void {
@@ -211,6 +253,12 @@ function pointerSelect(option: HTMLElement): void {
       cancelable: true,
     }),
   );
+}
+
+async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }): Promise<void> {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
 }
 
 describe('tng-command-palette component', () => {
@@ -483,5 +531,41 @@ describe('tng-command-palette component', () => {
 
     expect(fixture.componentInstance.openChanges).toContain(false);
     expect(getPanel(fixture)).toBeNull();
+  });
+
+  it('isolates nested workspace content, redirects Tab, and restores focus on close', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [TriggeredCommandPaletteHost],
+    }).createComponent(TriggeredCommandPaletteHost);
+
+    await settle(fixture);
+
+    const trigger = getByTestId<HTMLButtonElement>(fixture, 'trigger');
+    trigger.focus();
+    trigger.click();
+    await settle(fixture);
+
+    const workspaceAction = getByTestId<HTMLButtonElement>(fixture, 'workspace-action');
+    const workspaceInput = getByTestId<HTMLInputElement>(fixture, 'workspace-input');
+    expect(workspaceAction.getAttribute('aria-hidden')).toBe('true');
+    expect(workspaceAction.getAttribute('inert')).toBe('');
+    expect(workspaceInput.getAttribute('aria-hidden')).toBe('true');
+    expect(workspaceInput.getAttribute('inert')).toBe('');
+
+    workspaceInput.focus();
+    const tabEvent = keydown(document, 'Tab');
+    await settle(fixture);
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(getInput(fixture));
+
+    keydown(getInput(fixture), 'Escape');
+    await settle(fixture);
+
+    expect(getPanel(fixture)).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    expect(workspaceAction.getAttribute('aria-hidden')).toBeNull();
+    expect(workspaceAction.getAttribute('inert')).toBeNull();
+    expect(workspaceInput.getAttribute('aria-hidden')).toBeNull();
+    expect(workspaceInput.getAttribute('inert')).toBeNull();
   });
 });

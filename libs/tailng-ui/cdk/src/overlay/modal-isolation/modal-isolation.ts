@@ -52,6 +52,12 @@ function isPartOfModalTree(
   return element.contains?.(modalElement) ?? false;
 }
 
+function resolveChildren(
+  element: Readonly<TngModalIsolationElement>,
+): readonly TngModalIsolationElement[] {
+  return Array.from(element.children ?? []);
+}
+
 class ModalIsolationManager implements TngModalIsolationManager {
   private readonly documentRef: TngModalIsolationDocument | null;
   private readonly activeModals = new Map<string, TngModalEntry>();
@@ -96,13 +102,27 @@ class ModalIsolationManager implements TngModalIsolationManager {
       return;
     }
 
-    for (const sibling of this.documentRef.body.children) {
-      if (isPartOfModalTree(sibling, entry.element)) {
-        continue;
-      }
-
-      this.isolateElement(sibling);
+    for (const child of Array.from(this.documentRef.body.children)) {
+      this.applyIsolationBranch(child, entry.element);
     }
+  }
+
+  private applyIsolationBranch(
+    element: TngModalIsolationElement,
+    modalElement: TngModalIsolationElement,
+  ): void {
+    if (element === modalElement) {
+      return;
+    }
+
+    if (isPartOfModalTree(element, modalElement)) {
+      for (const child of resolveChildren(element)) {
+        this.applyIsolationBranch(child, modalElement);
+      }
+      return;
+    }
+
+    this.isolateElement(element);
   }
 
   private getTopModalEntry(): TngModalEntry | null {
@@ -117,7 +137,9 @@ class ModalIsolationManager implements TngModalIsolationManager {
   }
 
   private isolateElement(element: TngModalIsolationElement): void {
-    this.isolatedElements.set(element, snapshotElementAttributes(element));
+    if (!this.isolatedElements.has(element)) {
+      this.isolatedElements.set(element, snapshotElementAttributes(element));
+    }
     element.setAttribute('aria-hidden', 'true');
     element.setAttribute('inert', '');
   }
@@ -155,4 +177,25 @@ export function createModalIsolationManager(
   options: TngModalIsolationManagerOptions = {},
 ): TngModalIsolationManager {
   return new ModalIsolationManager(options);
+}
+
+const globalModalIsolationManagers = new WeakMap<object, TngModalIsolationManager>();
+
+export function getGlobalModalIsolationManager(
+  options: TngModalIsolationManagerOptions = {},
+): TngModalIsolationManager {
+  const documentRef = options.documentRef ?? null;
+  if (documentRef === null) {
+    return createModalIsolationManager(options);
+  }
+
+  const key = documentRef as object;
+  const existing = globalModalIsolationManagers.get(key);
+  if (existing !== undefined) {
+    return existing;
+  }
+
+  const manager = createModalIsolationManager(options);
+  globalModalIsolationManagers.set(key, manager);
+  return manager;
 }

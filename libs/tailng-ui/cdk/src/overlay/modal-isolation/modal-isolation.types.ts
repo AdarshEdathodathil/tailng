@@ -1,4 +1,5 @@
 export type TngModalIsolationElement = Readonly<{
+  children?: ArrayLike<TngModalIsolationElement>;
   contains?: (element: TngModalIsolationElement) => boolean;
   getAttribute: (name: 'aria-hidden' | 'inert') => string | null;
   removeAttribute: (name: 'aria-hidden' | 'inert') => void;

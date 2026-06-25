@@ -16,7 +16,7 @@ import {
 } from '@angular/core';
 import {
   createOverlayFocusHandoffController,
-  createModalIsolationManager,
+  getGlobalModalIsolationManager,
   createOverlayScrollLockManager,
   resolveFirstFocusableElement,
   resolveFocusableElements,
@@ -86,7 +86,7 @@ function mapOverlayDismissReason(reason: TngOverlayDismissReason): TngDialogClos
 }
 
 const dialogGlobalDocument = typeof document === 'undefined' ? null : document;
-const dialogModalIsolation = createModalIsolationManager({
+const dialogModalIsolation = getGlobalModalIsolationManager({
   documentRef: toModalIsolationDocument(dialogGlobalDocument),
 });
 const dialogFocusHandoff = createOverlayFocusHandoffController();
@@ -187,6 +187,9 @@ export class TngDialog implements OnDestroy, OnInit {
   private readonly scrollLock = createOverlayScrollLockManager({
     documentRef: toScrollLockDocument(this.documentRef),
   });
+  private readonly documentKeydownListener = (event: KeyboardEvent): void => {
+    this.handleDocumentKeydown(event);
+  };
 
   private readonly uncontrolledOpen = signal(false);
   private readonly openStateEffect = effect((): void => {
@@ -383,6 +386,8 @@ export class TngDialog implements OnDestroy, OnInit {
     const focusableMemberIds = this.resolveFocusableMemberIds(panel);
     const firstMemberId = focusableMemberIds[0];
     if (firstMemberId === undefined) {
+      keyboardEvent.preventDefault();
+      panel.focus();
       return;
     }
     const lastMemberId = focusableMemberIds[focusableMemberIds.length - 1] ?? firstMemberId;
@@ -449,6 +454,7 @@ export class TngDialog implements OnDestroy, OnInit {
     this.activateFocusLayer();
     this.registerOverlayLayer();
     this.activateModalIsolation();
+    this.addDocumentKeydownListener();
 
     afterNextRender(
       (): void => {
@@ -469,10 +475,11 @@ export class TngDialog implements OnDestroy, OnInit {
       this.scrollLock.release(this.instanceId);
     }
 
+    this.removeDocumentKeydownListener();
+    this.deactivateModalIsolation();
     this.deactivateFocusLayer();
     this.unregisterFocusLayer();
     this.unregisterOverlayLayer();
-    this.deactivateModalIsolation();
   }
 
   private focusInitialElement(): void {
@@ -548,6 +555,22 @@ export class TngDialog implements OnDestroy, OnInit {
 
   private deactivateModalIsolation(): void {
     dialogModalIsolation.deactivate(this.instanceId);
+  }
+
+  private addDocumentKeydownListener(): void {
+    this.documentRef?.addEventListener('keydown', this.documentKeydownListener);
+  }
+
+  private removeDocumentKeydownListener(): void {
+    this.documentRef?.removeEventListener('keydown', this.documentKeydownListener);
+  }
+
+  private handleDocumentKeydown(event: KeyboardEvent): void {
+    if (!this.isActive || event.defaultPrevented) {
+      return;
+    }
+
+    this.trapTabNavigation(event);
   }
 
   private registerOverlayLayer(): void {

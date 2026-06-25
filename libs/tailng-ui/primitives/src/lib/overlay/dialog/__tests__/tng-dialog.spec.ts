@@ -321,6 +321,61 @@ describe('tng-dialog primitive behavior', () => {
     expect(document.activeElement).toBe(close);
   });
 
+  it('isolates nested background content while open', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [UncontrolledDialogHarnessComponent],
+    }).createComponent(UncontrolledDialogHarnessComponent);
+    fixture.componentInstance.defaultOpen.set(true);
+
+    await settle(fixture);
+
+    const before = getByTestId<HTMLButtonElement>(fixture, 'before');
+    const root = getByTestId<HTMLElement>(fixture, 'root');
+    const after = getByTestId<HTMLButtonElement>(fixture, 'after');
+    const panel = getByTestId<HTMLElement>(fixture, 'panel');
+
+    expect(root.getAttribute('aria-hidden')).toBeNull();
+    expect(panel.getAttribute('aria-hidden')).toBeNull();
+    expect(before.getAttribute('aria-hidden')).toBe('true');
+    expect(before.getAttribute('inert')).toBe('');
+    expect(after.getAttribute('aria-hidden')).toBe('true');
+    expect(after.getAttribute('inert')).toBe('');
+
+    getByTestId<HTMLButtonElement>(fixture, 'close').click();
+    await settle(fixture);
+
+    expect(before.getAttribute('aria-hidden')).toBeNull();
+    expect(before.getAttribute('inert')).toBeNull();
+    expect(after.getAttribute('aria-hidden')).toBeNull();
+    expect(after.getAttribute('inert')).toBeNull();
+  });
+
+  it('redirects document Tab back into the dialog when focus escapes to background content', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [UncontrolledDialogHarnessComponent],
+    }).createComponent(UncontrolledDialogHarnessComponent);
+    fixture.componentInstance.defaultOpen.set(true);
+
+    await settle(fixture);
+
+    const before = getByTestId<HTMLButtonElement>(fixture, 'before');
+    const first = getByTestId<HTMLButtonElement>(fixture, 'inside-first');
+    const after = getByTestId<HTMLButtonElement>(fixture, 'after');
+    const close = getByTestId<HTMLButtonElement>(fixture, 'close');
+
+    before.focus();
+    const tabForward = keydown(document, 'Tab');
+    await settle(fixture);
+    expect(tabForward.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(first);
+
+    after.focus();
+    const tabBackward = keydown(document, 'Tab', { shiftKey: true });
+    await settle(fixture);
+    expect(tabBackward.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(close);
+  });
+
   it('disabled prevents opening via trigger', async () => {
     const fixture = TestBed.configureTestingModule({
       imports: [UncontrolledDialogHarnessComponent],

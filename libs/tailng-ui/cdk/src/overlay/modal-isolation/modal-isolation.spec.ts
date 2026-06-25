@@ -1,5 +1,8 @@
 import { expect, it } from 'vitest';
-import { createModalIsolationManager } from './modal-isolation';
+import {
+  createModalIsolationManager,
+  getGlobalModalIsolationManager,
+} from './modal-isolation';
 import type {
   TngModalIsolationDocument,
   TngModalIsolationElement,
@@ -7,14 +10,20 @@ import type {
 
 class FakeElement implements TngModalIsolationElement {
   private readonly attributes = new Map<'aria-hidden' | 'inert', string>();
-  private readonly children = new Set<TngModalIsolationElement>();
+  public readonly children: TngModalIsolationElement[] = [];
 
   public addChild(child: Readonly<FakeElement>): void {
-    this.children.add(child);
+    this.children.push(child);
   }
 
   public contains(element: TngModalIsolationElement): boolean {
-    return this.children.has(element);
+    for (const child of this.children) {
+      if (child === element || child.contains?.(element) === true) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public getAttribute(name: 'aria-hidden' | 'inert'): string | null {
@@ -87,16 +96,58 @@ it('supports nested modal activation order', () => {
   expect(secondModal.getAttribute('aria-hidden')).toBe('true');
 });
 
-it('does not isolate ancestor that contains modal element', () => {
+it('isolates sibling branches when modal is nested inside an app root', () => {
   const appRoot = new FakeElement();
+  const appContent = new FakeElement();
+  const appHeader = new FakeElement();
   const modalRoot = new FakeElement();
-  appRoot.addChild(modalRoot);
+  const externalRoot = new FakeElement();
+  appRoot.addChild(appContent);
+  appRoot.addChild(appHeader);
+  appHeader.addChild(modalRoot);
+  const manager = createModalIsolationManager({
+    documentRef: createDocument([appRoot, externalRoot]),
+  });
+
+  manager.activate('modal-1', modalRoot);
+
+  expect(appRoot.getAttribute('aria-hidden')).toBeNull();
+  expect(appHeader.getAttribute('aria-hidden')).toBeNull();
+  expect(modalRoot.getAttribute('aria-hidden')).toBeNull();
+  expect(appContent.getAttribute('aria-hidden')).toBe('true');
+  expect(appContent.getAttribute('inert')).toBe('');
+  expect(externalRoot.getAttribute('aria-hidden')).toBe('true');
+  expect(externalRoot.getAttribute('inert')).toBe('');
+});
+
+it('restores parent modal isolation when nested top modal closes', () => {
+  const appRoot = new FakeElement();
+  const appContent = new FakeElement();
+  const parentModal = new FakeElement();
+  const parentContent = new FakeElement();
+  const childModal = new FakeElement();
+  appRoot.addChild(appContent);
+  appRoot.addChild(parentModal);
+  parentModal.addChild(parentContent);
+  parentModal.addChild(childModal);
   const manager = createModalIsolationManager({
     documentRef: createDocument([appRoot]),
   });
 
-  manager.activate('modal-1', modalRoot);
+  manager.activate('modal-1', parentModal);
+  manager.activate('modal-2', childModal);
+
   expect(appRoot.getAttribute('aria-hidden')).toBeNull();
+  expect(parentModal.getAttribute('aria-hidden')).toBeNull();
+  expect(appContent.getAttribute('aria-hidden')).toBe('true');
+  expect(parentContent.getAttribute('aria-hidden')).toBe('true');
+
+  manager.deactivate('modal-2');
+
+  expect(manager.getActiveModalIds()).toEqual(['modal-1']);
+  expect(appContent.getAttribute('aria-hidden')).toBe('true');
+  expect(parentContent.getAttribute('aria-hidden')).toBeNull();
+  expect(childModal.getAttribute('aria-hidden')).toBeNull();
 });
 
 it('clear removes active modal tracking and restores state', () => {
@@ -110,5 +161,20 @@ it('clear removes active modal tracking and restores state', () => {
   manager.clear();
 
   expect(manager.getActiveModalIds()).toEqual([]);
+  expect(appRoot.getAttribute('aria-hidden')).toBeNull();
+});
+
+it('shares global modal isolation managers per document', () => {
+  const appRoot = new FakeElement();
+  const modalRoot = new FakeElement();
+  const documentRef = createDocument([appRoot, modalRoot]);
+  const first = getGlobalModalIsolationManager({ documentRef });
+  const second = getGlobalModalIsolationManager({ documentRef });
+
+  expect(first).toBe(second);
+
+  first.activate('modal-1', modalRoot);
+  second.deactivate('modal-1');
+
   expect(appRoot.getAttribute('aria-hidden')).toBeNull();
 });

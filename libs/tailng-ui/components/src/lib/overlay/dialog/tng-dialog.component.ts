@@ -2,6 +2,7 @@ import {
   afterNextRender,
   booleanAttribute,
   Component,
+  ElementRef,
   effect,
   inject,
   Injector,
@@ -9,13 +10,18 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-import type { ElementRef, OnDestroy } from '@angular/core';
+import type { OnDestroy } from '@angular/core';
 import {
   createOverlayScrollLockManager,
   createTngIdFactory,
+  getGlobalModalIsolationManager,
   type TngOverlayDismissReason,
 } from '@tailng-ui/cdk';
-import type { TngScrollLockDocument } from '@tailng-ui/cdk/overlay';
+import type {
+  TngModalIsolationDocument,
+  TngModalIsolationElement,
+  TngScrollLockDocument,
+} from '@tailng-ui/cdk/overlay';
 import { tngOverlayRuntime } from '../tng-overlay-runtime';
 
 const createDialogId = createTngIdFactory('tng-dialog');
@@ -96,6 +102,22 @@ function toScrollLockDocument(documentRef: unknown): TngScrollLockDocument | nul
   return documentRef as unknown as TngScrollLockDocument;
 }
 
+function toModalIsolationDocument(documentRef: unknown): TngModalIsolationDocument | null {
+  if (!(documentRef instanceof Document)) {
+    return null;
+  }
+
+  return documentRef as unknown as TngModalIsolationDocument;
+}
+
+function toModalIsolationElement(elementRef: unknown): TngModalIsolationElement | null {
+  if (!(elementRef instanceof HTMLElement)) {
+    return null;
+  }
+
+  return elementRef as unknown as TngModalIsolationElement;
+}
+
 function toDialogCloseReason(reason: TngOverlayDismissReason): TngDialogCloseReason | null {
   if (reason === 'escape-key') {
     return 'escape';
@@ -134,11 +156,18 @@ export class TngDialogComponent implements OnDestroy {
   protected readonly titleId: string;
 
   private readonly documentRef = typeof document === 'undefined' ? null : document;
+  private readonly hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly panelRef = viewChild<ElementRef<HTMLElement>>('panelRef');
   private readonly scrollLock = createOverlayScrollLockManager({
     documentRef: toScrollLockDocument(this.documentRef),
   });
+  private readonly modalIsolation = getGlobalModalIsolationManager({
+    documentRef: toModalIsolationDocument(this.documentRef),
+  });
+  private readonly documentKeydownListener = (event: KeyboardEvent): void => {
+    this.handleDocumentKeydown(event);
+  };
   private readonly instanceId = createDialogId();
   private isActive = false;
   private isLayerRegistered = false;
@@ -172,6 +201,23 @@ export class TngDialogComponent implements OnDestroy {
     this.requestClose('close-button');
   }
 
+  public onBackdropPointerDown(event: PointerEvent): void {
+    if (!this.closeOnBackdrop()) {
+      return;
+    }
+
+    if (!(event.currentTarget instanceof HTMLElement)) {
+      return;
+    }
+
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    event.preventDefault();
+    this.requestClose('backdrop');
+  }
+
   public onPanelKeydown(event: unknown): void {
     const keyboardEvent = readKeyboardEvent(event);
     if (keyboardEvent === null) {
@@ -192,6 +238,8 @@ export class TngDialogComponent implements OnDestroy {
     this.registerOverlayLayer();
     this.restoreFocusElement = resolveActiveElement(this.documentRef);
     this.scrollLock.acquire(this.instanceId);
+    this.activateModalIsolation();
+    this.addDocumentKeydownListener();
     afterNextRender(
       (): void => {
         this.focusInitialElement();
@@ -206,8 +254,10 @@ export class TngDialogComponent implements OnDestroy {
     }
 
     this.isActive = false;
+    this.removeDocumentKeydownListener();
     this.unregisterOverlayLayer();
     this.scrollLock.release(this.instanceId);
+    this.deactivateModalIsolation();
     this.restoreFocusElement?.focus();
     this.restoreFocusElement = null;
   }
@@ -241,7 +291,7 @@ export class TngDialogComponent implements OnDestroy {
         return target instanceof Node ? panel.contains(target) : false;
       },
       dismissOnEscape: this.closeOnEscape(),
-      dismissOnOutsidePointer: this.closeOnBackdrop(),
+      dismissOnOutsidePointer: false,
       id: this.instanceId,
       modal: true,
       onDismiss: (reason: TngOverlayDismissReason): void => {
@@ -258,6 +308,35 @@ export class TngDialogComponent implements OnDestroy {
 
     this.isLayerRegistered = false;
     tngOverlayRuntime.unregisterLayer(this.instanceId);
+  }
+
+  private activateModalIsolation(): void {
+    const hostElement = toModalIsolationElement(this.hostRef.nativeElement);
+    if (hostElement === null) {
+      return;
+    }
+
+    this.modalIsolation.activate(this.instanceId, hostElement);
+  }
+
+  private deactivateModalIsolation(): void {
+    this.modalIsolation.deactivate(this.instanceId);
+  }
+
+  private addDocumentKeydownListener(): void {
+    this.documentRef?.addEventListener('keydown', this.documentKeydownListener);
+  }
+
+  private removeDocumentKeydownListener(): void {
+    this.documentRef?.removeEventListener('keydown', this.documentKeydownListener);
+  }
+
+  private handleDocumentKeydown(event: KeyboardEvent): void {
+    if (!this.isActive || event.defaultPrevented) {
+      return;
+    }
+
+    this.trapTabNavigation(event);
   }
 
   private focusInitialElement(): void {
@@ -350,6 +429,10 @@ export class TngDialogComponent implements OnDestroy {
   }
 
   private trapTabNavigation(event: unknown): void {
+    if (!this.isActive || !tngOverlayRuntime.isTopLayer(this.instanceId)) {
+      return;
+    }
+
     const panel = this.panelRef()?.nativeElement;
     if (panel === undefined) {
       return;

@@ -266,6 +266,64 @@ describe('tng-dialog component behavior', () => {
     expect(document.activeElement).toBe(last);
   });
 
+  it('isolates nested background content while open', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ManagedDialogHostComponent],
+    }).createComponent(ManagedDialogHostComponent);
+    fixture.componentInstance.open.set(true);
+
+    await settle(fixture);
+
+    const trigger = getByTestId<HTMLButtonElement>(fixture, 'trigger');
+    const after = getByTestId<HTMLButtonElement>(fixture, 'after');
+    const host = fixture.nativeElement.querySelector('tng-dialog') as HTMLElement | null;
+    const panel = findPanel(fixture);
+
+    expect(host).not.toBeNull();
+    expect(panel).not.toBeNull();
+    expect(host?.getAttribute('aria-hidden')).toBeNull();
+    expect(panel?.getAttribute('aria-hidden')).toBeNull();
+    expect(trigger.getAttribute('aria-hidden')).toBe('true');
+    expect(trigger.getAttribute('inert')).toBe('');
+    expect(after.getAttribute('aria-hidden')).toBe('true');
+    expect(after.getAttribute('inert')).toBe('');
+
+    fixture.componentInstance.open.set(false);
+    await settle(fixture);
+
+    expect(trigger.getAttribute('aria-hidden')).toBeNull();
+    expect(trigger.getAttribute('inert')).toBeNull();
+    expect(after.getAttribute('aria-hidden')).toBeNull();
+    expect(after.getAttribute('inert')).toBeNull();
+  });
+
+  it('redirects document Tab back into the dialog when focus escapes to background content', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ManagedDialogHostComponent],
+    }).createComponent(ManagedDialogHostComponent);
+    fixture.componentInstance.open.set(true);
+
+    await settle(fixture);
+
+    const trigger = getByTestId<HTMLButtonElement>(fixture, 'trigger');
+    const after = getByTestId<HTMLButtonElement>(fixture, 'after');
+    const close = fixture.nativeElement.querySelector('.tng-dialog-close') as HTMLButtonElement | null;
+    const last = getByTestId<HTMLButtonElement>(fixture, 'inside-last');
+    expect(close).not.toBeNull();
+
+    trigger.focus();
+    const tabForward = keydown(document, 'Tab');
+    await settle(fixture);
+    expect(tabForward.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(close);
+
+    after.focus();
+    const tabBackward = keydown(document, 'Tab', { shiftKey: true });
+    await settle(fixture);
+    expect(tabBackward.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(last);
+  });
+
   it('controlled mode emits close events but stays open until host updates input', async () => {
     const fixture = TestBed.configureTestingModule({
       imports: [ControlledNoSyncHostComponent],
