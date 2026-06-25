@@ -109,7 +109,6 @@ export class TngDateRangePickerComponent<TDate = Date>
   private readonly anchorRef = viewChild<ElementRef<HTMLElement>>('anchorShell');
   private readonly triggerRef = viewChild<ElementRef<HTMLElement>>('triggerButton');
   private appliedInitialState = false;
-  private suppressNextOverlayFocusSync = false;
   protected readonly controller = createDateRangePickerController<TDate>({
     allowManualInput: true,
     autoCommitView: false,
@@ -297,10 +296,7 @@ export class TngDateRangePickerComponent<TDate = Date>
         break;
       case 'opened':
         this.openChange.emit(true);
-        if (!this.suppressNextOverlayFocusSync) {
-          this.queueOverlayFocusSync();
-        }
-        this.suppressNextOverlayFocusSync = false;
+        this.queueOverlayFocusSync();
         break;
       case 'previewChange':
         this.previewEndDateChange.emit(event.previewEndDate);
@@ -502,12 +498,7 @@ export class TngDateRangePickerComponent<TDate = Date>
     if (event.key === 'Enter' && this.allowManualInput()) {
       event.preventDefault();
       if (!this.outputs().open) {
-        this.suppressNextOverlayFocusSync = true;
         this.controller.open();
-        const target = event.target;
-        if (target instanceof HTMLInputElement) {
-          target.focus();
-        }
         this.renderVersion.update((value) => value + 1);
         return;
       }
