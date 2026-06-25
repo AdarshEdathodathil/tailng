@@ -4,6 +4,132 @@
     Reusable headless stepper patterns for checkout, release workflows, and validation states.
   </p>
 
+  <section id="horizontal-orientation" class="headless-stepper-examples-block">
+    <app-docs-example-tabs-section
+      heading="Horizontal orientation"
+      description="An explicitly horizontal stepper with connector lines and arrow-key focus across the row."
+      ariaLabel="Headless stepper horizontal orientation examples"
+      tabListAriaLabel="Headless stepper horizontal orientation tabs"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain-CSS"
+        panelTitle="Headless stepper horizontal orientation (plain CSS)"
+        [codeTabs]="horizontalPlainCodeTabs"
+      >
+        <section
+          tngStepper
+          orientation="horizontal"
+          defaultValue="plan"
+          ariaLabel="Horizontal onboarding progress"
+        >
+          <ol class="headless-stepper-horizontal-list">
+            <li
+              tngStepperItem
+              value="account"
+              label="Account"
+              completed
+              class="headless-stepper-horizontal-item"
+            >
+              <button tngStepperTrigger class="headless-stepper-horizontal-trigger">
+                <span class="dot">1</span>
+                <span tngStepperLabel>Account</span>
+              </button>
+              <span tngStepperConnector class="horizontal-connector"></span>
+            </li>
+            <li
+              tngStepperItem
+              value="plan"
+              label="Plan"
+              class="headless-stepper-horizontal-item"
+            >
+              <button tngStepperTrigger class="headless-stepper-horizontal-trigger">
+                <span class="dot">2</span>
+                <span tngStepperLabel>Plan</span>
+                <span tngStepperDescription class="description">Choose workspace limits</span>
+              </button>
+              <span tngStepperConnector class="horizontal-connector"></span>
+            </li>
+            <li
+              tngStepperItem
+              value="invite"
+              label="Invite"
+              optional
+              class="headless-stepper-horizontal-item"
+            >
+              <button tngStepperTrigger class="headless-stepper-horizontal-trigger">
+                <span class="dot">3</span>
+                <span tngStepperLabel>Invite</span>
+                <span tngStepperDescription class="description">Optional team setup</span>
+              </button>
+            </li>
+          </ol>
+        </section>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Headless stepper horizontal orientation (Tailwind CSS)"
+        [codeTabs]="horizontalTailwindCodeTabs"
+      >
+        <section
+          tngStepper
+          orientation="horizontal"
+          defaultValue="plan"
+          ariaLabel="Horizontal onboarding progress"
+        >
+          <ol class="flex flex-wrap items-start gap-3">
+            <li
+              tngStepperItem
+              value="account"
+              label="Account"
+              completed
+              class="flex min-w-36 flex-1 items-center gap-3 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-slate-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-slate-100"
+            >
+              <button tngStepperTrigger class="inline-flex items-center gap-2 text-left">
+                <span tngStepperLabel>Account</span>
+              </button>
+              <span tngStepperConnector class="h-px flex-1 bg-emerald-300 dark:bg-emerald-800"></span>
+            </li>
+            <li
+              tngStepperItem
+              value="plan"
+              label="Plan"
+              class="flex min-w-36 flex-1 items-center gap-3 rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-slate-900 dark:border-sky-800 dark:bg-sky-950/30 dark:text-slate-100"
+            >
+              <button tngStepperTrigger class="inline-flex flex-wrap items-center gap-2 text-left">
+                <span tngStepperLabel>Plan</span>
+                <span tngStepperDescription class="text-xs text-slate-600 dark:text-slate-300">
+                  Workspace limits
+                </span>
+              </button>
+              <span tngStepperConnector class="h-px flex-1 bg-sky-300 dark:bg-sky-800"></span>
+            </li>
+            <li
+              tngStepperItem
+              value="invite"
+              label="Invite"
+              optional
+              class="min-w-36 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-slate-900 dark:border-slate-700 dark:text-slate-100"
+            >
+              <button tngStepperTrigger class="inline-flex flex-wrap items-center gap-2 text-left">
+                <span tngStepperLabel>Invite</span>
+                <span tngStepperDescription class="text-xs text-slate-600 dark:text-slate-300">
+                  Optional team setup
+                </span>
+              </button>
+            </li>
+          </ol>
+        </section>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
   <section id="checkout-progression" class="headless-stepper-examples-block">
     <app-docs-example-tabs-section
       heading="Checkout progression"
