@@ -860,20 +860,28 @@ class DateRangePickerController<TDate> implements TngDateRangePickerController<T
 
     const previousMonth = this.state.visibleMonth;
     const previousYear = this.config.adapter.getYear(previousMonth);
-    const nextMonth = this.config.adapter.createDate(
+    const preferredMonth = this.config.adapter.getMonth(previousMonth);
+    const nextMonth = this.resolveNearestEnabledMonthInYear(
       normalizedYear,
-      this.config.adapter.getMonth(previousMonth),
-      1,
+      preferredMonth,
     );
-    this.state.visibleMonth = nextMonth;
+    if (nextMonth === null) {
+      return;
+    }
+    const nextVisibleMonth = this.config.adapter.startOfMonth(nextMonth);
+    this.state.visibleMonth = nextVisibleMonth;
     this.yearPageStart = this.resolveCenteredYearPageStart(normalizedYear);
-    const nextActive = clampDateToMonth(this.config.adapter, this.state.activeDate, nextMonth);
+    const nextActive = clampDateToMonth(
+      this.config.adapter,
+      this.state.activeDate,
+      nextVisibleMonth,
+    );
     this.applyActiveDate(nextActive, 'programmatic', true);
     this.bumpVersion();
     this.emit({
       previousMonth,
       type: 'monthChange',
-      visibleMonth: nextMonth,
+      visibleMonth: nextVisibleMonth,
     });
     this.emit({
       previousYear,
@@ -884,6 +892,32 @@ class DateRangePickerController<TDate> implements TngDateRangePickerController<T
     if (this.config.autoCommitView) {
       this.setView('day');
     }
+  }
+
+  private resolveNearestEnabledMonthInYear(year: number, preferredMonth: number): TDate | null {
+    const normalizedMonth = Math.max(0, Math.min(11, Math.trunc(preferredMonth)));
+
+    for (let distance = 0; distance < 12; distance += 1) {
+      const monthOffsets = distance === 0 ? [0] : [-distance, distance];
+      for (const offset of monthOffsets) {
+        const month = normalizedMonth + offset;
+        if (month < 0 || month > 11) {
+          continue;
+        }
+
+        const monthStart = this.config.adapter.createDate(year, month, 1);
+        const firstEnabledDate = findFirstEnabledDateInMonth(
+          this.config.adapter,
+          monthStart,
+          (date) => this.isDateDisabled(date),
+        );
+        if (firstEnabledDate !== null) {
+          return firstEnabledDate;
+        }
+      }
+    }
+
+    return null;
   }
 
   public setActiveDate(
@@ -1781,6 +1815,19 @@ class DateRangePickerController<TDate> implements TngDateRangePickerController<T
       nextPosition.row === currentPosition.row &&
       nextPosition.col === currentPosition.col;
 
+    if (view === 'month' && currentOption.disabled && isBoundaryClamp) {
+      const fallbackMonthOption = this.findNearestEnabledMonthOption(
+        options as readonly TngMonthOption<TDate>[],
+        activeIndex,
+        action.type,
+      );
+      if (fallbackMonthOption !== null) {
+        this.state.focusedSection = 'month';
+        this.applyPickerActiveDate(fallbackMonthOption.date, 'keyboard', true);
+      }
+      return;
+    }
+
     if (nextPosition === null || isBoundaryClamp) {
       if (view === 'year' && yearDelta !== null) {
         this.state.focusedSection = 'year';
@@ -1852,6 +1899,35 @@ class DateRangePickerController<TDate> implements TngDateRangePickerController<T
     }
 
     this.applyPickerActiveDate(nextOption.date, 'keyboard', true);
+  }
+
+  private findNearestEnabledMonthOption(
+    options: readonly TngMonthOption<TDate>[],
+    activeIndex: number,
+    actionType: Exclude<TngGridNavigationActionType, 'activate' | 'exit'>,
+  ): TngMonthOption<TDate> | null {
+    const clampedActiveIndex = Math.max(0, Math.min(options.length - 1, activeIndex));
+    const preferredDirection =
+      actionType === 'move-left' ||
+      actionType === 'move-up' ||
+      actionType === 'move-row-start' ||
+      actionType === 'move-grid-start'
+        ? -1
+        : 1;
+
+    for (let distance = 1; distance < options.length; distance += 1) {
+      const preferredOption = options[clampedActiveIndex + distance * preferredDirection];
+      if (preferredOption !== undefined && !preferredOption.disabled) {
+        return preferredOption;
+      }
+
+      const oppositeOption = options[clampedActiveIndex - distance * preferredDirection];
+      if (oppositeOption !== undefined && !oppositeOption.disabled) {
+        return oppositeOption;
+      }
+    }
+
+    return null;
   }
 
   private findYearOptionInVerticalDirection(

@@ -47,7 +47,7 @@
           [attr.aria-haspopup]="outputs().getTriggerAttributes()['aria-haspopup']"
           [attr.data-open]="outputs().getTriggerAttributes()['data-open']"
           [attr.data-slot]="outputs().getTriggerAttributes()['data-slot']"
-          [attr.tabindex]="outputs().getTriggerAttributes()['tabindex']"
+          [attr.tabindex]="-1"
           [attr.aria-label]="'Open date range calendar'"
           (click)="onTriggerClick()"
           (keydown)="onTriggerKeydown($event)"

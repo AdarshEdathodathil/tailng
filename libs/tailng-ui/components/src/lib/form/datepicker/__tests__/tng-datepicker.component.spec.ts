@@ -319,6 +319,20 @@ class DatepickerTabFocusHostComponent {
   public readonly openChanges: boolean[] = [];
 }
 
+@Component({
+  imports: [TngDatepickerComponent],
+  template: `
+    <form>
+      <input type="text" data-testid="text-input" />
+      <tng-datepicker [defaultValue]="'2024-04-22'" (openChange)="openChanges.push($event)" />
+      <button type="submit" data-testid="submit-button">Submit</button>
+    </form>
+  `,
+})
+class DatepickerFormTabOrderHostComponent {
+  public readonly openChanges: boolean[] = [];
+}
+
 describe('tng-datepicker component behavior', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -887,6 +901,40 @@ describe('tng-datepicker component behavior', () => {
     expect(tabEvent.defaultPrevented).toBe(false);
     expect(document.activeElement).toBe(afterButton);
     expect(document.activeElement).not.toBe(trigger);
+  });
+
+  it('tabs from a preceding text input to the datepicker input and then to submit', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [DatepickerFormTabOrderHostComponent],
+    }).createComponent(DatepickerFormTabOrderHostComponent);
+
+    await settle(fixture);
+
+    const textInput = getRequired<HTMLInputElement>(fixture, '[data-testid="text-input"]');
+    const datepickerInput = getRequired<HTMLInputElement>(fixture, '[data-slot="datepicker-input"]');
+    const trigger = getRequired<HTMLButtonElement>(fixture, '[data-slot="datepicker-trigger"]');
+    const submitButton = getRequired<HTMLButtonElement>(fixture, '[data-testid="submit-button"]');
+    const overlay = getRequired<HTMLElement>(fixture, '[data-slot="datepicker-overlay"]');
+
+    focus(textInput);
+    expect(document.activeElement).toBe(textInput);
+
+    const firstTabEvent = dispatchTabAndSimulateBrowserFocus(textInput, datepickerInput);
+    await settle(fixture);
+
+    expect(firstTabEvent.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(datepickerInput);
+    expect(document.activeElement).not.toBe(trigger);
+
+    const secondTabEvent = dispatchTabAndSimulateBrowserFocus(datepickerInput, submitButton);
+    await settle(fixture);
+
+    expect(secondTabEvent.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(submitButton);
+    expect(document.activeElement).not.toBe(trigger);
+    expect(trigger.getAttribute('tabindex')).toBe('-1');
+    expect(overlay.getAttribute('hidden')).toBe('');
+    expect(fixture.componentInstance.openChanges).toEqual([]);
   });
 
   it('opens from the input with Enter, navigates the day grid with arrow keys, and selects a date with Enter', async () => {

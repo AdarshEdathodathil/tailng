@@ -314,6 +314,77 @@ describe('tng-date-range-picker keyboard support', () => {
     const monthOptions = controller.getOutputs().monthOptions;
     expect(monthOptions.find((option) => option.label === 'Mar')?.disabled).toBe(true);
     expect(monthOptions.find((option) => option.label === 'Apr')?.disabled).toBe(false);
+    expect(getActiveMonthLabel(controller)).toBe('Apr');
+  });
+
+  it('keeps month-grid focus on enabled April after selecting a bounded 2024 year', () => {
+    const controller = createController({
+      max: '2025-03-31',
+      min: '2024-04-01',
+      today: d('2025-03-31'),
+      value: null,
+      yearPageSize: 24,
+    });
+
+    controller.open();
+    expect(dateKey(controller.getOutputs().activeDate)).toBe('2025-03-31');
+
+    controller.showYearsPanel();
+    controller.setFocusedSection('year');
+
+    navigateYearGridTo(controller, 2024);
+    controller.handleYearGridKeyDown(keyboardEvent('Enter'));
+    controller.setFocusedSection('month');
+
+    let activeMonth = controller.getOutputs().monthOptions.find((option) => option.active);
+    expect(activeMonth?.label).toBe('Apr');
+    expect(activeMonth?.disabled).toBe(false);
+    expect(
+      controller.getOutputs().monthOptions.find((option) => option.label === 'Mar')?.disabled,
+    ).toBe(true);
+
+    controller.handleMonthGridKeyDown(keyboardEvent('ArrowLeft'));
+    activeMonth = controller.getOutputs().monthOptions.find((option) => option.active);
+    expect(activeMonth?.label).toBe('Apr');
+    expect(activeMonth?.disabled).toBe(false);
+  });
+
+  it('keeps month-grid focus on enabled March after selecting bounded 2025 from April 2024', () => {
+    const controller = createController({
+      max: '2025-03-31',
+      min: '2024-04-01',
+      today: d('2024-04-18'),
+      value: {
+        end: '2024-04-24',
+        start: '2024-04-22',
+      },
+      yearPageSize: 24,
+    });
+
+    controller.open();
+    expect(dateKey(controller.getOutputs().activeDate)).toBe('2024-04-24');
+
+    controller.showYearsPanel();
+    controller.setFocusedSection('year');
+    expect(getActiveYear(controller)).toBe(2024);
+
+    controller.handleYearGridKeyDown(keyboardEvent('ArrowRight'));
+    expect(getActiveYear(controller)).toBe(2025);
+
+    controller.handleYearGridKeyDown(keyboardEvent('Enter'));
+    controller.setFocusedSection('month');
+
+    let activeMonth = controller.getOutputs().monthOptions.find((option) => option.active);
+    expect(activeMonth?.label).toBe('Mar');
+    expect(activeMonth?.disabled).toBe(false);
+    expect(
+      controller.getOutputs().monthOptions.find((option) => option.label === 'Apr')?.disabled,
+    ).toBe(true);
+
+    controller.handleMonthGridKeyDown(keyboardEvent('ArrowLeft'));
+    activeMonth = controller.getOutputs().monthOptions.find((option) => option.active);
+    expect(activeMonth?.label).toBe('Feb');
+    expect(activeMonth?.disabled).toBe(false);
   });
 
   it('selects an earlier in-range month range by keyboard when today exceeds maxDate', () => {
