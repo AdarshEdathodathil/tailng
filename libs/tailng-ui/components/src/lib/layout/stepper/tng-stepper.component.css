@@ -9,10 +9,27 @@
   padding: 0.9rem 1rem;
 }
 
+:host([data-orientation='horizontal'].tng-stepper--projected-items) {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+}
+
 .tng-stepper__list {
   display: grid;
   gap: 0.55rem;
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+:host([data-orientation='horizontal']) .tng-stepper__list {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+:host([data-orientation='horizontal']) .tng-stepper__list > tng-stepper-item {
+  flex: 1 1 8.5rem;
+  min-width: min(100%, 8.5rem);
 }

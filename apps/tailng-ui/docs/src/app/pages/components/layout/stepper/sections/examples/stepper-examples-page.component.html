@@ -5,6 +5,69 @@
     triggers, and state attributes.
   </p>
 
+  <section id="horizontal-orientation-variants" class="stepper-examples-block">
+    <app-docs-example-tabs-section
+      heading="Horizontal orientation variants"
+      description="A styled wrapper stepper with explicit horizontal orientation and built-in item layout."
+      ariaLabel="Horizontal orientation stepper variants"
+      tabListAriaLabel="Horizontal orientation stepper styles"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain-CSS"
+        panelTitle="Plain CSS horizontal orientation"
+        [codeTabs]="horizontalPlainCodeTabs"
+      >
+        <div class="stepper-example-shell stepper-example-shell--plain stepper-example-shell--horizontal">
+          <tng-stepper
+            orientation="horizontal"
+            defaultValue="plan"
+            ariaLabel="Horizontal onboarding progress"
+          >
+            <tng-stepper-item value="account" label="Account" completed />
+            <tng-stepper-item value="plan" label="Plan" description="Choose workspace limits" />
+            <tng-stepper-item
+              value="invite"
+              label="Invite"
+              description="Optional team setup"
+              optional
+            />
+          </tng-stepper>
+        </div>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Tailwind horizontal orientation"
+        [codeTabs]="horizontalTailwindCodeTabs"
+      >
+        <div
+          class="stepper-example-shell stepper-example-shell--horizontal rounded-xl border border-slate-300 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60"
+        >
+          <tng-stepper
+            orientation="horizontal"
+            defaultValue="plan"
+            ariaLabel="Horizontal onboarding progress"
+          >
+            <tng-stepper-item value="account" label="Account" completed />
+            <tng-stepper-item value="plan" label="Plan" description="Workspace limits" />
+            <tng-stepper-item
+              value="invite"
+              label="Invite"
+              description="Optional team setup"
+              optional
+            />
+          </tng-stepper>
+        </div>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
   <section id="checkout-progression-variants" class="stepper-examples-block">
     <app-docs-example-tabs-section
       heading="Checkout progression variants"

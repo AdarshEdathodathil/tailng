@@ -38,6 +38,7 @@ const headlessStepperOutlineItemsBySection: Readonly<
     { id: 'practical-guidance', label: 'Practical guidance' },
   ],
   examples: [
+    { id: 'horizontal-orientation', label: 'Horizontal orientation' },
     { id: 'checkout-progression', label: 'Checkout progression' },
     { id: 'release-pipeline', label: 'Release pipeline' },
     { id: 'error-surface', label: 'Error surface' },

@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, inject, signal, type OnDestroy } from '@angular/core';
-import { TngStepperComponent } from '@tailng-ui/components';
+import { TngStepperComponent, TngStepperItemComponent } from '@tailng-ui/components';
 import {
   TngStepperDescription,
   TngStepperItem,
@@ -21,6 +21,7 @@ import {
   selector: 'app-stepper-examples-page',
   imports: [
     TngStepperComponent,
+    TngStepperItemComponent,
     TngStepperDescription,
     TngStepperItem,
     TngStepperLabel,
@@ -38,6 +39,98 @@ export class StepperExamplesPageComponent implements OnDestroy {
     resolveDocsCodeBlockTheme(this.documentRef),
   );
   private readonly colorSchemeObserver = observeDocsCodeThemeChanges(this.documentRef, this.codeBlockTheme);
+
+  protected readonly horizontalPlainCodeTabs: readonly DocsExampleCodeTab[] = Object.freeze([
+    {
+      value: 'ts',
+      label: 'TS',
+      language: 'ts',
+      title: 'stepper-examples-horizontal-plain-css.component.ts',
+      code: [
+        "import { Component } from '@angular/core';",
+        "import { TngStepperComponent, TngStepperItemComponent } from '@tailng-ui/components';",
+        '',
+        '@Component({',
+        "  selector: 'app-stepper-examples-horizontal-plain-css',",
+        '  standalone: true,',
+        '  imports: [TngStepperComponent, TngStepperItemComponent],',
+        "  templateUrl: './stepper-examples-horizontal-plain-css.component.html',",
+        "  styleUrl: './stepper-examples-horizontal-plain-css.component.css',",
+        '})',
+        'export class StepperExamplesHorizontalPlainCssComponent {}',
+      ].join('\n'),
+    },
+    {
+      value: 'html',
+      label: 'HTML',
+      language: 'html',
+      title: 'stepper-examples-horizontal-plain-css.component.html',
+      code: [
+        '<div class="stepper-example-shell stepper-example-shell--plain stepper-example-shell--horizontal">',
+        '  <tng-stepper orientation="horizontal" defaultValue="plan" ariaLabel="Horizontal onboarding progress">',
+        '    <tng-stepper-item value="account" label="Account" completed />',
+        '    <tng-stepper-item value="plan" label="Plan" description="Choose workspace limits" />',
+        '    <tng-stepper-item value="invite" label="Invite" description="Optional team setup" optional />',
+        '  </tng-stepper>',
+        '</div>',
+      ].join('\n'),
+    },
+    {
+      value: 'css',
+      label: 'CSS',
+      language: 'css',
+      title: 'stepper-examples-horizontal-plain-css.component.css',
+      code: [
+        '.stepper-example-shell--horizontal {',
+        '  max-width: 48rem;',
+        '}',
+      ].join('\n'),
+    },
+  ]);
+
+  protected readonly horizontalTailwindCodeTabs: readonly DocsExampleCodeTab[] = Object.freeze([
+    {
+      value: 'ts',
+      label: 'TS',
+      language: 'ts',
+      title: 'stepper-examples-horizontal-tailwind.component.ts',
+      code: [
+        "import { Component } from '@angular/core';",
+        "import { TngStepperComponent, TngStepperItemComponent } from '@tailng-ui/components';",
+        '',
+        '@Component({',
+        "  selector: 'app-stepper-examples-horizontal-tailwind',",
+        '  standalone: true,',
+        '  imports: [TngStepperComponent, TngStepperItemComponent],',
+        "  templateUrl: './stepper-examples-horizontal-tailwind.component.html',",
+        "  styleUrl: './stepper-examples-horizontal-tailwind.component.css',",
+        '})',
+        'export class StepperExamplesHorizontalTailwindComponent {}',
+      ].join('\n'),
+    },
+    {
+      value: 'html',
+      label: 'HTML',
+      language: 'html',
+      title: 'stepper-examples-horizontal-tailwind.component.html',
+      code: [
+        '<div class="rounded-xl border border-slate-300 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">',
+        '  <tng-stepper orientation="horizontal" defaultValue="plan" ariaLabel="Horizontal onboarding progress">',
+        '    <tng-stepper-item value="account" label="Account" completed />',
+        '    <tng-stepper-item value="plan" label="Plan" description="Workspace limits" />',
+        '    <tng-stepper-item value="invite" label="Invite" description="Optional team setup" optional />',
+        '  </tng-stepper>',
+        '</div>',
+      ].join('\n'),
+    },
+    {
+      value: 'css',
+      label: 'CSS',
+      language: 'css',
+      title: 'stepper-examples-horizontal-tailwind.component.css',
+      code: '/* Tailwind utilities are applied directly in the template. */',
+    },
+  ]);
 
   protected readonly checkoutPlainCodeTabs: readonly DocsExampleCodeTab[] = Object.freeze([
     {

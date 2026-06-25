@@ -35,6 +35,10 @@
   width: 100%;
 }
 
+.stepper-example-shell--horizontal {
+  max-width: 48rem;
+}
+
 .stepper-example-shell--headless {
   background: color-mix(in srgb, var(--tng-semantic-background-surface) 84%, transparent);
   border: 1px solid var(--tng-semantic-border-subtle);

@@ -109,6 +109,25 @@ class StepperWrapperStepsHostComponent {
 }
 
 @Component({
+  imports: [TngStepperComponent],
+  template: `
+    <tng-stepper
+      data-testid="wrapper-horizontal-steps"
+      orientation="horizontal"
+      defaultValue="shipping"
+      [steps]="steps()"
+    />
+  `,
+})
+class StepperWrapperHorizontalStepsHostComponent {
+  public readonly steps = signal<readonly TngStepperStep[]>([
+    { value: 'cart', label: 'Cart', completed: true },
+    { value: 'shipping', label: 'Shipping', description: 'Choose a delivery address' },
+    { value: 'payment', label: 'Payment' },
+  ]);
+}
+
+@Component({
   imports: [TngStepperComponent, TngStepperItemComponent],
   template: `
     <tng-stepper data-testid="wrapper-items" defaultValue="shipping">
@@ -119,6 +138,18 @@ class StepperWrapperStepsHostComponent {
   `,
 })
 class StepperWrapperItemsHostComponent {}
+
+@Component({
+  imports: [TngStepperComponent, TngStepperItemComponent],
+  template: `
+    <tng-stepper data-testid="wrapper-horizontal-items" orientation="horizontal" defaultValue="shipping">
+      <tng-stepper-item value="cart" label="Cart" completed />
+      <tng-stepper-item value="shipping" label="Shipping" />
+      <tng-stepper-item value="payment" label="Payment" optional />
+    </tng-stepper>
+  `,
+})
+class StepperWrapperHorizontalItemsHostComponent {}
 
 function click(el: HTMLElement): MouseEvent {
   const event = new MouseEvent('click', { bubbles: true, cancelable: true });
@@ -261,6 +292,28 @@ describe('tng-stepper component', () => {
     expect(fixture.componentInstance.valueChanges).toEqual([]);
   });
 
+  it('applies horizontal orientation hooks to generated styled steps', () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [StepperWrapperHorizontalStepsHostComponent],
+    }).createComponent(StepperWrapperHorizontalStepsHostComponent);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const wrapper = host.querySelector('[data-testid="wrapper-horizontal-steps"]');
+    const list = host.querySelector('[data-testid="wrapper-horizontal-steps"] .tng-stepper__list');
+    const items = Array.from(
+      host.querySelectorAll<HTMLElement>('[data-testid="wrapper-horizontal-steps"] tng-stepper-item'),
+    );
+
+    expect(wrapper?.getAttribute('data-orientation')).toBe('horizontal');
+    expect(wrapper?.classList.contains('tng-stepper--projected-items')).toBe(false);
+    expect(list).toBeTruthy();
+    expect(items.length).toBe(3);
+    expect(items[0]?.getAttribute('data-state')).toBe('completed');
+    expect(items[1]?.getAttribute('data-state')).toBe('current');
+    expect(items[2]?.getAttribute('data-state')).toBe('upcoming');
+  });
+
   it('supports declarative styled stepper item children', () => {
     const fixture = TestBed.configureTestingModule({
       imports: [StepperWrapperItemsHostComponent],
@@ -283,5 +336,30 @@ describe('tng-stepper component', () => {
     expect(
       triggers.map((trigger) => trigger.querySelector('[data-slot="stepper-label"]')?.textContent?.trim()),
     ).toEqual(['Cart', 'Shipping', 'Payment']);
+  });
+
+  it('marks direct projected styled item children for horizontal host layout', () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [StepperWrapperHorizontalItemsHostComponent],
+    }).createComponent(StepperWrapperHorizontalItemsHostComponent);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const wrapper = host.querySelector('[data-testid="wrapper-horizontal-items"]');
+    const items = Array.from(
+      host.querySelectorAll<HTMLElement>('[data-testid="wrapper-horizontal-items"] tng-stepper-item'),
+    );
+    const triggers = Array.from(
+      host.querySelectorAll<HTMLButtonElement>('[data-testid="wrapper-horizontal-items"] [data-slot="stepper-trigger"]'),
+    );
+
+    expect(wrapper?.getAttribute('data-orientation')).toBe('horizontal');
+    expect(wrapper?.classList.contains('tng-stepper--projected-items')).toBe(true);
+    expect(items.length).toBe(3);
+    expect(items[0]?.getAttribute('data-state')).toBe('completed');
+    expect(items[1]?.getAttribute('data-state')).toBe('current');
+    expect(items[2]?.getAttribute('data-state')).toBe('upcoming');
+    expect(items[2]?.hasAttribute('data-optional')).toBe(true);
+    expect(triggers[1]?.getAttribute('aria-current')).toBe('step');
   });
 });

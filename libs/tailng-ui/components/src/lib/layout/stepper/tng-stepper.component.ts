@@ -1,4 +1,4 @@
-import { booleanAttribute, Component, HostBinding, inject, input } from '@angular/core';
+import { booleanAttribute, Component, HostBinding, contentChildren, inject, input } from '@angular/core';
 import {
   TngStepper as TngStepperPrimitive,
   TngStepperDescription,
@@ -52,11 +52,17 @@ export type TngStepperStep = Readonly<{
       counter-increment: tng-stepper-item;
       display: block;
       min-height: var(--tng-control-height-md, 2.5rem);
+      min-width: 0;
       transition:
         background-color var(--tng-duration-normal, 150ms) var(--tng-easing, ease),
         border-color     var(--tng-duration-normal, 150ms) var(--tng-easing, ease),
         color            var(--tng-duration-normal, 150ms) var(--tng-easing, ease),
         opacity          var(--tng-duration-normal, 150ms) var(--tng-easing, ease);
+    }
+
+    :host-context(tng-stepper[data-orientation='horizontal']) {
+      flex: 1 1 8.5rem;
+      min-width: min(100%, 8.5rem);
     }
 
     :host([data-state='current']) {
@@ -181,6 +187,8 @@ export class TngStepperItemComponent {
   styleUrl: './tng-stepper.component.css',
 })
 export class TngStepperComponent {
+  private readonly projectedItems = contentChildren(TngStepperItemComponent, { descendants: false });
+
   public readonly steps = input<readonly TngStepperStep[] | null>(null);
   public readonly ariaLabel = input<string | null>('Stepper');
   public readonly ariaLabelledby = input<string | null>(null);
@@ -194,6 +202,11 @@ export class TngStepperComponent {
   @HostBinding('attr.aria-labelledby')
   protected get hostAriaLabelledby(): string | null {
     return this.ariaLabelledby();
+  }
+
+  @HostBinding('class.tng-stepper--projected-items')
+  protected get hasProjectedItems(): boolean {
+    return this.renderedSteps.length === 0 && this.projectedItems().length > 0;
   }
 
   protected get renderedSteps(): readonly TngStepperStep[] {

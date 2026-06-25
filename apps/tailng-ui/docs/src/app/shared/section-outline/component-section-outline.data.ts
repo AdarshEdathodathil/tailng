@@ -960,6 +960,7 @@ export const docsComponentOutlineItemsBySlug: Readonly<
       { id: 'css-starter', label: 'CSS starter' },
     ],
     examples: [
+      { id: 'horizontal-orientation-variants', label: 'Horizontal orientation variants' },
       { id: 'checkout-progression-variants', label: 'Checkout progression variants' },
       { id: 'release-pipeline-variants', label: 'Release pipeline variants' },
       { id: 'error-surface-variants', label: 'Error surface variants' },
