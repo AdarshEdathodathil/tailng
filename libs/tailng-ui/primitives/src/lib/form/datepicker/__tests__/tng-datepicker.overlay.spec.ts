@@ -18,7 +18,10 @@ function createRect(top: number, bottom: number, width = 240): DOMRect {
   } as DOMRect;
 }
 
-async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }): Promise<void> {
+async function settle(fixture: {
+  detectChanges(): void;
+  whenStable(): Promise<unknown>;
+}): Promise<void> {
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -97,9 +100,58 @@ class DatepickerOverlayHostComponent implements AfterViewInit {
   }
 }
 
+@Component({
+  imports: [TngDatepickerOverlay],
+  template: `
+    <div data-testid="scroll-parent" style="overflow: auto; max-height: 120px;">
+      <div
+        #anchor
+        data-slot="datepicker-input-shell"
+        data-testid="scroll-anchor"
+        style="width: 240px; min-height: 52px;"
+      >
+        <button
+          #trigger
+          type="button"
+          data-slot="datepicker-trigger"
+          data-testid="scroll-trigger"
+          (click)="controller.open()"
+        >
+          Open
+        </button>
+      </div>
+
+      <section
+        [tngDatepickerOverlay]="controller"
+        [tngDatepickerOverlayAnchor]="anchor"
+        data-testid="scroll-overlay"
+        style="display: block; min-height: 320px;"
+      >
+        Overlay
+      </section>
+    </div>
+  `,
+})
+class DatepickerOverlayScrollableHostComponent implements AfterViewInit {
+  @ViewChild('trigger', { static: true })
+  private readonly trigger!: ElementRef<HTMLElement>;
+
+  public readonly controller = createDatepickerController<Date>({
+    ownerDocument: document,
+    trapFocus: true,
+    value: '2024-04-22',
+  });
+
+  public ngAfterViewInit(): void {
+    this.controller.registerTrigger(this.trigger.nativeElement);
+  }
+}
+
 describe('tng-datepicker.overlay', () => {
   afterEach(() => {
-    document.body.querySelectorAll('[data-testid="overlay"]').forEach((element) => element.remove());
+    document.body
+      .querySelectorAll('[data-testid="overlay"], [data-testid="scroll-overlay"]')
+      .forEach((element) => element.remove());
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
     vi.restoreAllMocks();
@@ -113,7 +165,10 @@ describe('tng-datepicker.overlay', () => {
 
     await settle(fixture);
 
-    const trigger = getRequired<HTMLButtonElement>(fixture.nativeElement, '[data-testid="trigger"]');
+    const trigger = getRequired<HTMLButtonElement>(
+      fixture.nativeElement,
+      '[data-testid="trigger"]',
+    );
     const overlay = getRequired<HTMLElement>(fixture.nativeElement, '[data-testid="overlay"]');
 
     expect(overlay.getAttribute('hidden')).toBe('');
@@ -125,13 +180,19 @@ describe('tng-datepicker.overlay', () => {
     expect(mountedOverlay.parentNode).toBe(document.body);
     expect(mountedOverlay.style.position).toBe('fixed');
     expect(document.body.style.overflow).toBe('hidden');
-    expect(mountedOverlay.style.zIndex).toBe('var(--tng-datepicker-z-overlay, var(--tng-z-overlay, 1000))');
+    expect(mountedOverlay.style.zIndex).toBe(
+      'var(--tng-datepicker-z-overlay, var(--tng-z-overlay, 1000))',
+    );
     expect(mountedOverlay.getAttribute('hidden')).toBeNull();
-    expect(mountedOverlay.style.getPropertyValue('--tng-datepicker-surface').trim()).toBe('#f8fafc');
+    expect(mountedOverlay.style.getPropertyValue('--tng-datepicker-surface').trim()).toBe(
+      '#f8fafc',
+    );
     expect(mountedOverlay.style.getPropertyValue('--tng-datepicker-border').trim()).toBe('#d8e2ef');
     expect(mountedOverlay.style.getPropertyValue('--tng-datepicker-fg').trim()).toBe('#0f172a');
     expect(mountedOverlay.style.getPropertyValue('--tng-datepicker-brand').trim()).toBe('#2563eb');
-    expect(mountedOverlay.style.getPropertyValue('--tng-datepicker-nav-size').trim()).toBe('2.8rem');
+    expect(mountedOverlay.style.getPropertyValue('--tng-datepicker-nav-size').trim()).toBe(
+      '2.8rem',
+    );
     expect(mountedOverlay.style.colorScheme).toBe('light');
 
     fixture.componentInstance.controller.close();
@@ -154,7 +215,10 @@ describe('tng-datepicker.overlay', () => {
 
     await settle(fixture);
 
-    const trigger = getRequired<HTMLButtonElement>(fixture.nativeElement, '[data-testid="trigger"]');
+    const trigger = getRequired<HTMLButtonElement>(
+      fixture.nativeElement,
+      '[data-testid="trigger"]',
+    );
     const anchor = getRequired<HTMLElement>(fixture.nativeElement, '[data-testid="anchor"]');
     const originalInnerHeight = window.innerHeight;
 
@@ -173,7 +237,10 @@ describe('tng-datepicker.overlay', () => {
     expect(overlay.getAttribute('data-placement')).toBe('top');
     expect(overlay.style.maxHeight).not.toBe('');
 
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: originalInnerHeight,
+    });
   });
 
   it('locks page scroll and does not reposition from scroll events while open', async () => {
@@ -183,7 +250,10 @@ describe('tng-datepicker.overlay', () => {
 
     await settle(fixture);
 
-    const trigger = getRequired<HTMLButtonElement>(fixture.nativeElement, '[data-testid="trigger"]');
+    const trigger = getRequired<HTMLButtonElement>(
+      fixture.nativeElement,
+      '[data-testid="trigger"]',
+    );
     trigger.click();
     await settle(fixture);
 
@@ -202,5 +272,36 @@ describe('tng-datepicker.overlay', () => {
     expect(overlay.getAttribute('hidden')).toBeNull();
     expect(overlay.style.top).toBe(overlayTop);
     expect(overlayRectSpy).not.toHaveBeenCalled();
+  });
+
+  it('locks scrollable ancestors while open and restores them on close', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [DatepickerOverlayScrollableHostComponent],
+    }).createComponent(DatepickerOverlayScrollableHostComponent);
+
+    await settle(fixture);
+
+    const trigger = getRequired<HTMLButtonElement>(
+      fixture.nativeElement,
+      '[data-testid="scroll-trigger"]',
+    );
+    const scrollParent = getRequired<HTMLElement>(
+      fixture.nativeElement,
+      '[data-testid="scroll-parent"]',
+    );
+
+    expect(scrollParent.style.overflow).toBe('auto');
+
+    trigger.click();
+    await settle(fixture);
+
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(scrollParent.style.overflow).toBe('hidden');
+
+    fixture.componentInstance.controller.close();
+    await settle(fixture);
+
+    expect(document.body.style.overflow).toBe('');
+    expect(scrollParent.style.overflow).toBe('auto');
   });
 });

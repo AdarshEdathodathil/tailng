@@ -91,8 +91,60 @@ class DateRangePickerOverlayThemeHostComponent implements AfterViewInit {
   }
 }
 
+@Component({
+  imports: [TngDateRangePickerOverlay],
+  template: `
+    <div data-testid="range-scroll-parent" style="overflow: auto; max-height: 120px;">
+      <div
+        #anchor
+        data-slot="date-range-picker-input-shell"
+        data-testid="range-scroll-anchor"
+        style="width: 240px; min-height: 52px;"
+      >
+        <button
+          #trigger
+          type="button"
+          data-slot="date-range-picker-trigger"
+          data-testid="range-scroll-trigger"
+          (click)="controller.open()"
+        >
+          Open
+        </button>
+      </div>
+
+      <section
+        [tngDateRangePickerOverlay]="controller"
+        [tngDateRangePickerOverlayAnchor]="anchor"
+        data-testid="range-scroll-overlay"
+        style="display: block; min-height: 320px;"
+      >
+        Overlay
+      </section>
+    </div>
+  `,
+})
+class DateRangePickerOverlayScrollableHostComponent implements AfterViewInit {
+  @ViewChild('trigger', { static: true })
+  private readonly trigger!: ElementRef<HTMLElement>;
+
+  public readonly controller = createController({
+    ownerDocument: document,
+    trapFocus: true,
+    value: {
+      end: '2024-04-24',
+      start: '2024-04-20',
+    },
+  });
+
+  public ngAfterViewInit(): void {
+    this.controller.registerTrigger(this.trigger.nativeElement);
+  }
+}
+
 afterEach(() => {
   cleanupDom();
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
   TestBed.resetTestingModule();
 });
 
@@ -208,6 +260,37 @@ describe('tng-date-range-picker overlay behavior', () => {
     expect(overlay.style.getPropertyValue('--tng-date-range-picker-z-overlay').trim()).toBe('');
     expect(overlay.style.zIndex).toBe('');
     expect(overlay.style.colorScheme).toBe('');
+  });
+
+  it('locks scrollable ancestors while open and restores them on close', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [DateRangePickerOverlayScrollableHostComponent],
+    }).createComponent(DateRangePickerOverlayScrollableHostComponent);
+
+    await settle(fixture);
+
+    const trigger = getRequired<HTMLButtonElement>(
+      fixture.nativeElement,
+      '[data-testid="range-scroll-trigger"]',
+    );
+    const scrollParent = getRequired<HTMLElement>(
+      fixture.nativeElement,
+      '[data-testid="range-scroll-parent"]',
+    );
+
+    expect(scrollParent.style.overflow).toBe('auto');
+
+    trigger.click();
+    await settle(fixture);
+
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(scrollParent.style.overflow).toBe('hidden');
+
+    fixture.componentInstance.controller.close();
+    await settle(fixture);
+
+    expect(document.body.style.overflow).toBe('');
+    expect(scrollParent.style.overflow).toBe('auto');
   });
 
   it('computes layout values for overlay, push, and side modes', () => {

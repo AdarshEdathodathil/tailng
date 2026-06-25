@@ -121,7 +121,10 @@ async function openOverlay(fixture: FixtureLike): Promise<void> {
 }
 
 async function openOverlayByKeyboard(fixture: FixtureLike): Promise<void> {
-  const trigger = getRequired<HTMLButtonElement>(fixture, '[data-slot="date-range-picker-trigger"]');
+  const trigger = getRequired<HTMLButtonElement>(
+    fixture,
+    '[data-slot="date-range-picker-trigger"]',
+  );
   trigger.focus();
   keydown(trigger, 'Enter');
   await settle(fixture);
@@ -169,11 +172,11 @@ function getActiveDayCell(): HTMLButtonElement {
   );
 }
 
-async function navigatePickerGridToYear(
-  fixture: FixtureLike,
-  targetYear: string,
-): Promise<void> {
-  const grid = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="date-range-picker-grid"]');
+async function navigatePickerGridToYear(fixture: FixtureLike, targetYear: string): Promise<void> {
+  const grid = getRequiredFromRoot<HTMLElement>(
+    document.body,
+    '[data-slot="date-range-picker-grid"]',
+  );
 
   for (let attempt = 0; attempt < 50; attempt += 1) {
     if (getActivePickerButton('date-range-picker-year').textContent?.trim() === targetYear) {
@@ -191,12 +194,25 @@ async function navigatePickerGridToYear(
   throw new Error(`Could not navigate the year grid to ${targetYear}.`);
 }
 
-async function navigatePickerGridToMonth(
-  fixture: FixtureLike,
-  targetLabel: string,
-): Promise<void> {
-  const grid = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="date-range-picker-grid"]');
-  const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+async function navigatePickerGridToMonth(fixture: FixtureLike, targetLabel: string): Promise<void> {
+  const grid = getRequiredFromRoot<HTMLElement>(
+    document.body,
+    '[data-slot="date-range-picker-grid"]',
+  );
+  const monthOrder = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (getActivePickerButton('date-range-picker-month').textContent?.trim() === targetLabel) {
@@ -220,7 +236,10 @@ async function navigatePickerGridToMonth(
 }
 
 async function navigateDayGridTo(fixture: FixtureLike, dayLabel: string): Promise<void> {
-  const grid = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="date-range-picker-grid"]');
+  const grid = getRequiredFromRoot<HTMLElement>(
+    document.body,
+    '[data-slot="date-range-picker-grid"]',
+  );
 
   for (let attempt = 0; attempt < 80; attempt += 1) {
     if (getActiveDayCell().textContent?.trim() === dayLabel) {
@@ -430,6 +449,21 @@ class UncontrolledDateRangePickerHostComponent {
 @Component({
   imports: [TngDateRangePickerComponent],
   template: `
+    <div data-testid="range-scroll-parent" style="overflow: auto; max-height: 120px;">
+      <tng-date-range-picker
+        [defaultValue]="{ start: '2024-04-22', end: '2024-04-24' }"
+        (openChange)="openChanges.push($event)"
+      />
+    </div>
+  `,
+})
+class ScrollableDateRangePickerHostComponent {
+  public readonly openChanges: boolean[] = [];
+}
+
+@Component({
+  imports: [TngDateRangePickerComponent],
+  template: `
     <tng-date-range-picker
       aria-label="Styled Date Range Picker"
       style="
@@ -469,6 +503,8 @@ describe('tng-date-range-picker component behavior', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     TestBed.resetTestingModule();
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
     document.body.querySelectorAll('[data-slot="date-range-picker-overlay"]').forEach((element) => {
       element.remove();
     });
@@ -842,6 +878,29 @@ describe('tng-date-range-picker component behavior', () => {
     });
   });
 
+  it('locks scrollable ancestors while the overlay is open', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ScrollableDateRangePickerHostComponent],
+    }).createComponent(ScrollableDateRangePickerHostComponent);
+
+    await settle(fixture);
+
+    const scrollParent = getRequired<HTMLElement>(fixture, '[data-testid="range-scroll-parent"]');
+    expect(scrollParent.style.overflow).toBe('auto');
+
+    await openOverlay(fixture);
+
+    expect(fixture.componentInstance.openChanges).toEqual([true]);
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(scrollParent.style.overflow).toBe('hidden');
+
+    getRequired<HTMLButtonElement>(fixture, '[data-slot="date-range-picker-trigger"]').click();
+    await settle(fixture);
+
+    expect(document.body.style.overflow).toBe('');
+    expect(scrollParent.style.overflow).toBe('auto');
+  });
+
   it('selects an earlier enabled range by keyboard when today is beyond maxDate', async () => {
     const fixture = TestBed.configureTestingModule({
       imports: [UncontrolledDateRangePickerHostComponent],
@@ -867,7 +926,10 @@ describe('tng-date-range-picker component behavior', () => {
     await waitForAnimationFrame();
     await settle(fixture);
 
-    const yearGrid = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="date-range-picker-grid"]');
+    const yearGrid = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="date-range-picker-grid"]',
+    );
     expect(getActivePickerButton('date-range-picker-year').textContent?.trim()).toBe('2025');
 
     await navigatePickerGridToYear(fixture, '2024');
@@ -876,7 +938,10 @@ describe('tng-date-range-picker component behavior', () => {
     await waitForAnimationFrame();
     await settle(fixture);
 
-    const monthGrid = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="date-range-picker-grid"]');
+    const monthGrid = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="date-range-picker-grid"]',
+    );
     await navigatePickerGridToMonth(fixture, 'Apr');
     keydown(monthGrid, 'Enter');
     await settle(fixture);
@@ -885,7 +950,10 @@ describe('tng-date-range-picker component behavior', () => {
 
     expect(periodButton.textContent?.includes('April 2024')).toBe(true);
 
-    const dayGrid = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="date-range-picker-grid"]');
+    const dayGrid = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="date-range-picker-grid"]',
+    );
     await navigateDayGridTo(fixture, '1');
     keydown(dayGrid, 'Enter');
     await settle(fixture);
@@ -969,7 +1037,10 @@ describe('tng-date-range-picker component behavior', () => {
     await settle(fixture);
 
     const input = getRequired<HTMLInputElement>(fixture, '[data-slot="date-range-picker-input"]');
-    const trigger = getRequired<HTMLButtonElement>(fixture, '[data-slot="date-range-picker-trigger"]');
+    const trigger = getRequired<HTMLButtonElement>(
+      fixture,
+      '[data-slot="date-range-picker-trigger"]',
+    );
 
     focus(input);
     keydown(input, 'Enter');
@@ -979,9 +1050,10 @@ describe('tng-date-range-picker component behavior', () => {
 
     expect(fixture.componentInstance.openChanges).toEqual([true]);
     expect(
-      getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="date-range-picker-overlay"]').getAttribute(
-        'hidden',
-      ),
+      getRequiredFromRoot<HTMLElement>(
+        document.body,
+        '[data-slot="date-range-picker-overlay"]',
+      ).getAttribute('hidden'),
     ).toBeNull();
     expect(document.activeElement).toBe(getActiveDayCell());
     expect(trigger.getAttribute('tabindex')).toBe('-1');
@@ -1003,14 +1075,8 @@ describe('tng-date-range-picker component behavior', () => {
       fixture,
       '[data-slot="date-range-picker-trigger"]',
     );
-    const submitButton = getRequired<HTMLButtonElement>(
-      fixture,
-      '[data-testid="submit-button"]',
-    );
-    const overlay = getRequired<HTMLElement>(
-      fixture,
-      '[data-slot="date-range-picker-overlay"]',
-    );
+    const submitButton = getRequired<HTMLButtonElement>(fixture, '[data-testid="submit-button"]');
+    const overlay = getRequired<HTMLElement>(fixture, '[data-slot="date-range-picker-overlay"]');
 
     focus(textInput);
     expect(document.activeElement).toBe(textInput);

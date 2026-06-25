@@ -14,18 +14,18 @@ import {
   clearFixedPortalledOverlayBaseStyles,
   clearPortalledThemeVars,
   createTngIdFactory,
+  getGlobalElementScrollLockManager,
   getGlobalScrollLockManager,
   positionFixedAnchoredOverlay,
   resolveCssCustomPropertyPx,
+  resolveTngScrollableAncestors,
   syncPortalledThemeVars,
   type TngOverlayCollisionOptions,
   type TngOverlayOffset,
   type TngOverlayPlacement,
   type TngOverlayRect,
 } from '@tailng-ui/cdk';
-import type {
-  TngDatepickerAttributeMap,
-} from './datepicker.types';
+import type { TngDatepickerAttributeMap } from './datepicker.types';
 
 type TngDatepickerOverlayController = Readonly<{
   handleOverlayKeyDown: (event: KeyboardEvent) => void;
@@ -38,11 +38,7 @@ type TngDatepickerOverlayController = Readonly<{
   subscribe: (listener: (event: unknown) => void) => () => void;
 }>;
 
-type OverlayAnchorInput =
-  | ElementRef<HTMLElement>
-  | HTMLElement
-  | null
-  | undefined;
+type OverlayAnchorInput = ElementRef<HTMLElement> | HTMLElement | null | undefined;
 type OverlayThemeSourceInput = OverlayAnchorInput;
 
 const PORTALLED_DATEPICKER_THEME_VARS = [
@@ -134,7 +130,9 @@ function anchorRectFor(anchorEl: HTMLElement): TngOverlayRect {
     };
   }
   const labelPosition = anchorEl.getAttribute('data-label-position');
-  const fieldset = anchorEl.querySelector('[data-slot="form-field-control-row"]') as HTMLElement | null;
+  const fieldset = anchorEl.querySelector(
+    '[data-slot="form-field-control-row"]',
+  ) as HTMLElement | null;
   const innerRow = anchorEl.querySelector('.tng-form-field__control-row') as HTMLElement | null;
   const positionEl = labelPosition === 'outline' ? (fieldset ?? innerRow) : (innerRow ?? fieldset);
   if (positionEl === null) {
@@ -170,12 +168,16 @@ export class TngDatepickerOverlay {
   private readonly scrollLock = getGlobalScrollLockManager({
     documentRef: this.ownerDocument,
   });
+  private readonly elementScrollLock = getGlobalElementScrollLockManager({
+    documentRef: this.ownerDocument,
+  });
 
   private overlayPlaceholder: Comment | null = null;
   private overlayOriginalParent: Node | null = null;
   private overlayLayoutFrame: number | null = null;
   private removeResizeListener: (() => void) | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private scrollAncestors: readonly HTMLElement[] = [];
 
   public readonly controller = input.required<TngDatepickerOverlayController>({
     alias: 'tngDatepickerOverlay',
@@ -350,10 +352,8 @@ export class TngDatepickerOverlay {
           ? this.overlayOriginalParent
           : null;
 
-    return (
-      scope?.querySelector('[data-slot="datepicker-input-shell"]') ??
-      scope?.querySelector('[data-slot="datepicker-trigger"]')
-    ) as HTMLElement | null;
+    return (scope?.querySelector('[data-slot="datepicker-input-shell"]') ??
+      scope?.querySelector('[data-slot="datepicker-trigger"]')) as HTMLElement | null;
   }
 
   /**
@@ -439,9 +439,28 @@ export class TngDatepickerOverlay {
     this.resizeObserver = null;
   }
 
+  private setupScrollLock(anchor: HTMLElement | null): void {
+    this.teardownScrollLock();
+    this.scrollLock.acquire(this.instanceId);
+
+    if (anchor === null) {
+      return;
+    }
+
+    this.scrollAncestors = resolveTngScrollableAncestors(anchor);
+    this.elementScrollLock.acquire(this.instanceId, this.scrollAncestors);
+  }
+
+  private teardownScrollLock(): void {
+    this.scrollLock.release(this.instanceId);
+    this.elementScrollLock.release(this.instanceId);
+    this.scrollAncestors = [];
+  }
+
   private syncPortalledThemeVars(): void {
     const overlay = this.elRef.nativeElement;
-    const themeSource = resolveThemeSourceElement(this.themeSource()) ?? this.findDatepickerAnchorEl();
+    const themeSource =
+      resolveThemeSourceElement(this.themeSource()) ?? this.findDatepickerAnchorEl();
     if (themeSource === null) {
       return;
     }
@@ -463,8 +482,9 @@ export class TngDatepickerOverlay {
       return;
     }
 
+    const anchor = this.findAnchorEl();
     this.setupRepositionListeners();
-    this.scrollLock.acquire(this.instanceId);
+    this.setupScrollLock(anchor);
 
     if (overlay.parentNode !== this.ownerDocument.body) {
       this.ownerDocument.body.appendChild(overlay);
@@ -496,7 +516,7 @@ export class TngDatepickerOverlay {
     }
 
     this.teardownRepositionListeners();
-    this.scrollLock.release(this.instanceId);
+    this.teardownScrollLock();
     this.resolvedPlacement.set(this.resolvePlacement().side === 'top' ? 'top' : 'bottom');
     this.clearPortalledThemeVars();
     clearFixedPortalledOverlayBaseStyles(overlay);
@@ -520,20 +540,18 @@ export class TngDatepickerOverlay {
       side:
         themeSource === null
           ? OVERLAY_OFFSET
-          : resolveCssCustomPropertyPx(
-              themeSource,
-              '--tng-datepicker-overlay-gap',
-              OVERLAY_OFFSET,
-            ),
+          : resolveCssCustomPropertyPx(themeSource, '--tng-datepicker-overlay-gap', OVERLAY_OFFSET),
     };
   }
 
   private resolveCollision(): TngOverlayCollisionOptions {
-    return this.collision() ?? {
-      flip: true,
-      padding: OVERLAY_VIEWPORT_MARGIN,
-      shift: false,
-    };
+    return (
+      this.collision() ?? {
+        flip: true,
+        padding: OVERLAY_VIEWPORT_MARGIN,
+        shift: false,
+      }
+    );
   }
 
   private resolveDirection(): 'ltr' | 'rtl' {

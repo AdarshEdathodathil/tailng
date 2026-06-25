@@ -47,7 +47,10 @@ function dispatchTabAndSimulateBrowserFocus(
   return event;
 }
 
-async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }): Promise<void> {
+async function settle(fixture: {
+  detectChanges(): void;
+  whenStable(): Promise<unknown>;
+}): Promise<void> {
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -59,7 +62,10 @@ async function waitForAnimationFrame(): Promise<void> {
   });
 }
 
-function getRequired<T extends Element>(fixture: { nativeElement: HTMLElement }, selector: string): T {
+function getRequired<T extends Element>(
+  fixture: { nativeElement: HTMLElement },
+  selector: string,
+): T {
   const element = fixture.nativeElement.querySelector(selector);
   if (element === null) {
     throw new Error(`Expected selector ${selector} to exist.`);
@@ -159,7 +165,10 @@ async function selectOverlayDay(fixture: FixtureLike, dayLabel: string): Promise
 }
 
 function getSelectedDayCell(): HTMLButtonElement {
-  return getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-cell"][data-selected="true"]');
+  return getRequiredFromRoot<HTMLButtonElement>(
+    document.body,
+    '[data-slot="datepicker-cell"][data-selected="true"]',
+  );
 }
 
 function getActiveDayCell(): HTMLButtonElement {
@@ -169,7 +178,10 @@ function getActiveDayCell(): HTMLButtonElement {
   );
 }
 
-function getPickerButton(slot: 'datepicker-month' | 'datepicker-year', label: string): HTMLButtonElement {
+function getPickerButton(
+  slot: 'datepicker-month' | 'datepicker-year',
+  label: string,
+): HTMLButtonElement {
   const button = Array.from(document.body.querySelectorAll(`[data-slot="${slot}"]`)).find(
     (element) => (element as HTMLElement).textContent?.trim() === label,
   ) as HTMLButtonElement | undefined;
@@ -214,7 +226,10 @@ async function expectInputCommitReopensSelectedDate(
   await openOverlay(fixture);
 
   expect(
-    getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').textContent?.includes(expectedHeader),
+    getRequiredFromRoot<HTMLButtonElement>(
+      document.body,
+      '[data-slot="datepicker-period-button"]',
+    ).textContent?.includes(expectedHeader),
   ).toBe(true);
   expect(getSelectedDayCell().textContent?.trim()).toBe(expectedDayLabel);
 }
@@ -241,6 +256,18 @@ class UncontrolledDatepickerHostComponent {
   public readonly placement = signal<'auto' | 'bottom' | 'top'>('auto');
   public readonly openChanges: boolean[] = [];
   public readonly valueChanges: unknown[] = [];
+}
+
+@Component({
+  imports: [TngDatepickerComponent],
+  template: `
+    <div data-testid="scroll-parent" style="overflow: auto; max-height: 120px;">
+      <tng-datepicker [defaultValue]="'2024-04-22'" (openChange)="openChanges.push($event)" />
+    </div>
+  `,
+})
+class ScrollableDatepickerHostComponent {
+  public readonly openChanges: boolean[] = [];
 }
 
 @Component({
@@ -295,10 +322,7 @@ class StyledDatepickerHostComponent {}
 @Component({
   imports: [TngDatepickerComponent],
   template: `
-    <tng-datepicker
-      aria-label="Runtime Datepicker"
-      [overlayRuntime]="overlayRuntime()"
-    />
+    <tng-datepicker aria-label="Runtime Datepicker" [overlayRuntime]="overlayRuntime()" />
   `,
 })
 class CustomRuntimeDatepickerHostComponent {
@@ -335,6 +359,8 @@ class DatepickerFormTabOrderHostComponent {
 
 describe('tng-datepicker component behavior', () => {
   afterEach(() => {
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
     vi.restoreAllMocks();
     TestBed.resetTestingModule();
   });
@@ -380,11 +406,18 @@ describe('tng-datepicker component behavior', () => {
     await settle(fixture);
 
     expect(fixture.componentInstance.openChanges).toEqual([true]);
-    const overlay = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="datepicker-overlay"]');
+    const overlay = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="datepicker-overlay"]',
+    );
     expect(overlay.parentNode).toBe(document.body);
     expect(overlay.style.position).toBe('fixed');
-    expect(overlay.style.zIndex).toBe('var(--tng-datepicker-z-overlay, var(--tng-z-overlay, 1000))');
-    expect((document.activeElement as HTMLElement | null)?.getAttribute('data-slot')).toBe('datepicker-cell');
+    expect(overlay.style.zIndex).toBe(
+      'var(--tng-datepicker-z-overlay, var(--tng-z-overlay, 1000))',
+    );
+    expect((document.activeElement as HTMLElement | null)?.getAttribute('data-slot')).toBe(
+      'datepicker-cell',
+    );
   });
 
   it('keeps host-scoped theme vars on the portalled overlay', async () => {
@@ -395,7 +428,10 @@ describe('tng-datepicker component behavior', () => {
     await settle(fixture);
     await openOverlay(fixture);
 
-    const overlay = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="datepicker-overlay"]');
+    const overlay = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="datepicker-overlay"]',
+    );
     expect(overlay.style.getPropertyValue('--tng-datepicker-surface').trim()).toBe('#f8fafc');
     expect(overlay.style.getPropertyValue('--tng-datepicker-border').trim()).toBe('#d8e2ef');
     expect(overlay.style.getPropertyValue('--tng-datepicker-fg').trim()).toBe('#0f172a');
@@ -498,13 +534,20 @@ describe('tng-datepicker component behavior', () => {
     await settle(fixture);
 
     expect(fixture.componentInstance.valueChanges.length).toBe(initialChangeCount);
-    expect(getRequired<HTMLElement>(fixture, '[data-slot="datepicker-input-shell"]').getAttribute('data-invalid')).toBe('true');
+    expect(
+      getRequired<HTMLElement>(fixture, '[data-slot="datepicker-input-shell"]').getAttribute(
+        'data-invalid',
+      ),
+    ).toBe('true');
     expect(input.getAttribute('aria-invalid')).toBe('true');
 
     await openOverlay(fixture);
 
     expect(
-      getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').textContent?.includes(
+      getRequiredFromRoot<HTMLButtonElement>(
+        document.body,
+        '[data-slot="datepicker-period-button"]',
+      ).textContent?.includes(
         defaultDatepickerDateAdapter.format(new Date(2024, 3, 22), 'month-year', 'en-US'),
       ),
     ).toBe(true);
@@ -605,12 +648,19 @@ describe('tng-datepicker component behavior', () => {
     keydown(input, 'Enter');
     await settle(fixture);
 
-    expect(getRequired<HTMLElement>(fixture, '[data-slot="datepicker-input-shell"]').getAttribute('data-invalid')).toBe('true');
+    expect(
+      getRequired<HTMLElement>(fixture, '[data-slot="datepicker-input-shell"]').getAttribute(
+        'data-invalid',
+      ),
+    ).toBe('true');
 
     await openOverlay(fixture);
 
     expect(
-      getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').textContent?.includes(
+      getRequiredFromRoot<HTMLButtonElement>(
+        document.body,
+        '[data-slot="datepicker-period-button"]',
+      ).textContent?.includes(
         customFormatAdapter.format(new Date(2024, 3, 24), 'month-year', 'en-US'),
       ),
     ).toBe(true);
@@ -625,26 +675,39 @@ describe('tng-datepicker component behavior', () => {
 
     await settle(fixture);
 
-    getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').click();
+    getRequiredFromRoot<HTMLButtonElement>(
+      document.body,
+      '[data-slot="datepicker-period-button"]',
+    ).click();
     await settle(fixture);
 
-    expect(document.body.querySelectorAll('[data-slot="datepicker-year"]').length).toBeGreaterThan(0);
+    expect(document.body.querySelectorAll('[data-slot="datepicker-year"]').length).toBeGreaterThan(
+      0,
+    );
 
     const yearButton = Array.from(
       document.body.querySelectorAll('[data-slot="datepicker-year"]'),
-    ).find((element) => (element as HTMLElement).textContent?.trim() === '2024') as HTMLButtonElement | undefined;
+    ).find((element) => (element as HTMLElement).textContent?.trim() === '2024') as
+      | HTMLButtonElement
+      | undefined;
     yearButton?.click();
     await settle(fixture);
 
-    expect(document.body.querySelectorAll('[data-slot="datepicker-month"]').length).toBeGreaterThan(0);
+    expect(document.body.querySelectorAll('[data-slot="datepicker-month"]').length).toBeGreaterThan(
+      0,
+    );
 
     const monthButton = Array.from(
       document.body.querySelectorAll('[data-slot="datepicker-month"]'),
-    ).find((element) => (element as HTMLElement).textContent?.trim() === 'Apr') as HTMLButtonElement | undefined;
+    ).find((element) => (element as HTMLElement).textContent?.trim() === 'Apr') as
+      | HTMLButtonElement
+      | undefined;
     monthButton?.click();
     await settle(fixture);
 
-    expect(document.body.querySelectorAll('[data-slot="datepicker-cell"]').length).toBeGreaterThan(0);
+    expect(document.body.querySelectorAll('[data-slot="datepicker-cell"]').length).toBeGreaterThan(
+      0,
+    );
   });
 
   it('omits footer actions in the default wrapper overlay', async () => {
@@ -657,8 +720,8 @@ describe('tng-datepicker component behavior', () => {
 
     expect(document.body.querySelector('[data-slot="datepicker-footer"]')).toBeNull();
     expect(
-      Array.from(document.body.querySelectorAll('button')).some(
-        (button) => ['Today', 'Clear', 'Done'].includes((button).textContent?.trim() ?? ''),
+      Array.from(document.body.querySelectorAll('button')).some((button) =>
+        ['Today', 'Clear', 'Done'].includes(button.textContent?.trim() ?? ''),
       ),
     ).toBe(false);
   });
@@ -674,12 +737,17 @@ describe('tng-datepicker component behavior', () => {
 
     await settle(fixture);
 
-    getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').click();
+    getRequiredFromRoot<HTMLButtonElement>(
+      document.body,
+      '[data-slot="datepicker-period-button"]',
+    ).click();
     await settle(fixture);
 
     const yearButton = Array.from(
       document.body.querySelectorAll('[data-slot="datepicker-year"]'),
-    ).find((element) => (element as HTMLElement).textContent?.trim() === '2026') as HTMLButtonElement | undefined;
+    ).find((element) => (element as HTMLElement).textContent?.trim() === '2026') as
+      | HTMLButtonElement
+      | undefined;
     yearButton?.click();
     await settle(fixture);
 
@@ -704,10 +772,16 @@ describe('tng-datepicker component behavior', () => {
 
     await settle(fixture);
 
-    getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').click();
+    getRequiredFromRoot<HTMLButtonElement>(
+      document.body,
+      '[data-slot="datepicker-period-button"]',
+    ).click();
     await settle(fixture);
 
-    const yearGrid = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="datepicker-grid"]');
+    const yearGrid = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="datepicker-grid"]',
+    );
     keydown(yearGrid, 'ArrowLeft');
     await settle(fixture);
 
@@ -739,10 +813,16 @@ describe('tng-datepicker component behavior', () => {
 
     await settle(fixture);
 
-    getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').click();
+    getRequiredFromRoot<HTMLButtonElement>(
+      document.body,
+      '[data-slot="datepicker-period-button"]',
+    ).click();
     await settle(fixture);
 
-    const yearGrid = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="datepicker-grid"]');
+    const yearGrid = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="datepicker-grid"]',
+    );
     keydown(yearGrid, 'ArrowLeft');
     await settle(fixture);
     keydown(yearGrid, 'Enter');
@@ -750,7 +830,10 @@ describe('tng-datepicker component behavior', () => {
     await waitForAnimationFrame();
     await settle(fixture);
 
-    const monthGrid = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="datepicker-grid"]');
+    const monthGrid = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="datepicker-grid"]',
+    );
     expect(getPickerButton('datepicker-month', 'Apr').getAttribute('data-active')).toBe('true');
 
     keydown(monthGrid, 'Enter');
@@ -759,14 +842,19 @@ describe('tng-datepicker component behavior', () => {
     await settle(fixture);
 
     expect(
-      getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').textContent?.includes(
+      getRequiredFromRoot<HTMLButtonElement>(
+        document.body,
+        '[data-slot="datepicker-period-button"]',
+      ).textContent?.includes(
         defaultDatepickerDateAdapter.format(new Date(2025, 3, 1), 'month-year', 'en-US'),
       ),
     ).toBe(true);
 
-    const aprilFirst = Array.from(document.body.querySelectorAll('[data-slot="datepicker-cell"]')).find(
-      (element) => (element as HTMLElement).textContent?.trim() === '1',
-    ) as HTMLButtonElement | undefined;
+    const aprilFirst = Array.from(
+      document.body.querySelectorAll('[data-slot="datepicker-cell"]'),
+    ).find((element) => (element as HTMLElement).textContent?.trim() === '1') as
+      | HTMLButtonElement
+      | undefined;
 
     expect(aprilFirst).not.toBeUndefined();
     expect(aprilFirst?.disabled).toBe(false);
@@ -774,7 +862,9 @@ describe('tng-datepicker component behavior', () => {
     aprilFirst?.click();
     await settle(fixture);
 
-    expect(getRequired<HTMLInputElement>(fixture, '[data-slot="datepicker-input"]').value).toBe('04-01-2025');
+    expect(getRequired<HTMLInputElement>(fixture, '[data-slot="datepicker-input"]').value).toBe(
+      '04-01-2025',
+    );
   });
 
   it('uses Angular LOCALE_ID for month labels when no locale input is provided', async () => {
@@ -786,21 +876,37 @@ describe('tng-datepicker component behavior', () => {
 
     await settle(fixture);
 
-    const expectedHeader = defaultDatepickerDateAdapter.format(new Date(2024, 3, 22), 'month-year', 'fr-FR');
+    const expectedHeader = defaultDatepickerDateAdapter.format(
+      new Date(2024, 3, 22),
+      'month-year',
+      'fr-FR',
+    );
     expect(
-      getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').textContent?.includes(expectedHeader),
+      getRequiredFromRoot<HTMLButtonElement>(
+        document.body,
+        '[data-slot="datepicker-period-button"]',
+      ).textContent?.includes(expectedHeader),
     ).toBe(true);
 
-    getRequiredFromRoot<HTMLButtonElement>(document.body, '[data-slot="datepicker-period-button"]').click();
+    getRequiredFromRoot<HTMLButtonElement>(
+      document.body,
+      '[data-slot="datepicker-period-button"]',
+    ).click();
     await settle(fixture);
 
     const yearButton = Array.from(
       document.body.querySelectorAll('[data-slot="datepicker-year"]'),
-    ).find((element) => (element as HTMLElement).textContent?.trim() === '2024') as HTMLButtonElement | undefined;
+    ).find((element) => (element as HTMLElement).textContent?.trim() === '2024') as
+      | HTMLButtonElement
+      | undefined;
     yearButton?.click();
     await settle(fixture);
 
-    const expectedApril = defaultDatepickerDateAdapter.format(new Date(2024, 3, 1), 'month-short', 'fr-FR');
+    const expectedApril = defaultDatepickerDateAdapter.format(
+      new Date(2024, 3, 1),
+      'month-short',
+      'fr-FR',
+    );
     expect(
       Array.from(document.body.querySelectorAll('[data-slot="datepicker-month"]')).some(
         (element) => (element as HTMLElement).textContent?.trim() === expectedApril,
@@ -817,7 +923,10 @@ describe('tng-datepicker component behavior', () => {
     await settle(fixture);
 
     const anchor = getRequired<HTMLElement>(fixture, '[data-slot="datepicker-input-shell"]');
-    const overlay = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="datepicker-overlay"]');
+    const overlay = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="datepicker-overlay"]',
+    );
     const originalInnerHeight = window.innerHeight;
 
     vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(createRect(700, 740));
@@ -832,7 +941,10 @@ describe('tng-datepicker component behavior', () => {
     expect(overlay.getAttribute('data-placement')).toBe('top');
     expect(overlay.style.maxHeight).not.toBe('');
 
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: originalInnerHeight,
+    });
   });
 
   it('locks page scroll and keeps the overlay stable when scroll events fire', async () => {
@@ -846,7 +958,10 @@ describe('tng-datepicker component behavior', () => {
     await settle(fixture);
 
     const anchor = getRequired<HTMLElement>(fixture, '[data-slot="datepicker-input-shell"]');
-    const overlay = getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="datepicker-overlay"]');
+    const overlay = getRequiredFromRoot<HTMLElement>(
+      document.body,
+      '[data-slot="datepicker-overlay"]',
+    );
     const originalInnerHeight = window.innerHeight;
     const originalTop = overlay.style.top;
 
@@ -870,7 +985,33 @@ describe('tng-datepicker component behavior', () => {
 
     expect(document.body.style.overflow).toBe('');
 
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: originalInnerHeight,
+    });
+  });
+
+  it('locks scrollable ancestors while the overlay is open', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ScrollableDatepickerHostComponent],
+    }).createComponent(ScrollableDatepickerHostComponent);
+
+    await settle(fixture);
+
+    const scrollParent = getRequired<HTMLElement>(fixture, '[data-testid="scroll-parent"]');
+    expect(scrollParent.style.overflow).toBe('auto');
+
+    await openOverlay(fixture);
+
+    expect(fixture.componentInstance.openChanges).toEqual([true]);
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(scrollParent.style.overflow).toBe('hidden');
+
+    getRequired<HTMLButtonElement>(fixture, '[data-slot="datepicker-trigger"]').click();
+    await settle(fixture);
+
+    expect(document.body.style.overflow).toBe('');
+    expect(scrollParent.style.overflow).toBe('auto');
   });
 
   it('opens the overlay from the input with Enter and lets Tab move focus to the next focusable element', async () => {
@@ -891,7 +1032,12 @@ describe('tng-datepicker component behavior', () => {
     await settle(fixture);
 
     expect(fixture.componentInstance.openChanges).toEqual([true]);
-    expect(getRequiredFromRoot<HTMLElement>(document.body, '[data-slot="datepicker-overlay"]').getAttribute('hidden')).toBeNull();
+    expect(
+      getRequiredFromRoot<HTMLElement>(
+        document.body,
+        '[data-slot="datepicker-overlay"]',
+      ).getAttribute('hidden'),
+    ).toBeNull();
     expect(document.activeElement).toBe(input);
     expect(trigger.getAttribute('tabindex')).toBe('-1');
 
@@ -911,7 +1057,10 @@ describe('tng-datepicker component behavior', () => {
     await settle(fixture);
 
     const textInput = getRequired<HTMLInputElement>(fixture, '[data-testid="text-input"]');
-    const datepickerInput = getRequired<HTMLInputElement>(fixture, '[data-slot="datepicker-input"]');
+    const datepickerInput = getRequired<HTMLInputElement>(
+      fixture,
+      '[data-slot="datepicker-input"]',
+    );
     const trigger = getRequired<HTMLButtonElement>(fixture, '[data-slot="datepicker-trigger"]');
     const submitButton = getRequired<HTMLButtonElement>(fixture, '[data-testid="submit-button"]');
     const overlay = getRequired<HTMLElement>(fixture, '[data-slot="datepicker-overlay"]');

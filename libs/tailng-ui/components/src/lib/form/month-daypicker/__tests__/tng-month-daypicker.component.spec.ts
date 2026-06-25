@@ -1,7 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
-import { TngMonthDaypickerComponent, type TngMonthDayValue } from '../tng-month-daypicker.component';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+  TngMonthDaypickerComponent,
+  type TngMonthDayValue,
+} from '../tng-month-daypicker.component';
 
 function keydown(target: EventTarget, key: string): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key });
@@ -9,7 +12,10 @@ function keydown(target: EventTarget, key: string): KeyboardEvent {
   return event;
 }
 
-async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }): Promise<void> {
+async function settle(fixture: {
+  detectChanges(): void;
+  whenStable(): Promise<unknown>;
+}): Promise<void> {
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -46,7 +52,26 @@ class MonthDaypickerHostComponent {
   public readonly valueChanges: TngMonthDayValue[] = [];
 }
 
+@Component({
+  imports: [TngMonthDaypickerComponent],
+  template: `
+    <div data-testid="month-day-scroll-parent" style="overflow: auto; max-height: 120px;">
+      <tng-month-daypicker [defaultValue]="{ day: 22, month: 4 }" [year]="2024" />
+    </div>
+  `,
+})
+class ScrollableMonthDaypickerHostComponent {}
+
 describe('tng-month-daypicker component', () => {
+  afterEach(() => {
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    document.body.querySelectorAll('[data-slot="datepicker-overlay"]').forEach((element) => {
+      element.remove();
+    });
+    TestBed.resetTestingModule();
+  });
+
   it('uses the month-daypicker selector and displays month-day text', async () => {
     const fixture = TestBed.configureTestingModule({
       imports: [MonthDaypickerHostComponent],
@@ -54,7 +79,10 @@ describe('tng-month-daypicker component', () => {
 
     await settle(fixture);
 
-    const input = getRequired<HTMLInputElement>(fixture.nativeElement, '[data-slot="datepicker-input"]');
+    const input = getRequired<HTMLInputElement>(
+      fixture.nativeElement,
+      '[data-slot="datepicker-input"]',
+    );
     expect(input.value).toBe('04-22');
   });
 
@@ -65,12 +93,18 @@ describe('tng-month-daypicker component', () => {
 
     await settle(fixture);
 
-    const input = getRequired<HTMLInputElement>(fixture.nativeElement, '[data-slot="datepicker-input"]');
+    const input = getRequired<HTMLInputElement>(
+      fixture.nativeElement,
+      '[data-slot="datepicker-input"]',
+    );
     input.value = '09-14';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     await settle(fixture);
 
-    getRequired<HTMLButtonElement>(fixture.nativeElement, '[data-slot="datepicker-trigger"]').click();
+    getRequired<HTMLButtonElement>(
+      fixture.nativeElement,
+      '[data-slot="datepicker-trigger"]',
+    ).click();
     await settle(fixture);
     input.focus();
     keydown(input, 'Enter');
@@ -86,7 +120,10 @@ describe('tng-month-daypicker component', () => {
 
     await settle(fixture);
 
-    getRequired<HTMLButtonElement>(fixture.nativeElement, '[data-slot="datepicker-trigger"]').click();
+    getRequired<HTMLButtonElement>(
+      fixture.nativeElement,
+      '[data-slot="datepicker-trigger"]',
+    ).click();
     await settle(fixture);
     await waitForAnimationFrame();
     await settle(fixture);
@@ -97,6 +134,42 @@ describe('tng-month-daypicker component', () => {
     await settle(fixture);
 
     expect(document.body.querySelectorAll('[data-slot="datepicker-year"]').length).toBe(0);
-    expect(document.body.querySelectorAll('[data-slot="datepicker-month"]').length).toBeGreaterThan(0);
+    expect(document.body.querySelectorAll('[data-slot="datepicker-month"]').length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it('locks scrollable ancestors while the month-day overlay is open', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ScrollableMonthDaypickerHostComponent],
+    }).createComponent(ScrollableMonthDaypickerHostComponent);
+
+    await settle(fixture);
+
+    const scrollParent = getRequired<HTMLElement>(
+      fixture.nativeElement,
+      '[data-testid="month-day-scroll-parent"]',
+    );
+    expect(scrollParent.style.overflow).toBe('auto');
+
+    getRequired<HTMLButtonElement>(
+      fixture.nativeElement,
+      '[data-slot="datepicker-trigger"]',
+    ).click();
+    await settle(fixture);
+    await waitForAnimationFrame();
+    await settle(fixture);
+
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(scrollParent.style.overflow).toBe('hidden');
+
+    getRequired<HTMLButtonElement>(
+      fixture.nativeElement,
+      '[data-slot="datepicker-trigger"]',
+    ).click();
+    await settle(fixture);
+
+    expect(document.body.style.overflow).toBe('');
+    expect(scrollParent.style.overflow).toBe('auto');
   });
 });

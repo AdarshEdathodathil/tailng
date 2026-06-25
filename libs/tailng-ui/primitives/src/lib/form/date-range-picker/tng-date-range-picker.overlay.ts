@@ -14,9 +14,11 @@ import {
   clearFixedPortalledOverlayBaseStyles,
   clearPortalledThemeVars,
   createTngIdFactory,
+  getGlobalElementScrollLockManager,
   getGlobalScrollLockManager,
   positionFixedAnchoredOverlay,
   resolveCssCustomPropertyPx,
+  resolveTngScrollableAncestors,
   syncPortalledThemeVars,
   type TngOverlayCollisionOptions,
   type TngOverlayOffset,
@@ -166,12 +168,16 @@ export class TngDateRangePickerOverlay {
   private readonly scrollLock = getGlobalScrollLockManager({
     documentRef: this.ownerDocument,
   });
+  private readonly elementScrollLock = getGlobalElementScrollLockManager({
+    documentRef: this.ownerDocument,
+  });
 
   private overlayPlaceholder: Comment | null = null;
   private overlayOriginalParent: Node | null = null;
   private overlayLayoutFrame: number | null = null;
   private removeResizeListener: (() => void) | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private scrollAncestors: readonly HTMLElement[] = [];
 
   public readonly controller = input.required<TngDateRangePickerOverlayController>({
     alias: 'tngDateRangePickerOverlay',
@@ -435,6 +441,24 @@ export class TngDateRangePickerOverlay {
     this.resizeObserver = null;
   }
 
+  private setupScrollLock(anchor: HTMLElement | null): void {
+    this.teardownScrollLock();
+    this.scrollLock.acquire(this.instanceId);
+
+    if (anchor === null) {
+      return;
+    }
+
+    this.scrollAncestors = resolveTngScrollableAncestors(anchor);
+    this.elementScrollLock.acquire(this.instanceId, this.scrollAncestors);
+  }
+
+  private teardownScrollLock(): void {
+    this.scrollLock.release(this.instanceId);
+    this.elementScrollLock.release(this.instanceId);
+    this.scrollAncestors = [];
+  }
+
   private syncPortalledThemeVars(): void {
     const overlay = this.elRef.nativeElement;
     const themeSource =
@@ -460,8 +484,9 @@ export class TngDateRangePickerOverlay {
       return;
     }
 
+    const anchor = this.findAnchorEl();
     this.setupRepositionListeners();
-    this.scrollLock.acquire(this.instanceId);
+    this.setupScrollLock(anchor);
 
     if (overlay.parentNode !== this.ownerDocument.body) {
       this.ownerDocument.body.appendChild(overlay);
@@ -493,7 +518,7 @@ export class TngDateRangePickerOverlay {
     }
 
     this.teardownRepositionListeners();
-    this.scrollLock.release(this.instanceId);
+    this.teardownScrollLock();
     this.resolvedPlacement.set(this.resolvePlacement().side === 'top' ? 'top' : 'bottom');
     this.clearPortalledThemeVars();
     clearFixedPortalledOverlayBaseStyles(overlay);
