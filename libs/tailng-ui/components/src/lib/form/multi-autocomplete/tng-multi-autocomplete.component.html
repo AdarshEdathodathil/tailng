@@ -25,7 +25,7 @@
 />
 
 <div tngMultiAutocompleteContent>
-  <div tngMultiAutocompleteOverlay>
+  <div tngMultiAutocompleteOverlay [scrollStrategy]="scrollStrategy()">
     <ul tngMultiAutocompleteListbox>
       @for (opt of filteredOptions(); track trackBy()($index, opt)) {
         <li

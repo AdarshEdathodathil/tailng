@@ -16,6 +16,7 @@ import {
   type TngPopoverPanelRole,
   type TngPopoverSide,
 } from '@tailng-ui/primitives';
+import type { TngOverlayScrollStrategy } from '@tailng-ui/cdk';
 export type {
   TngPopoverAlign,
   TngPopoverAriaHasPopup,
@@ -65,6 +66,7 @@ export class TngPopoverComponent {
   public readonly restoreFocus = input<boolean, boolean | string>(true, {
     transform: booleanAttribute,
   });
+  public readonly scrollStrategy = input<TngOverlayScrollStrategy>('close');
   public readonly side = input<TngPopoverSide>('bottom');
   public readonly triggerLabel = input<string>('Toggle Popover');
 

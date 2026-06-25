@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { TngOverlayScrollStrategy } from '@tailng-ui/cdk';
 
 import { TngMultiAutocomplete } from '../tng-multi-autocomplete';
 import { TngMultiAutocompleteContent } from '../tng-multi-autocomplete.content';
@@ -69,6 +70,44 @@ class MultiAutocompleteOverlayHostComponent {
     TngMultiAutocompleteOption,
   ],
   template: `
+    <div data-testid="scroll-parent" style="height: 120px; overflow: auto">
+      <section
+        tngMultiAutocomplete
+        [open]="open()"
+        (openChange)="open.set($event)"
+        [value]="value()"
+        (valueChange)="value.set($event)"
+        data-testid="multi-autocomplete"
+      >
+        <input tngMultiAutocompleteTrigger data-testid="trigger" type="text" autocomplete="off" />
+
+        <div tngMultiAutocompleteContent>
+          <div tngMultiAutocompleteOverlay data-testid="overlay">
+            <ul tngMultiAutocompleteListbox>
+              <li tngMultiAutocompleteOption [tngValue]="'India'">India</li>
+              <li tngMultiAutocompleteOption [tngValue]="'Indonesia'">Indonesia</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  `,
+})
+class NestedScrollBlockHostComponent {
+  readonly open = signal(false);
+  readonly value = signal<readonly string[]>([]);
+}
+
+@Component({
+  imports: [
+    TngMultiAutocomplete,
+    TngMultiAutocompleteTrigger,
+    TngMultiAutocompleteContent,
+    TngMultiAutocompleteOverlay,
+    TngMultiAutocompleteListbox,
+    TngMultiAutocompleteOption,
+  ],
+  template: `
     <header
       data-testid="sticky-header"
       style="position: sticky; top: 0; z-index: 50; height: 64px"
@@ -91,7 +130,11 @@ class MultiAutocompleteOverlayHostComponent {
         <input tngMultiAutocompleteTrigger data-testid="trigger" type="text" autocomplete="off" />
 
         <div tngMultiAutocompleteContent>
-          <div tngMultiAutocompleteOverlay data-testid="overlay">
+          <div
+            tngMultiAutocompleteOverlay
+            [scrollStrategy]="scrollStrategy()"
+            data-testid="overlay"
+          >
             <ul tngMultiAutocompleteListbox>
               <li tngMultiAutocompleteOption [tngValue]="'India'">India</li>
               <li tngMultiAutocompleteOption [tngValue]="'Indonesia'">Indonesia</li>
@@ -107,12 +150,44 @@ class MultiAutocompleteOverlayHostComponent {
 class StickyHeaderScrollHostComponent {
   readonly open = signal(false);
   readonly value = signal<readonly string[]>([]);
+  readonly scrollStrategy = signal<TngOverlayScrollStrategy>('reposition');
 }
 
 describe('tng-multi-autocomplete overlay mounting', () => {
   afterEach(() => {
     TestBed.resetTestingModule();
     vi.restoreAllMocks();
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  });
+
+  it('blocks document and nested scroll containers by default while open', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [NestedScrollBlockHostComponent],
+    }).createComponent(NestedScrollBlockHostComponent);
+
+    fixture.detectChanges();
+
+    const host = fixture.componentInstance;
+    const scrollParent = fixture.nativeElement.querySelector('[data-testid="scroll-parent"]') as HTMLElement;
+    const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLInputElement;
+
+    focus(trigger);
+    fixture.detectChanges();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(host.open()).toBe(true);
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(scrollParent.style.overflow).toBe('hidden');
+
+    host.open.set(false);
+    fixture.detectChanges();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(document.body.style.overflow).toBe('');
+    expect(scrollParent.style.overflow).toBe('auto');
   });
 
   it('moves overlay to document.body while open and restores it on close', async () => {
@@ -178,7 +253,7 @@ describe('tng-multi-autocomplete overlay mounting', () => {
     expect(overlay.style.minWidth).toBe('');
   });
 
-  it('keeps the overlay anchored to the trigger after page scroll moves it under a sticky header', async () => {
+  it('closes the overlay after scroll moves the trigger fully out of view', async () => {
     const fixture = TestBed.configureTestingModule({
       imports: [StickyHeaderScrollHostComponent],
     }).createComponent(StickyHeaderScrollHostComponent);
@@ -234,12 +309,9 @@ describe('tng-multi-autocomplete overlay mounting', () => {
     await new Promise((resolve) => requestAnimationFrame(resolve));
     fixture.detectChanges();
 
-    expect(overlay!.style.top).toBe(`${hostTop + hostHeight}px`);
-    expect(overlay!.style.zIndex).toBe(
-      'var(--tng-multi-autocomplete-z-overlay, var(--tng-multi-autocomplete-overlay-z-index, var(--tng-z-overlay, 2)))',
-    );
-    expect(Number(overlay!.style.getPropertyValue('--tng-multi-autocomplete-z-overlay'))).toBeLessThan(
-      Number(header.style.zIndex),
-    );
+    expect(fixture.componentInstance.open()).toBe(false);
+    expect(overlay!.style.top).toBe('');
+    expect(overlay!.style.zIndex).toBe('');
+    expect(Number(header.style.zIndex)).toBe(50);
   });
 });

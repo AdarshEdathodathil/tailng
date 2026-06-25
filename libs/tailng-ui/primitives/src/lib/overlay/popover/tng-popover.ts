@@ -18,8 +18,12 @@ import {
 } from '@angular/core';
 import {
   createOverlayFocusHandoffController,
+  getGlobalElementScrollLockManager,
+  getGlobalScrollLockManager,
   resolveFocusableElements,
+  resolveTngScrollableAncestors,
   createTngIdFactory,
+  type TngOverlayScrollStrategy,
 } from '@tailng-ui/cdk';
 import type { TngOverlayDismissReason } from '@tailng-ui/cdk/overlay';
 import { tngPrimitiveOverlayRuntime } from '../tng-overlay-runtime';
@@ -155,6 +159,7 @@ export class TngPopover implements OnDestroy, OnInit {
     },
   });
   public readonly ariaLabel = input<string | null>(null);
+  public readonly scrollStrategy = input<TngOverlayScrollStrategy>('close');
 
   public readonly openChange = output<boolean>();
   public readonly closed = output<TngPopoverCloseReason>();
@@ -162,14 +167,28 @@ export class TngPopover implements OnDestroy, OnInit {
   private readonly hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly documentRef = popoverGlobalDocument;
+  private readonly bodyScrollLock = getGlobalScrollLockManager({
+    documentRef: this.hostRef.nativeElement.ownerDocument,
+  });
+  private readonly elementScrollLock = getGlobalElementScrollLockManager({
+    documentRef: this.hostRef.nativeElement.ownerDocument,
+  });
   private readonly instanceId = createPopoverId();
   private readonly uncontrolledOpen = signal(false);
   private readonly openStateEffect = effect((): void => {
+    const open = this.isOpen();
+    this.scrollStrategy();
+
     if (!this.initialized) {
       return;
     }
 
-    if (this.isOpen()) {
+    if (open) {
+      if (this.isActive) {
+        this.setupScrollStrategy();
+        return;
+      }
+
       this.activatePopover();
       return;
     }
@@ -185,6 +204,7 @@ export class TngPopover implements OnDestroy, OnInit {
   private panelElementId: string | null = null;
   private triggerElement: HTMLElement | null = null;
   private removeScrollListener: (() => void) | null = null;
+  private scrollAncestors: readonly HTMLElement[] = [];
 
   @HostBinding('attr.data-slot')
   protected readonly dataSlot = 'popover';
@@ -319,7 +339,7 @@ export class TngPopover implements OnDestroy, OnInit {
     this.registerFocusLayer();
     this.activateFocusLayer();
     this.registerOverlayLayer();
-    this.setupScrollCloseListener();
+    this.setupScrollStrategy();
     this.focusInitialElement();
   }
 
@@ -332,7 +352,7 @@ export class TngPopover implements OnDestroy, OnInit {
     this.deactivateFocusLayer();
     this.unregisterFocusLayer();
     this.unregisterOverlayLayer();
-    this.teardownScrollCloseListener();
+    this.teardownScrollStrategy();
   }
 
   private focusInitialElement(): void {
@@ -491,8 +511,19 @@ export class TngPopover implements OnDestroy, OnInit {
     this.isOverlayLayerRegistered = false;
   }
 
-  private setupScrollCloseListener(): void {
-    if (this.removeScrollListener !== null || this.documentRef === null) {
+  private setupScrollStrategy(): void {
+    this.teardownScrollStrategy();
+
+    const anchor = this.triggerElement ?? this.hostRef.nativeElement;
+    this.scrollAncestors = resolveTngScrollableAncestors(anchor);
+
+    if (this.scrollStrategy() === 'block') {
+      this.bodyScrollLock.acquire(this.instanceId);
+      this.elementScrollLock.acquire(this.instanceId, this.scrollAncestors);
+      return;
+    }
+
+    if (this.scrollStrategy() !== 'close' || this.documentRef === null) {
       return;
     }
 
@@ -501,16 +532,23 @@ export class TngPopover implements OnDestroy, OnInit {
       return;
     }
 
-    const onScroll = (): void => {
+    const onScroll = (event: Event): void => {
+      if (this.panelElement !== null && event.target instanceof Node && this.panelElement.contains(event.target)) {
+        return;
+      }
+
       this.requestClose('outside-pointer');
     };
     win.addEventListener('scroll', onScroll, true);
     this.removeScrollListener = (): void => win.removeEventListener('scroll', onScroll, true);
   }
 
-  private teardownScrollCloseListener(): void {
+  private teardownScrollStrategy(): void {
     this.removeScrollListener?.();
     this.removeScrollListener = null;
+    this.bodyScrollLock.release(this.instanceId);
+    this.elementScrollLock.release(this.instanceId);
+    this.scrollAncestors = [];
   }
 
   private focusElement(target: HTMLElement): void {

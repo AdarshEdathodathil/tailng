@@ -5,8 +5,18 @@ import {
   HostBinding,
   effect,
   inject,
+  input,
 } from '@angular/core';
-import { computeOverlayPosition, resolveAnchoredYWhenOffscreen } from '@tailng-ui/cdk';
+import {
+  computeOverlayPosition,
+  createTngIdFactory,
+  getGlobalElementScrollLockManager,
+  getGlobalScrollLockManager,
+  isTngAnchorVisibleInScrollAncestors,
+  resolveAnchoredYWhenOffscreen,
+  resolveTngScrollableAncestors,
+  type TngOverlayScrollStrategy,
+} from '@tailng-ui/cdk';
 import { TNG_MULTI_AUTOCOMPLETE } from './tng-multi-autocomplete.tokens';
 import type { TngMultiAutocomplete } from './tng-multi-autocomplete';
 
@@ -37,6 +47,8 @@ const PORTALLED_MULTI_AUTOCOMPLETE_THEME_VARS = [
   '--tng-multi-autocomplete-shadow',
   '--tng-multi-autocomplete-shadow-focus',
 ] as const;
+
+const createMultiAutocompleteOverlayLockId = createTngIdFactory('tng-multi-autocomplete-overlay-lock');
 
 function rectFromClientRect(r: DOMRect | ClientRect): MaybeRect {
   return { left: r.left, top: r.top, width: r.width, height: r.height };
@@ -105,6 +117,14 @@ export class TngMultiAutocompleteOverlay {
   private readonly multi = inject<TngMultiAutocomplete>(TNG_MULTI_AUTOCOMPLETE);
   private readonly elRef = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly instanceId = createMultiAutocompleteOverlayLockId();
+  private readonly documentRef = this.elRef.nativeElement.ownerDocument;
+  private readonly bodyScrollLock = getGlobalScrollLockManager({
+    documentRef: this.documentRef,
+  });
+  private readonly elementScrollLock = getGlobalElementScrollLockManager({
+    documentRef: this.documentRef,
+  });
 
   private removeResizeListener: (() => void) | null = null;
   private removeScrollListener: (() => void) | null = null;
@@ -112,6 +132,9 @@ export class TngMultiAutocompleteOverlay {
   private removeDocPointerListener: (() => void) | null = null;
   private placeholder: Comment | null = null;
   private originalParent: Node | null = null;
+  private scrollAncestors: readonly HTMLElement[] = [];
+
+  readonly scrollStrategy = input<TngOverlayScrollStrategy>('block');
 
   @HostBinding('attr.data-slot')
   protected readonly dataSlot = 'multi-autocomplete-overlay' as const;
@@ -160,6 +183,15 @@ export class TngMultiAutocompleteOverlay {
 
     const panel = this.elRef.nativeElement;
     const anchorEl = this.findAnchorEl();
+
+    if (
+      this.scrollStrategy() === 'reposition' &&
+      !isTngAnchorVisibleInScrollAncestors(anchorEl, this.scrollAncestors)
+    ) {
+      this.multi.close();
+      return;
+    }
+
     const anchor = anchorRectFor(anchorEl);
     const overlay = rectFromClientRect(panel.getBoundingClientRect());
     const viewport = viewportRect();
@@ -179,6 +211,18 @@ export class TngMultiAutocompleteOverlay {
     })}px`;
   }
 
+  private setupScrollStrategy(anchorEl: HTMLElement): void {
+    this.teardownScrollStrategy();
+    this.scrollAncestors = resolveTngScrollableAncestors(anchorEl);
+
+    if (this.scrollStrategy() === 'block') {
+      this.bodyScrollLock.acquire(this.instanceId);
+      this.elementScrollLock.acquire(this.instanceId, this.scrollAncestors);
+    }
+
+    this.setupRepositionListeners();
+  }
+
   private setupRepositionListeners(): void {
     let rafId: number | null = null;
 
@@ -192,12 +236,22 @@ export class TngMultiAutocompleteOverlay {
     };
 
     const onResize = () => schedule();
-    const onScroll = () => schedule();
 
     window.addEventListener('resize', onResize);
-    window.addEventListener('scroll', onScroll, true);
     this.removeResizeListener = () => window.removeEventListener('resize', onResize);
-    this.removeScrollListener = () => window.removeEventListener('scroll', onScroll, true);
+
+    if (this.scrollStrategy() !== 'block') {
+      const onScroll = (event: Event) => {
+        if (isInside(event.target, this.elRef.nativeElement)) return;
+        if (this.scrollStrategy() === 'close') {
+          this.multi.close();
+          return;
+        }
+        schedule();
+      };
+      window.addEventListener('scroll', onScroll, true);
+      this.removeScrollListener = () => window.removeEventListener('scroll', onScroll, true);
+    }
 
     if ('ResizeObserver' in window) {
       this.resizeObserver = new ResizeObserver(() => schedule());
@@ -213,6 +267,13 @@ export class TngMultiAutocompleteOverlay {
     this.removeScrollListener = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+  }
+
+  private teardownScrollStrategy(): void {
+    this.teardownRepositionListeners();
+    this.bodyScrollLock.release(this.instanceId);
+    this.elementScrollLock.release(this.instanceId);
+    this.scrollAncestors = [];
   }
 
   private setupOutsidePointer(): void {
@@ -278,7 +339,8 @@ export class TngMultiAutocompleteOverlay {
   }
 
   private mountToBodyAndPosition(): void {
-    this.setupRepositionListeners();
+    const anchorEl = this.findAnchorEl();
+    this.setupScrollStrategy(anchorEl);
 
     const panel = this.elRef.nativeElement;
     if (panel.parentNode !== document.body) {
@@ -294,7 +356,15 @@ export class TngMultiAutocompleteOverlay {
     queueMicrotask(() => {
       if (!this.multi.open()) return;
 
-      const anchor = anchorRectFor(this.findAnchorEl());
+      if (
+        this.scrollStrategy() === 'reposition' &&
+        !isTngAnchorVisibleInScrollAncestors(anchorEl, this.scrollAncestors)
+      ) {
+        this.multi.close();
+        return;
+      }
+
+      const anchor = anchorRectFor(anchorEl);
       const viewportWidth = viewportRect().width;
       const inlineSize = Math.max(0, Math.min(anchor.width, viewportWidth - 16));
       panel.style.width = `${inlineSize}px`;
@@ -318,7 +388,7 @@ export class TngMultiAutocompleteOverlay {
       this.originalParent.appendChild(panel);
     }
 
-    this.teardownRepositionListeners();
+    this.teardownScrollStrategy();
     panel.style.position = '';
     panel.style.left = '';
     panel.style.top = '';

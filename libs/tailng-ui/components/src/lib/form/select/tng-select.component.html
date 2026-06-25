@@ -13,7 +13,7 @@
 </button>
 
 <div tngSelectContent>
-  <div tngSelectOverlay>
+  <div tngSelectOverlay [scrollStrategy]="scrollStrategy()">
     <ul tngSelectListbox>
       @for (opt of options(); track trackBy()($index, opt)) {
         <li

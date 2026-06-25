@@ -1,6 +1,7 @@
 import { Component, ViewChild, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import type { TngOverlayScrollStrategy } from '@tailng-ui/cdk';
 
 import { TngSelect } from '../tng-select';
 import { TngSelectTrigger, TngSelectContent } from '../tng-select.parts';
@@ -57,6 +58,47 @@ function dispatchWindowScroll(): void {
 class HostComponent {
   @ViewChild('api', { static: true }) api!: TngSelect<string>;
   open = signal(false);
+}
+
+@Component({
+  imports: [
+    TngSelect,
+    TngSelectTrigger,
+    TngSelectContent,
+    TngSelectOverlay,
+    TngSelectListbox,
+    TngSelectOption,
+  ],
+  template: `
+    <div data-testid="scroll-parent" style="height: 120px; overflow: auto">
+      <button
+        tngSelect
+        #api="tngSelect"
+        [open]="open()"
+        (openChange)="open.set($event)"
+        data-testid="select"
+      >
+        <span tngSelectTrigger data-testid="trigger">Trigger</span>
+
+        <div tngSelectContent data-testid="content">
+          <div
+            tngSelectOverlay
+            [scrollStrategy]="scrollStrategy()"
+            data-testid="overlay"
+          >
+            <div tngSelectListbox data-testid="listbox">
+              <div tngSelectOption [tngValue]="'a'">A</div>
+            </div>
+          </div>
+        </div>
+      </button>
+    </div>
+  `,
+})
+class ScrollStrategyHostComponent {
+  @ViewChild('api', { static: true }) api!: TngSelect<string>;
+  open = signal(false);
+  scrollStrategy = signal<TngOverlayScrollStrategy>('block');
 }
 
 describe('tng-select overlay primitive (scroll lock + reposition)', () => {
@@ -224,6 +266,54 @@ describe('tng-select overlay primitive (scroll lock + reposition)', () => {
     fixture.detectChanges();
 
     expect(document.body.style.overflow).toBe('');
+  });
+
+  it('blocks nested scroll containers by default while open', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ScrollStrategyHostComponent],
+    }).createComponent(ScrollStrategyHostComponent);
+    fixture.detectChanges();
+
+    const host = fixture.componentInstance;
+    const scrollParent = fixture.nativeElement.querySelector('[data-testid="scroll-parent"]') as HTMLElement;
+    const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLElement;
+
+    pointerdown(trigger);
+    fixture.detectChanges();
+    await Promise.resolve();
+
+    expect(host.api.open()).toBe(true);
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(scrollParent.style.overflow).toBe('hidden');
+
+    host.open.set(false);
+    fixture.detectChanges();
+
+    expect(document.body.style.overflow).toBe('');
+    expect(scrollParent.style.overflow).toBe('auto');
+  });
+
+  it('closes on scroll when scrollStrategy is close', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ScrollStrategyHostComponent],
+    }).createComponent(ScrollStrategyHostComponent);
+    fixture.componentInstance.scrollStrategy.set('close');
+    fixture.detectChanges();
+
+    const host = fixture.componentInstance;
+    const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLElement;
+
+    pointerdown(trigger);
+    fixture.detectChanges();
+    await Promise.resolve();
+
+    expect(host.api.open()).toBe(true);
+    expect(document.body.style.overflow).toBe('');
+
+    window.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+
+    expect(host.api.open()).toBe(false);
   });
 
   it('stops repositioning after close (no measurements after events)', async () => {

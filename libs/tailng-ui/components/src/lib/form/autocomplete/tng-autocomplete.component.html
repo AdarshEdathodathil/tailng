@@ -32,7 +32,7 @@
 </div>
 
 <div tngAutocompleteContent>
-  <div tngAutocompleteOverlay>
+  <div tngAutocompleteOverlay [scrollStrategy]="scrollStrategy()">
     <ul tngAutocompleteListbox [value]="selectedValue()">
       @for (opt of filteredOptions(); track trackBy()($index, opt)) {
         <li

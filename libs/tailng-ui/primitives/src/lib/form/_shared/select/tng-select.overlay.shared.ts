@@ -11,11 +11,15 @@ import type {
   TngOverlayCollisionOptions,
   TngOverlayOffset,
   TngOverlayPlacement,
+  TngOverlayScrollStrategy,
 } from '@tailng-ui/cdk';
 import {
   computeOverlayPosition,
   createTngIdFactory,
+  getGlobalElementScrollLockManager,
   getGlobalScrollLockManager,
+  isTngAnchorVisibleInScrollAncestors,
+  resolveTngScrollableAncestors,
 } from '@tailng-ui/cdk';
 
 import type { TngSelectHostApi } from './tng-select.host-api';
@@ -166,14 +170,20 @@ export class TngSelectOverlay {
   private readonly scrollLock = getGlobalScrollLockManager({
     documentRef: this.elRef.nativeElement.ownerDocument,
   });
+  private readonly elementScrollLock = getGlobalElementScrollLockManager({
+    documentRef: this.elRef.nativeElement.ownerDocument,
+  });
 
   private lastFocusedBeforeOpen: HTMLElement | null = null;
   private removeResizeListener: (() => void) | null = null;
+  private removeScrollListener: (() => void) | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private scrollAncestors: readonly HTMLElement[] = [];
 
   public readonly placement = input<TngOverlayPlacement | undefined>(undefined);
   public readonly offset = input<TngOverlayOffset | undefined>(undefined);
   public readonly collision = input<TngOverlayCollisionOptions | undefined>(undefined);
+  public readonly scrollStrategy = input<TngOverlayScrollStrategy>('block');
 
   @HostBinding('attr.data-slot')
   protected readonly dataSlot = 'select-overlay' as const;
@@ -213,6 +223,14 @@ export class TngSelectOverlay {
     const anchorEl = this.findAnchorEl();
     if (!anchorEl) return;
 
+    if (
+      this.scrollStrategy() === 'reposition' &&
+      !isTngAnchorVisibleInScrollAncestors(anchorEl, this.scrollAncestors)
+    ) {
+      this.host.close();
+      return;
+    }
+
     const anchor = anchorRectFor(anchorEl);
     const overlay = rectFromClientRect(panel.getBoundingClientRect());
     const viewport = viewportRect();
@@ -230,6 +248,21 @@ export class TngSelectOverlay {
     panel.style.top = `${result.y}px`;
   }
 
+  private setupScrollStrategy(anchorEl: HTMLElement | null): void {
+    this.teardownScrollStrategy();
+
+    if (anchorEl !== null) {
+      this.scrollAncestors = resolveTngScrollableAncestors(anchorEl);
+    }
+
+    if (this.scrollStrategy() === 'block') {
+      this.scrollLock.acquire(this.instanceId);
+      this.elementScrollLock.acquire(this.instanceId, this.scrollAncestors);
+    }
+
+    this.setupRepositionListeners();
+  }
+
   private setupRepositionListeners(): void {
     let rafId: number | null = null;
     const schedule = (): void => {
@@ -244,6 +277,19 @@ export class TngSelectOverlay {
     window.addEventListener('resize', onResize);
     this.removeResizeListener = (): void => window.removeEventListener('resize', onResize);
 
+    if (this.scrollStrategy() !== 'block') {
+      const onScroll = (event: Event): void => {
+        if (isInside(event.target, this.elRef.nativeElement)) return;
+        if (this.scrollStrategy() === 'close') {
+          this.host.close();
+          return;
+        }
+        schedule();
+      };
+      window.addEventListener('scroll', onScroll, true);
+      this.removeScrollListener = (): void => window.removeEventListener('scroll', onScroll, true);
+    }
+
     if ('ResizeObserver' in window) {
       this.resizeObserver = new ResizeObserver(() => schedule());
       const anchorEl = this.findAnchorEl();
@@ -254,9 +300,18 @@ export class TngSelectOverlay {
 
   private teardownRepositionListeners(): void {
     this.removeResizeListener?.();
+    this.removeScrollListener?.();
     this.removeResizeListener = null;
+    this.removeScrollListener = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+  }
+
+  private teardownScrollStrategy(): void {
+    this.teardownRepositionListeners();
+    this.scrollLock.release(this.instanceId);
+    this.elementScrollLock.release(this.instanceId);
+    this.scrollAncestors = [];
   }
 
   private findTriggerEl(): HTMLElement | null {
@@ -311,8 +366,8 @@ export class TngSelectOverlay {
 
   private mountToBodyAndPosition(): void {
     this.lastFocusedBeforeOpen = document.activeElement as HTMLElement | null;
-    this.scrollLock.acquire(this.instanceId);
-    this.setupRepositionListeners();
+    const anchorEl = this.findAnchorEl();
+    this.setupScrollStrategy(anchorEl);
     const panel = this.elRef.nativeElement;
     const ownerId = resolveOverlayOwnerId(this.host.hostElement);
     if (ownerId !== null) {
@@ -331,8 +386,15 @@ export class TngSelectOverlay {
 
     queueMicrotask(() => {
       if (!this.host.open()) return;
-      const anchorEl = this.findAnchorEl();
       if (!anchorEl) return;
+
+      if (
+        this.scrollStrategy() === 'reposition' &&
+        !isTngAnchorVisibleInScrollAncestors(anchorEl, this.scrollAncestors)
+      ) {
+        this.host.close();
+        return;
+      }
 
       const anchor = anchorRectFor(anchorEl);
       const viewportWidth = viewportRect().width;
@@ -374,8 +436,7 @@ export class TngSelectOverlay {
       this.originalParent.appendChild(panel);
     }
 
-    this.teardownRepositionListeners();
-    this.scrollLock.release(this.instanceId);
+    this.teardownScrollStrategy();
 
     if (
       this.lastFocusedBeforeOpen &&

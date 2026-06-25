@@ -1,6 +1,7 @@
 import { Component, ViewChild, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { TngOverlayScrollStrategy } from '@tailng-ui/cdk';
 
 import {
   TngAutocomplete,
@@ -92,6 +93,51 @@ function injectAutocompleteHostGridStylesheetForTests(): HTMLStyleElement {
   `,
 })
 class HostComponent {
+  @ViewChild('api', { static: true }) api!: TngAutocomplete<string>;
+  open = signal(false);
+  value = signal<string | null>(null);
+}
+
+@Component({
+  imports: [
+    TngAutocomplete,
+    TngAutocompleteTrigger,
+    TngAutocompleteContent,
+    TngAutocompleteOverlay,
+    TngAutocompleteListbox,
+    TngAutocompleteOption,
+  ],
+  template: `
+    <div data-testid="scroll-parent" style="height: 120px; overflow: auto">
+      <div
+        tngAutocomplete
+        #api="tngAutocomplete"
+        [open]="open()"
+        (openChange)="open.set($event)"
+        [value]="value()"
+        (valueChange)="value.set($event)"
+        data-testid="autocomplete"
+      >
+        <input tngAutocompleteTrigger type="text" data-testid="trigger" />
+
+        <div tngAutocompleteContent data-testid="content">
+          <div tngAutocompleteOverlay data-testid="overlay">
+            <ul
+              tngAutocompleteListbox
+              [value]="api.value()"
+              (valueChange)="api.value.set($event)"
+              data-testid="listbox"
+            >
+              <li tngAutocompleteOption [tngValue]="'a'" data-testid="opt-a">A</li>
+              <li tngAutocompleteOption [tngValue]="'b'" data-testid="opt-b">B</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class NestedScrollBlockHostComponent {
   @ViewChild('api', { static: true }) api!: TngAutocomplete<string>;
   open = signal(false);
   value = signal<string | null>(null);
@@ -226,7 +272,11 @@ class TriggerContainerHostComponent {
         <input tngAutocompleteTrigger type="text" data-testid="trigger" />
 
         <div tngAutocompleteContent data-testid="content">
-          <div tngAutocompleteOverlay data-testid="overlay">
+          <div
+            tngAutocompleteOverlay
+            [scrollStrategy]="scrollStrategy()"
+            data-testid="overlay"
+          >
             <ul
               tngAutocompleteListbox
               [value]="api.value()"
@@ -249,6 +299,7 @@ class StickyHeaderScrollHostComponent {
   @ViewChild('api', { static: true }) api!: TngAutocomplete<string>;
   open = signal(false);
   value = signal<string | null>(null);
+  scrollStrategy = signal<TngOverlayScrollStrategy>('reposition');
 }
 
 async function openAutocomplete(
@@ -265,6 +316,8 @@ describe('tng-autocomplete.overlay', () => {
   afterEach(() => {
     TestBed.resetTestingModule();
     vi.restoreAllMocks();
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
   });
 
   describe('Host layout when overlay is portalled', () => {
@@ -317,6 +370,34 @@ describe('tng-autocomplete.overlay', () => {
       expect(overlay).toBeTruthy();
       expect(overlay?.getAttribute('hidden')).toBeNull();
       expect(document.body.contains(overlay)).toBe(true);
+    });
+  });
+
+  describe('Scroll strategy', () => {
+    it('blocks document and nested scroll containers by default while open', async () => {
+      const fixture = TestBed.configureTestingModule({
+        imports: [NestedScrollBlockHostComponent],
+      }).createComponent(NestedScrollBlockHostComponent);
+
+      fixture.detectChanges();
+
+      const host = fixture.componentInstance;
+      const scrollParent = fixture.nativeElement.querySelector('[data-testid="scroll-parent"]') as HTMLElement;
+      const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLInputElement;
+
+      await openAutocomplete(fixture, trigger);
+
+      expect(host.open()).toBe(true);
+      expect(document.body.style.overflow).toBe('hidden');
+      expect(scrollParent.style.overflow).toBe('hidden');
+
+      host.open.set(false);
+      fixture.detectChanges();
+      await Promise.resolve();
+      fixture.detectChanges();
+
+      expect(document.body.style.overflow).toBe('');
+      expect(scrollParent.style.overflow).toBe('auto');
     });
   });
 
@@ -530,7 +611,7 @@ describe('tng-autocomplete.overlay', () => {
   });
 
   describe('Scroll reposition', () => {
-    it('keeps the overlay anchored to the trigger after page scroll moves it under a sticky header', async () => {
+    it('closes the overlay after scroll moves the trigger fully out of view', async () => {
       const fixture = TestBed.configureTestingModule({
         imports: [StickyHeaderScrollHostComponent],
       }).createComponent(StickyHeaderScrollHostComponent);
@@ -585,13 +666,10 @@ describe('tng-autocomplete.overlay', () => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
       fixture.detectChanges();
 
-      expect(overlay!.style.top).toBe(`${triggerTop + triggerHeight}px`);
-      expect(overlay!.style.zIndex).toBe(
-        'var(--tng-autocomplete-z-overlay, var(--tng-autocomplete-overlay-z-index, var(--tng-z-overlay, 2)))',
-      );
-      expect(Number(overlay!.style.getPropertyValue('--tng-autocomplete-z-overlay'))).toBeLessThan(
-        Number(header.style.zIndex),
-      );
+      expect(fixture.componentInstance.open()).toBe(false);
+      expect(overlay!.style.top).toBe('');
+      expect(overlay!.style.zIndex).toBe('');
+      expect(Number(header.style.zIndex)).toBe(50);
     });
   });
 });

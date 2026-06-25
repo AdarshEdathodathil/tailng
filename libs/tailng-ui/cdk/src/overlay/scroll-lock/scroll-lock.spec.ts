@@ -1,5 +1,11 @@
-import { expect, it } from 'vitest';
-import { createScrollLockManager, getGlobalScrollLockManager } from './scroll-lock';
+import { afterEach, expect, it, vi } from 'vitest';
+import {
+  createElementScrollLockManager,
+  createScrollLockManager,
+  getGlobalScrollLockManager,
+  isTngAnchorVisibleInScrollAncestors,
+  resolveTngScrollableAncestors,
+} from './scroll-lock';
 import type { TngScrollLockDocument } from './scroll-lock.types';
 
 function createDocumentRef(): TngScrollLockDocument {
@@ -9,6 +15,12 @@ function createDocumentRef(): TngScrollLockDocument {
     },
   };
 }
+
+afterEach(() => {
+  document.body.innerHTML = '';
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+});
 
 it('applies lock styles on first acquire and restores on last release', () => {
   const documentRef = createDocumentRef();
@@ -96,4 +108,77 @@ it('shares global managers per document so nested overlays release independently
   second.release('datepicker');
 
   expect(documentRef.body.style.overflow).toBeUndefined();
+});
+
+it('resolves non-document scrollable ancestors for nested overlay anchors', () => {
+  const outer = document.createElement('section');
+  const inner = document.createElement('div');
+  const anchor = document.createElement('button');
+  outer.style.overflow = 'auto';
+  inner.style.overflowY = 'visible';
+
+  document.body.appendChild(outer);
+  outer.appendChild(inner);
+  inner.appendChild(anchor);
+
+  expect(resolveTngScrollableAncestors(anchor)).toEqual([outer]);
+  expect(resolveTngScrollableAncestors(anchor, { includeDocument: true })).toEqual([
+    outer,
+    document.body,
+  ]);
+});
+
+it('locks element scroll containers with reference counting and restores inline styles', () => {
+  const manager = createElementScrollLockManager();
+  const container = document.createElement('div');
+  container.style.overflow = 'auto';
+  container.style.overflowX = 'scroll';
+  container.style.overflowY = 'auto';
+
+  manager.acquire('first', [container]);
+  manager.acquire('second', [container]);
+
+  expect(manager.isLocked(container)).toBe(true);
+  expect(container.style.overflow).toBe('hidden');
+
+  manager.release('first');
+  expect(container.style.overflow).toBe('hidden');
+
+  manager.release('second');
+  expect(manager.isLocked(container)).toBe(false);
+  expect(container.style.overflow).toBe('auto');
+  expect(container.style.overflowX).toBe('scroll');
+  expect(container.style.overflowY).toBe('auto');
+});
+
+it('reports an anchor hidden when it no longer intersects a scroll ancestor', () => {
+  const container = document.createElement('div');
+  const anchor = document.createElement('button');
+  container.appendChild(anchor);
+  document.body.appendChild(container);
+
+  vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+    bottom: 120,
+    height: 120,
+    left: 0,
+    right: 320,
+    top: 0,
+    width: 320,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  } as DOMRect);
+  vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue({
+    bottom: 232,
+    height: 32,
+    left: 12,
+    right: 172,
+    top: 200,
+    width: 160,
+    x: 12,
+    y: 200,
+    toJSON: () => ({}),
+  } as DOMRect);
+
+  expect(isTngAnchorVisibleInScrollAncestors(anchor, [container])).toBe(false);
 });

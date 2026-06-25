@@ -19,6 +19,7 @@ import {
   TngSelectListbox,
   TngSelectOption,
 } from '@tailng-ui/primitives';
+import type { TngOverlayScrollStrategy } from '@tailng-ui/cdk';
 
 export type TngSelectGetValue<O, V> = (opt: O) => V;
 export type TngSelectGetLabel<O> = (opt: O) => string;
@@ -75,6 +76,7 @@ export class TngSelectComponent<O = unknown, V = unknown> {
   // ----- data / accessors (recommended API) -----
   readonly options = input<readonly O[]>([]);
   readonly placeholder = input<string>('Select…');
+  readonly scrollStrategy = input<TngOverlayScrollStrategy>('block');
 
   readonly getOptionValue = input<TngSelectGetValue<O, V>>(
     ((opt: any) => opt?.value) as TngSelectGetValue<O, V>,

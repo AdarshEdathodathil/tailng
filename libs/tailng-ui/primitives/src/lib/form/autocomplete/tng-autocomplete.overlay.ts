@@ -11,8 +11,17 @@ import type {
   TngOverlayCollisionOptions,
   TngOverlayOffset,
   TngOverlayPlacement,
+  TngOverlayScrollStrategy,
 } from '@tailng-ui/cdk';
-import { computeOverlayPosition, resolveAnchoredYWhenOffscreen } from '@tailng-ui/cdk';
+import {
+  computeOverlayPosition,
+  createTngIdFactory,
+  getGlobalElementScrollLockManager,
+  getGlobalScrollLockManager,
+  isTngAnchorVisibleInScrollAncestors,
+  resolveAnchoredYWhenOffscreen,
+  resolveTngScrollableAncestors,
+} from '@tailng-ui/cdk';
 import { TNG_AUTOCOMPLETE } from './tng-autocomplete.tokens';
 import type { TngAutocomplete } from './tng-autocomplete';
 
@@ -81,6 +90,8 @@ const PORTALLED_AUTOCOMPLETE_THEME_VARS = [
   '--tng-semantic-focus-ring',
 ] as const;
 
+const createAutocompleteOverlayLockId = createTngIdFactory('tng-autocomplete-overlay-lock');
+
 function rectFromClientRect(r: DOMRect | ClientRect): MaybeRect {
   return { left: r.left, top: r.top, width: r.width, height: r.height };
 }
@@ -143,16 +154,26 @@ export class TngAutocompleteOverlay {
   private readonly autocomplete = inject<TngAutocomplete>(TNG_AUTOCOMPLETE);
   private readonly elRef = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly instanceId = createAutocompleteOverlayLockId();
+  private readonly documentRef = this.elRef.nativeElement.ownerDocument;
+  private readonly bodyScrollLock = getGlobalScrollLockManager({
+    documentRef: this.documentRef,
+  });
+  private readonly elementScrollLock = getGlobalElementScrollLockManager({
+    documentRef: this.documentRef,
+  });
 
   private lastFocusedBeforeOpen: HTMLElement | null = null;
   private removeResizeListener: (() => void) | null = null;
   private removeScrollListener: (() => void) | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private removeDocPointerListener: (() => void) | null = null;
+  private scrollAncestors: readonly HTMLElement[] = [];
 
   readonly placement = input<TngOverlayPlacement | undefined>(undefined);
   readonly offset = input<TngOverlayOffset | undefined>(undefined);
   readonly collision = input<TngOverlayCollisionOptions | undefined>(undefined);
+  readonly scrollStrategy = input<TngOverlayScrollStrategy>('block');
 
   private placeholder: Comment | null = null;
   private originalParent: Node | null = null;
@@ -210,6 +231,15 @@ export class TngAutocompleteOverlay {
     const panel = this.elRef.nativeElement;
     const anchorEl = this.findAnchorEl();
     if (!anchorEl) return;
+
+    if (
+      this.scrollStrategy() === 'reposition' &&
+      !isTngAnchorVisibleInScrollAncestors(anchorEl, this.scrollAncestors)
+    ) {
+      this.autocomplete.close();
+      return;
+    }
+
     const anchor = anchorRectFor(anchorEl);
     const overlay = rectFromClientRect(panel.getBoundingClientRect());
     const viewport = viewportRect();
@@ -233,6 +263,21 @@ export class TngAutocompleteOverlay {
     })}px`;
   }
 
+  private setupScrollStrategy(anchorEl: HTMLElement | null): void {
+    this.teardownScrollStrategy();
+
+    if (anchorEl !== null) {
+      this.scrollAncestors = resolveTngScrollableAncestors(anchorEl);
+    }
+
+    if (this.scrollStrategy() === 'block') {
+      this.bodyScrollLock.acquire(this.instanceId);
+      this.elementScrollLock.acquire(this.instanceId, this.scrollAncestors);
+    }
+
+    this.setupRepositionListeners();
+  }
+
   private setupRepositionListeners(): void {
     let rafId: number | null = null;
     const schedule = () => {
@@ -243,11 +288,22 @@ export class TngAutocompleteOverlay {
       });
     };
     const onResize = () => schedule();
-    const onScroll = () => schedule();
     window.addEventListener('resize', onResize);
-    window.addEventListener('scroll', onScroll, true);
     this.removeResizeListener = () => window.removeEventListener('resize', onResize);
-    this.removeScrollListener = () => window.removeEventListener('scroll', onScroll, true);
+
+    if (this.scrollStrategy() !== 'block') {
+      const onScroll = (event: Event) => {
+        if (isInside(event.target, this.elRef.nativeElement)) return;
+        if (this.scrollStrategy() === 'close') {
+          this.autocomplete.close();
+          return;
+        }
+        schedule();
+      };
+      window.addEventListener('scroll', onScroll, true);
+      this.removeScrollListener = () => window.removeEventListener('scroll', onScroll, true);
+    }
+
     if ('ResizeObserver' in window) {
       this.resizeObserver = new ResizeObserver(() => schedule());
       const anchorEl = this.findAnchorEl();
@@ -263,6 +319,13 @@ export class TngAutocompleteOverlay {
     this.removeScrollListener = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+  }
+
+  private teardownScrollStrategy(): void {
+    this.teardownRepositionListeners();
+    this.bodyScrollLock.release(this.instanceId);
+    this.elementScrollLock.release(this.instanceId);
+    this.scrollAncestors = [];
   }
 
   private setupOutsidePointer(): void {
@@ -325,7 +388,8 @@ export class TngAutocompleteOverlay {
 
   private mountToBodyAndPosition(): void {
     this.lastFocusedBeforeOpen = document.activeElement as HTMLElement | null;
-    this.setupRepositionListeners();
+    const anchorEl = this.findAnchorEl();
+    this.setupScrollStrategy(anchorEl);
     const panel = this.elRef.nativeElement;
     if (panel.parentNode !== document.body) {
       document.body.appendChild(panel);
@@ -338,8 +402,16 @@ export class TngAutocompleteOverlay {
 
     queueMicrotask(() => {
       if (!this.autocomplete.open()) return;
-      const anchorEl = this.findAnchorEl();
       if (!anchorEl) return;
+
+      if (
+        this.scrollStrategy() === 'reposition' &&
+        !isTngAnchorVisibleInScrollAncestors(anchorEl, this.scrollAncestors)
+      ) {
+        this.autocomplete.close();
+        return;
+      }
+
       const anchor = anchorRectFor(anchorEl);
       panel.style.minWidth = `${anchor.width}px`;
       if (findFormFieldAnchor(this.autocomplete.hostElement)) {
@@ -382,7 +454,7 @@ export class TngAutocompleteOverlay {
     } else if (this.originalParent) {
       this.originalParent.appendChild(panel);
     }
-    this.teardownRepositionListeners();
+    this.teardownScrollStrategy();
 
     if (
       this.lastFocusedBeforeOpen &&

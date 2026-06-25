@@ -18,6 +18,7 @@ import {
   TngMultiAutocompleteOverlay,
   TngMultiAutocompleteTrigger,
 } from '@tailng-ui/primitives';
+import type { TngOverlayScrollStrategy } from '@tailng-ui/cdk';
 
 export type TngMultiAutocompleteGetValue<O, V> = (opt: O) => V;
 export type TngMultiAutocompleteGetLabel<O> = (opt: O) => string;
@@ -81,6 +82,7 @@ export class TngMultiAutocompleteComponent<O = unknown, V = unknown> {
   readonly placeholder = input<string>('Type to search…');
   readonly emptyText = input<string>('No matches');
   readonly ariaLabel = input<string>('Multi autocomplete');
+  readonly scrollStrategy = input<TngOverlayScrollStrategy>('block');
 
   readonly getOptionValue = input<TngMultiAutocompleteGetValue<O, V>>(
     ((opt: unknown) => (opt as { value?: V })?.value) as TngMultiAutocompleteGetValue<O, V>,

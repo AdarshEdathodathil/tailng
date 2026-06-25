@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it } from 'vitest';
+import type { TngOverlayScrollStrategy } from '@tailng-ui/cdk';
 import {
   TngPopover,
   TngPopoverClose,
@@ -127,6 +128,34 @@ class ControlledPopoverHarnessComponent {
 @Component({
   imports: [TngPopover, TngPopoverTrigger, TngPopoverPanel],
   template: `
+    <div data-testid="scroll-parent" style="height: 120px; overflow: auto">
+      <section
+        tngPopover
+        #popover="tngPopover"
+        data-testid="root"
+        [open]="open()"
+        [scrollStrategy]="scrollStrategy()"
+        (openChange)="open.set($event)"
+        (closed)="closeReasons.push($event)"
+      >
+        <button type="button" [tngPopoverTrigger]="popover" data-testid="trigger">Toggle</button>
+
+        <section tngPopoverPanel data-testid="panel">
+          <button type="button">Inside</button>
+        </section>
+      </section>
+    </div>
+  `,
+})
+class ScrollStrategyPopoverHarnessComponent {
+  readonly open = signal(true);
+  readonly scrollStrategy = signal<TngOverlayScrollStrategy>('block');
+  readonly closeReasons: TngPopoverCloseReason[] = [];
+}
+
+@Component({
+  imports: [TngPopover, TngPopoverTrigger, TngPopoverPanel],
+  template: `
     <section
       tngPopover
       #firstPopover="tngPopover"
@@ -168,6 +197,8 @@ class StackedPopoverHarnessComponent {
 describe('tng-popover primitive behavior', () => {
   afterEach(() => {
     TestBed.resetTestingModule();
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
   });
 
   it('exports root, trigger, panel, and close directives', () => {
@@ -331,6 +362,33 @@ describe('tng-popover primitive behavior', () => {
 
     expect(fixture.componentInstance.closeReasons).toEqual(['outside-pointer']);
     expect(getByTestId<HTMLElement>(fixture, 'panel').getAttribute('hidden')).toBe('');
+  });
+
+  it('blocks document and nested scroll containers when scrollStrategy is block', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ScrollStrategyPopoverHarnessComponent],
+    }).createComponent(ScrollStrategyPopoverHarnessComponent);
+
+    await settle(fixture);
+
+    const scrollParent = getByTestId<HTMLElement>(fixture, 'scroll-parent');
+    const panel = getByTestId<HTMLElement>(fixture, 'panel');
+
+    expect(panel.getAttribute('hidden')).toBeNull();
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(scrollParent.style.overflow).toBe('hidden');
+
+    window.dispatchEvent(new Event('scroll'));
+    await settle(fixture);
+
+    expect(fixture.componentInstance.closeReasons).toEqual([]);
+    expect(panel.getAttribute('hidden')).toBeNull();
+
+    fixture.componentInstance.open.set(false);
+    await settle(fixture);
+
+    expect(document.body.style.overflow).toBe('');
+    expect(scrollParent.style.overflow).toBe('auto');
   });
 
   it('disabled state prevents opening from trigger', async () => {

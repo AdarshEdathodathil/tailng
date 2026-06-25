@@ -24,6 +24,7 @@ import {
   TngAutocompleteListbox,
   TngAutocompleteOption,
 } from '@tailng-ui/primitives';
+import type { TngOverlayScrollStrategy } from '@tailng-ui/cdk';
 
 export type TngAutocompleteGetValue<O, V> = (opt: O) => V;
 export type TngAutocompleteGetLabel<O> = (opt: O) => string;
@@ -104,6 +105,7 @@ export class TngAutocompleteComponent<O = unknown, V = unknown> {
   public readonly options = input<readonly O[]>([]);
   public readonly placeholder = input<string>('Type to search…');
   public readonly query = model<string>('');
+  public readonly scrollStrategy = input<TngOverlayScrollStrategy>('block');
 
   public readonly getOptionValue = input<TngAutocompleteGetValue<O, V>>(
     ((opt: unknown) => (opt as { value?: V })?.value) as TngAutocompleteGetValue<O, V>,
