@@ -1,5 +1,5 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TngTabsComponent } from '@tailng-ui/components';
 import { TngIcon } from '@tailng-ui/icons';
 import { TngTab, TngTabList, TngTabsScrollButtonNext, TngTabsScrollButtonPrev } from '@tailng-ui/primitives';
@@ -18,7 +18,7 @@ const defaultTabs: readonly DocsComponentSectionTab[] = [
 
 @Component({
   selector: 'app-docs-component-section-tabs',
-  imports: [TngTabsComponent, TngTabList, TngTab, TngTabsScrollButtonPrev, TngTabsScrollButtonNext, TngIcon],
+  imports: [TngTabsComponent, TngTabList, TngTab, TngTabsScrollButtonPrev, TngTabsScrollButtonNext, TngIcon, RouterLink],
   templateUrl: './docs-component-section-tabs.component.html',
   styleUrl: './docs-component-section-tabs.component.css',
 })

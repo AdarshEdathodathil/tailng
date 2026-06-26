@@ -1,0 +1,64 @@
+:host {
+  display: block;
+}
+
+.docs-route-skeleton {
+  display: grid;
+  gap: 1rem;
+  min-height: 24rem;
+  padding: 0.5rem 0;
+}
+
+.docs-route-skeleton__header,
+.docs-route-skeleton__panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.docs-route-skeleton__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-block: 0.25rem;
+}
+
+.docs-route-skeleton__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.docs-route-skeleton__panel {
+  background: var(--tng-semantic-background-base);
+  border: 1px solid var(--tng-semantic-border-subtle);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.docs-route-skeleton__panel--compact {
+  display: none;
+}
+
+.docs-route-skeleton__label {
+  clip: rect(0 0 0 0);
+  border: 0;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (min-width: 900px) {
+  .docs-route-skeleton__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.36fr);
+  }
+
+  .docs-route-skeleton__panel--compact {
+    align-self: start;
+    display: grid;
+  }
+}
+

@@ -53,7 +53,7 @@
                       <li class="components-docs-nav-item">
                         <a
                           class="components-docs-nav-link"
-                          [href]="itemHref(group.id, item.slug)"
+                          [routerLink]="itemHref(group.id, item.slug)"
                           [class.components-docs-nav-link--selected]="isNavItemActive(group, item)"
                         >
                           <span class="truncate">{{ item.title }}</span>
@@ -112,7 +112,9 @@
         }
       </section>
 
-      <router-outlet />
+      <app-docs-route-loading-outlet>
+        <router-outlet />
+      </app-docs-route-loading-outlet>
     </main>
   </section>
 </section>

@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, DestroyRef, effect, ElementRef, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import {
   TngAccordionComponent,
   TngAccordionItemComponent,
@@ -17,6 +17,7 @@ import {
   TngDrawerContent,
 } from '@tailng-ui/primitives';
 import { filter, map, startWith } from 'rxjs/operators';
+import { DocsRouteLoadingOutletComponent } from '../../../shared/route-loading/docs-route-loading-outlet.component';
 import { DocsComponentSectionOutlineComponent } from '../../../shared/section-outline/docs-component-section-outline.component';
 import {
   buildOwnableDocHref,
@@ -29,6 +30,7 @@ import {
   selector: 'app-ownable-page',
   imports: [
     RouterOutlet,
+    RouterLink,
     TngAccordionComponent,
     TngAccordionItemComponent,
     TngAccordionTriggerComponent,
@@ -40,6 +42,7 @@ import {
     TngDrawerComponent,
     TngIcon,
     DocsComponentSectionOutlineComponent,
+    DocsRouteLoadingOutletComponent,
   ],
   templateUrl: './ownable-page.component.html',
   styleUrls: ['../../components/landing/components-page.component.css', './ownable-page.component.css'],

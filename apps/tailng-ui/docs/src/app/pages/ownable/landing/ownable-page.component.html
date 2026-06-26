@@ -51,7 +51,7 @@
                     <li class="components-docs-nav-item">
                       <a
                         class="components-docs-nav-link"
-                        [href]="itemHref(group.id, item.slug)"
+                        [routerLink]="itemHref(group.id, item.slug)"
                         [class.components-docs-nav-link--selected]="isItemActive(group.id, item.slug)"
                       >
                         <span class="truncate">{{ item.title }}</span>
@@ -92,7 +92,9 @@
 
       <section class="docs-component-content">
         <div class="docs-component-content-main" #docsContentRoot>
-          <router-outlet />
+          <app-docs-route-loading-outlet>
+            <router-outlet />
+          </app-docs-route-loading-outlet>
         </div>
         <app-docs-component-section-outline
           ariaLabel="Ownable page sections"

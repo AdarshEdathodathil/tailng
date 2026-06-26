@@ -1,0 +1,10 @@
+<div class="docs-route-loading-outlet" [attr.aria-busy]="loading()">
+  <ng-content></ng-content>
+
+  @if (loading()) {
+    <div class="docs-route-loading-outlet__overlay">
+      <app-docs-route-skeleton />
+    </div>
+  }
+</div>
+

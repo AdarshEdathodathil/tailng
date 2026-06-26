@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, DestroyRef, effect, ElementRef, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import {
   TngAccordionComponent,
   TngAccordionItemComponent,
@@ -17,6 +17,7 @@ import {
   TngDrawerContent,
 } from '@tailng-ui/primitives';
 import { filter, map, startWith } from 'rxjs/operators';
+import { DocsRouteLoadingOutletComponent } from '../../../shared/route-loading/docs-route-loading-outlet.component';
 import {
   buildHeadlessDocHref,
   HEADLESS_DOCS_GROUPS,
@@ -28,6 +29,7 @@ import {
   selector: 'app-headless-page',
   imports: [
     RouterOutlet,
+    RouterLink,
     TngAccordionComponent,
     TngAccordionItemComponent,
     TngAccordionTriggerComponent,
@@ -38,6 +40,7 @@ import {
     TngDrawerContent,
     TngDrawerComponent,
     TngIcon,
+    DocsRouteLoadingOutletComponent,
   ],
   templateUrl: './headless-page.component.html',
   styleUrls: ['../../components/landing/components-page.component.css'],

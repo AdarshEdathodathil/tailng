@@ -71,7 +71,7 @@
                       <li class="components-docs-nav-item">
                         <a
                           class="components-docs-nav-link"
-                          [href]="itemHref(group.id, item)"
+                          [routerLink]="itemHref(group.id, item)"
                           [class.components-docs-nav-link--selected]="isItemActive(group.id, item)"
                         >
                           <span class="truncate">{{ item.title }}</span>
@@ -132,7 +132,9 @@
 
       <section class="docs-component-content">
         <div class="docs-component-content-main" #docsContentRoot>
-          <router-outlet />
+          <app-docs-route-loading-outlet>
+            <router-outlet />
+          </app-docs-route-loading-outlet>
         </div>
         <app-docs-component-section-outline
           ariaLabel="Theme page sections"

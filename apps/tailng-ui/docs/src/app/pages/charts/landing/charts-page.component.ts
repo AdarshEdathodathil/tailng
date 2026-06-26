@@ -14,6 +14,7 @@ import {
 import { TngIcon } from '@tailng-ui/icons';
 import { TngDrawerContainer, TngDrawerContent } from '@tailng-ui/primitives';
 import { filter, map, startWith, tap } from 'rxjs/operators';
+import { DocsRouteLoadingOutletComponent } from '../../../shared/route-loading/docs-route-loading-outlet.component';
 import {
   buildChartsDocHref,
   CHARTS_DOCS_GROUPS,
@@ -37,6 +38,7 @@ import {
     TngDrawerContent,
     TngDrawerComponent,
     TngIcon,
+    DocsRouteLoadingOutletComponent,
   ],
   templateUrl: './charts-page.component.html',
   styleUrl: './charts-page.component.css',

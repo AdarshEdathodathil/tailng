@@ -292,7 +292,9 @@
     }
 
     <section [class.pb-8]="!componentsDocsLayout()">
-      <router-outlet />
+      <app-docs-route-loading-outlet [active]="!componentsDocsLayout()">
+        <router-outlet />
+      </app-docs-route-loading-outlet>
     </section>
   </div>
 

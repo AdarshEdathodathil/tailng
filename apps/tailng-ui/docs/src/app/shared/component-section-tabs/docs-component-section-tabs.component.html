@@ -11,7 +11,7 @@
     </button>
     <div tngTabList class="docs-component-tab-list" [ariaLabel]="sectionName() + ' documentation tabs'">
       @for (tab of tabs(); track tab.value) {
-        <a tngTab [value]="tab.value" [href]="tabHrefs()[tab.value]" class="docs-component-tab-trigger">
+        <a tngTab [value]="tab.value" [routerLink]="tabHrefs()[tab.value]" class="docs-component-tab-trigger">
           {{ tab.label }}
         </a>
       }

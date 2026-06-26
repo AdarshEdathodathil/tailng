@@ -20,6 +20,7 @@ import {
   TngInputFieldPrefix,
 } from '@tailng-ui/primitives';
 import { filter, map, startWith, tap } from 'rxjs/operators';
+import { DocsRouteLoadingOutletComponent } from '../../../shared/route-loading/docs-route-loading-outlet.component';
 import { DocsComponentSectionOutlineComponent } from '../../../shared/section-outline/docs-component-section-outline.component';
 import {
   buildThemeDocHref,
@@ -48,6 +49,7 @@ import {
     TngInputFieldPrefix,
     TngIcon,
     DocsComponentSectionOutlineComponent,
+    DocsRouteLoadingOutletComponent,
   ],
   templateUrl: './theme-page.component.html',
   styleUrls: ['../../components/landing/components-page.component.css', './theme-page.component.css'],

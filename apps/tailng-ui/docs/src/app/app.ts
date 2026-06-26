@@ -34,6 +34,7 @@ import {
   type ThemeDefinition,
 } from '@tailng-ui/theme';
 import { filter } from 'rxjs/operators';
+import { DocsRouteLoadingOutletComponent } from './shared/route-loading/docs-route-loading-outlet.component';
 import { DocsSearchIndexService, type DocsSearchEntry } from './shared/search/docs-search-index.service';
 
 type ThemePresetId =
@@ -198,6 +199,7 @@ const footerResourceLinks: readonly LinkItem[] = [
     TngMenuTriggerFor,
     TngMenuItem,
     TngIcon,
+    DocsRouteLoadingOutletComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.html',
@@ -315,7 +317,7 @@ export class App {
 
   public onPrimaryNavigationSelect(route: string): void {
     this.closeMobileMenu();
-    this.documentRef.defaultView?.location.assign(route);
+    void this.router.navigateByUrl(route);
   }
 
   @HostListener('document:keydown', ['$event'])

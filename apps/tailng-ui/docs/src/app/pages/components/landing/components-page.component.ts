@@ -17,6 +17,7 @@ import {
   TngDrawerContent,
 } from '@tailng-ui/primitives';
 import { filter, map, startWith, tap } from 'rxjs/operators';
+import { DocsRouteLoadingOutletComponent } from '../../../shared/route-loading/docs-route-loading-outlet.component';
 import {
   buildComponentsDocHref,
   COMPONENTS_DOCS_GROUPS,
@@ -40,6 +41,7 @@ import {
     TngDrawerContent,
     TngDrawerComponent,
     TngIcon,
+    DocsRouteLoadingOutletComponent,
   ],
   templateUrl: './components-page.component.html',
   styleUrl: './components-page.component.css',
