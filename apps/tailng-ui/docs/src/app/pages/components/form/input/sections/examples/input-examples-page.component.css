@@ -53,6 +53,14 @@
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
 }
 
+/* Signal form number defaults */
+.doc-cmp-input-ex-signal-number-form-preview {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  width: min(100%, 40rem);
+}
+
 /* Validation */
 .doc-cmp-input-ex-validation-preview {
   display: grid;
@@ -100,6 +108,7 @@
 }
 
 @media (max-width: 760px) {
+  .doc-cmp-input-ex-signal-number-form-preview,
   .doc-cmp-input-ex-types-grid,
   .doc-cmp-input-ex-number-preview {
     grid-template-columns: 1fr;

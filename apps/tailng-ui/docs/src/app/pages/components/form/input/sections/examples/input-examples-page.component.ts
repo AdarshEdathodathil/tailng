@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, inject, signal, type OnDestroy } from '@angular/core';
+import { Component, computed, inject, signal, type OnDestroy } from '@angular/core';
+import { FormField, form } from '@angular/forms/signals';
 import { TngInputComponent } from '@tailng-ui/components';
 import type { DocsExampleCodeTab } from '../../../../../../shared/example-panel/docs-example-panel.component';
 import {
@@ -7,7 +8,10 @@ import {
   DocsExampleVariantDirective,
 } from '../../../../../../shared/example-tabs-section/docs-example-tabs-section.component';
 import { DocsFormDemoShellComponent } from '../../../../../../shared/form-demo-shell/docs-form-demo-shell.component';
-import { observeDocsCodeThemeChanges, resolveDocsCodeBlockTheme } from '../../../../../../shared/util';
+import {
+  observeDocsCodeThemeChanges,
+  resolveDocsCodeBlockTheme,
+} from '../../../../../../shared/util';
 import { stackblitzTailwindUrl, stackblitzVanillaUrl } from '../../input.util';
 
 function createCodeTabs(options: {
@@ -48,6 +52,7 @@ function createCodeTabs(options: {
     DocsExampleTabsSectionComponent,
     DocsExampleVariantDirective,
     DocsFormDemoShellComponent,
+    FormField,
     TngInputComponent,
   ],
   templateUrl: './input-examples-page.component.html',
@@ -59,11 +64,30 @@ export class InputExamplesPageComponent implements OnDestroy {
   public readonly codeBlockTheme = signal<'github-dark' | 'github-light'>(
     resolveDocsCodeBlockTheme(this.documentRef),
   );
-  private readonly colorSchemeObserver = observeDocsCodeThemeChanges(this.documentRef, this.codeBlockTheme);
+  private readonly colorSchemeObserver = observeDocsCodeThemeChanges(
+    this.documentRef,
+    this.codeBlockTheme,
+  );
 
   protected readonly stackblitzVanillaUrl = stackblitzVanillaUrl;
   protected readonly stackblitzTailwindUrl = stackblitzTailwindUrl;
   protected readonly formDemoValue = signal('Nova workspace');
+  protected readonly signalNumberModel = signal({
+    quantity: '12',
+    unitPrice: '49.99',
+  });
+  protected readonly signalNumberForm = form(this.signalNumberModel);
+  protected readonly signalNumberTotal = computed(() => {
+    const { quantity, unitPrice } = this.signalNumberModel();
+    const quantityValue = Number(quantity);
+    const unitPriceValue = Number(unitPrice);
+
+    if (!Number.isFinite(quantityValue) || !Number.isFinite(unitPriceValue)) {
+      return '—';
+    }
+
+    return (quantityValue * unitPriceValue).toFixed(2);
+  });
   protected readonly taxGroupRate = signal('8.5');
 
   private readonly tsBasic = [
@@ -93,6 +117,39 @@ export class InputExamplesPageComponent implements OnDestroy {
     "  styleUrl: './doc-cmp-input-ex-types.component.css',",
     '})',
     'export class DocCmpInputExTypesComponent {}',
+    '',
+  ].join('\n');
+
+  private readonly tsSignalNumberForm = [
+    "import { Component, computed, signal } from '@angular/core';",
+    "import { FormField, form } from '@angular/forms/signals';",
+    "import { TngInputComponent } from '@tailng-ui/components';",
+    '',
+    '@Component({',
+    "  selector: 'app-doc-cmp-input-ex-signal-number-form',",
+    '  standalone: true,',
+    '  imports: [FormField, TngInputComponent],',
+    "  templateUrl: './doc-cmp-input-ex-signal-number-form.component.html',",
+    "  styleUrl: './doc-cmp-input-ex-signal-number-form.component.css',",
+    '})',
+    'export class DocCmpInputExSignalNumberFormComponent {',
+    '  protected readonly orderModel = signal({',
+    "    quantity: '12',",
+    "    unitPrice: '49.99',",
+    '  });',
+    '  protected readonly orderForm = form(this.orderModel);',
+    '  protected readonly total = computed(() => {',
+    '    const { quantity, unitPrice } = this.orderModel();',
+    '    const quantityValue = Number(quantity);',
+    '    const unitPriceValue = Number(unitPrice);',
+    '',
+    '    if (!Number.isFinite(quantityValue) || !Number.isFinite(unitPriceValue)) {',
+    "      return '—';",
+    '    }',
+    '',
+    '    return (quantityValue * unitPriceValue).toFixed(2);',
+    '  });',
+    '}',
     '',
   ].join('\n');
 
@@ -164,6 +221,18 @@ export class InputExamplesPageComponent implements OnDestroy {
     '  gap: 0.65rem;',
     '  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));',
     '  width: min(100%, 100%);',
+    '}',
+    '',
+  ].join('\n');
+
+  private readonly plainCssSignalNumberForm = [
+    '/* Layout only; tng-input styling comes from the component. */',
+    '',
+    '.doc-cmp-input-ex-signal-number-form-preview {',
+    '  display: grid;',
+    '  gap: 0.75rem;',
+    '  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));',
+    '  width: min(100%, 40rem);',
     '}',
     '',
   ].join('\n');
@@ -275,6 +344,29 @@ export class InputExamplesPageComponent implements OnDestroy {
       '',
     ].join('\n'),
     cssCode: this.tailwindCssCode,
+  });
+
+  protected readonly signalNumberFormCodeTabs = createCodeTabs({
+    baseName: 'doc-cmp-input-ex-signal-number-form',
+    tsCode: this.tsSignalNumberForm,
+    htmlCode: [
+      '<div class="doc-cmp-input-ex-signal-number-form-preview">',
+      '  <tng-input',
+      '    type="number"',
+      '    ariaLabel="Quantity"',
+      '    [formField]="orderForm.quantity"',
+      '  ></tng-input>',
+      '',
+      '  <tng-input',
+      '    type="number"',
+      '    ariaLabel="Unit price"',
+      '    [formField]="orderForm.unitPrice"',
+      '  ></tng-input>',
+      '</div>',
+      "<p>Quantity: {{ orderModel().quantity || '—' }} | Unit price: {{ orderModel().unitPrice || '—' }} | Total: {{ total() }}</p>",
+      '',
+    ].join('\n'),
+    cssCode: this.plainCssSignalNumberForm,
   });
 
   protected readonly validationPlainCodeTabs = createCodeTabs({
@@ -429,5 +521,4 @@ export class InputExamplesPageComponent implements OnDestroy {
 
     inputElement.focus({ preventScroll: true });
   }
-
 }

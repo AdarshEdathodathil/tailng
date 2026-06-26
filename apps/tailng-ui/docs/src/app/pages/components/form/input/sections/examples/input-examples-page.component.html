@@ -15,7 +15,12 @@
         defaultValue="live-demo"
         [codeBlockTheme]="codeBlockTheme()"
       >
-        <ng-template appDocsExampleVariant value="live-demo" label="Live demo" panelTitle="Input form usage">
+        <ng-template
+          appDocsExampleVariant
+          value="live-demo"
+          label="Live demo"
+          panelTitle="Input form usage"
+        >
           <app-docs-form-demo-shell
             title="Create a workspace"
             description="Capture the project name before provisioning the workspace."
@@ -37,6 +42,49 @@
       </app-docs-example-tabs-section>
     </section>
 
+    <section id="signal-form-number-defaults" class="docs-section-anchor input-examples-block">
+      <app-docs-example-tabs-section
+        heading="Signal form number defaults"
+        description="A number input example bound directly to Angular Signal Forms with defaults from the model."
+        ariaLabel="Signal form number input defaults example"
+        tabListAriaLabel="Signal form number input defaults variants"
+        defaultValue="live-demo"
+        [codeBlockTheme]="codeBlockTheme()"
+      >
+        <ng-template
+          appDocsExampleVariant
+          value="live-demo"
+          label="Live demo"
+          panelTitle="Signal form number defaults"
+          [codeTabs]="signalNumberFormCodeTabs"
+        >
+          <app-docs-form-demo-shell
+            title="Order quantity"
+            description="Bind number inputs directly with [formField] while keeping string defaults in the signal model."
+            submitLabel="Save order"
+          >
+            <div docsFormDemoField class="doc-cmp-input-ex-signal-number-form-preview">
+              <tng-input
+                type="number"
+                ariaLabel="Quantity"
+                [formField]="signalNumberForm.quantity"
+              ></tng-input>
+
+              <tng-input
+                type="number"
+                ariaLabel="Unit price"
+                [formField]="signalNumberForm.unitPrice"
+              ></tng-input>
+            </div>
+            <p docsFormDemoSummary>
+              Quantity: {{ signalNumberModel().quantity || '—' }} | Unit price:
+              {{ signalNumberModel().unitPrice || '—' }} | Total: {{ signalNumberTotal() }}
+            </p>
+          </app-docs-form-demo-shell>
+        </ng-template>
+      </app-docs-example-tabs-section>
+    </section>
+
     <section id="basic-text-field" class="docs-section-anchor input-examples-block">
       <app-docs-example-tabs-section
         heading="Basic text field"
@@ -46,7 +94,14 @@
         defaultValue="plain-css"
         [codeBlockTheme]="codeBlockTheme()"
       >
-        <ng-template appDocsExampleVariant value="plain-css" label="Plain-CSS" panelTitle="Basic text field (Plain-CSS)" [codeTabs]="basicPlainCodeTabs" [stackblitzUrl]="stackblitzVanillaUrl">
+        <ng-template
+          appDocsExampleVariant
+          value="plain-css"
+          label="Plain-CSS"
+          panelTitle="Basic text field (Plain-CSS)"
+          [codeTabs]="basicPlainCodeTabs"
+          [stackblitzUrl]="stackblitzVanillaUrl"
+        >
           <div class="doc-cmp-input-ex-basic-preview">
             <tng-input
               type="text"
@@ -57,7 +112,14 @@
           </div>
         </ng-template>
 
-        <ng-template appDocsExampleVariant value="tailwind-css" label="Tailwind CSS" panelTitle="Basic text field (Tailwind CSS)" [codeTabs]="basicTailwindCodeTabs" [stackblitzUrl]="stackblitzTailwindUrl">
+        <ng-template
+          appDocsExampleVariant
+          value="tailwind-css"
+          label="Tailwind CSS"
+          panelTitle="Basic text field (Tailwind CSS)"
+          [codeTabs]="basicTailwindCodeTabs"
+          [stackblitzUrl]="stackblitzTailwindUrl"
+        >
           <div class="doc-cmp-input-ex-basic-preview">
             <tng-input
               type="text"
@@ -79,19 +141,71 @@
         defaultValue="plain-css"
         [codeBlockTheme]="codeBlockTheme()"
       >
-        <ng-template appDocsExampleVariant value="plain-css" label="Plain-CSS" panelTitle="Type variants (Plain-CSS)" [codeTabs]="typePlainCodeTabs" [stackblitzUrl]="stackblitzVanillaUrl">
+        <ng-template
+          appDocsExampleVariant
+          value="plain-css"
+          label="Plain-CSS"
+          panelTitle="Type variants (Plain-CSS)"
+          [codeTabs]="typePlainCodeTabs"
+          [stackblitzUrl]="stackblitzVanillaUrl"
+        >
           <div class="doc-cmp-input-ex-types-preview doc-cmp-input-ex-types-grid">
-            <tng-input type="email" placeholder="team@tailng.dev" ariaLabel="Email" inputmode="email" autocomplete="email"></tng-input>
-            <tng-input type="search" placeholder="Search docs" ariaLabel="Search" inputmode="search" enterkeyhint="search"></tng-input>
-            <tng-input type="number" placeholder="42" ariaLabel="Number" [min]="0" [max]="100" [step]="1"></tng-input>
+            <tng-input
+              type="email"
+              placeholder="team@tailng.dev"
+              ariaLabel="Email"
+              inputmode="email"
+              autocomplete="email"
+            ></tng-input>
+            <tng-input
+              type="search"
+              placeholder="Search docs"
+              ariaLabel="Search"
+              inputmode="search"
+              enterkeyhint="search"
+            ></tng-input>
+            <tng-input
+              type="number"
+              placeholder="42"
+              ariaLabel="Number"
+              [min]="0"
+              [max]="100"
+              [step]="1"
+            ></tng-input>
           </div>
         </ng-template>
 
-        <ng-template appDocsExampleVariant value="tailwind-css" label="Tailwind CSS" panelTitle="Type variants (Tailwind CSS)" [codeTabs]="typeTailwindCodeTabs" [stackblitzUrl]="stackblitzTailwindUrl">
+        <ng-template
+          appDocsExampleVariant
+          value="tailwind-css"
+          label="Tailwind CSS"
+          panelTitle="Type variants (Tailwind CSS)"
+          [codeTabs]="typeTailwindCodeTabs"
+          [stackblitzUrl]="stackblitzTailwindUrl"
+        >
           <div class="doc-cmp-input-ex-types-preview doc-cmp-input-ex-types-grid">
-            <tng-input type="email" placeholder="team@tailng.dev" ariaLabel="Email" inputmode="email" autocomplete="email"></tng-input>
-            <tng-input type="search" placeholder="Search docs" ariaLabel="Search" inputmode="search" enterkeyhint="search"></tng-input>
-            <tng-input type="number" placeholder="42" ariaLabel="Number" [min]="0" [max]="100" [step]="1"></tng-input>
+            <tng-input
+              type="email"
+              placeholder="team@tailng.dev"
+              ariaLabel="Email"
+              inputmode="email"
+              autocomplete="email"
+            ></tng-input>
+            <tng-input
+              type="search"
+              placeholder="Search docs"
+              ariaLabel="Search"
+              inputmode="search"
+              enterkeyhint="search"
+            ></tng-input>
+            <tng-input
+              type="number"
+              placeholder="42"
+              ariaLabel="Number"
+              [min]="0"
+              [max]="100"
+              [step]="1"
+            ></tng-input>
           </div>
         </ng-template>
       </app-docs-example-tabs-section>
@@ -106,7 +220,14 @@
         defaultValue="plain-css"
         [codeBlockTheme]="codeBlockTheme()"
       >
-        <ng-template appDocsExampleVariant value="plain-css" label="Plain-CSS" panelTitle="Validation feedback (Plain-CSS)" [codeTabs]="validationPlainCodeTabs" [stackblitzUrl]="stackblitzVanillaUrl">
+        <ng-template
+          appDocsExampleVariant
+          value="plain-css"
+          label="Plain-CSS"
+          panelTitle="Validation feedback (Plain-CSS)"
+          [codeTabs]="validationPlainCodeTabs"
+          [stackblitzUrl]="stackblitzVanillaUrl"
+        >
           <div class="doc-cmp-input-ex-validation-preview doc-cmp-input-ex-validation-stack">
             <tng-input
               tone="danger"
@@ -117,11 +238,23 @@
               [ariaInvalid]="true"
               (click)="focusProjectedInput($event)"
             ></tng-input>
-            <p id="input-validation-helper" class="doc-cmp-input-ex-validation-helper doc-cmp-input-ex-validation-helper--danger">Enter a valid email address in user&#64;domain format.</p>
+            <p
+              id="input-validation-helper"
+              class="doc-cmp-input-ex-validation-helper doc-cmp-input-ex-validation-helper--danger"
+            >
+              Enter a valid email address in user&#64;domain format.
+            </p>
           </div>
         </ng-template>
 
-        <ng-template appDocsExampleVariant value="tailwind-css" label="Tailwind CSS" panelTitle="Validation feedback (Tailwind CSS)" [codeTabs]="validationTailwindCodeTabs" [stackblitzUrl]="stackblitzTailwindUrl">
+        <ng-template
+          appDocsExampleVariant
+          value="tailwind-css"
+          label="Tailwind CSS"
+          panelTitle="Validation feedback (Tailwind CSS)"
+          [codeTabs]="validationTailwindCodeTabs"
+          [stackblitzUrl]="stackblitzTailwindUrl"
+        >
           <div class="doc-cmp-input-ex-validation-preview doc-cmp-input-ex-validation-stack">
             <tng-input
               tone="danger"
@@ -132,7 +265,12 @@
               [ariaInvalid]="true"
               (click)="focusProjectedInput($event)"
             ></tng-input>
-            <p id="input-validation-helper-tailwind" class="doc-cmp-input-ex-validation-tw-helper text-xs font-medium text-red-600">Enter a valid email address in user&#64;domain format.</p>
+            <p
+              id="input-validation-helper-tailwind"
+              class="doc-cmp-input-ex-validation-tw-helper text-xs font-medium text-red-600"
+            >
+              Enter a valid email address in user&#64;domain format.
+            </p>
           </div>
         </ng-template>
       </app-docs-example-tabs-section>
@@ -147,7 +285,14 @@
         defaultValue="plain-css"
         [codeBlockTheme]="codeBlockTheme()"
       >
-        <ng-template appDocsExampleVariant value="plain-css" label="Plain-CSS" panelTitle="Number controls (Plain-CSS)" [codeTabs]="numberPlainCodeTabs" [stackblitzUrl]="stackblitzVanillaUrl">
+        <ng-template
+          appDocsExampleVariant
+          value="plain-css"
+          label="Plain-CSS"
+          panelTitle="Number controls (Plain-CSS)"
+          [codeTabs]="numberPlainCodeTabs"
+          [stackblitzUrl]="stackblitzVanillaUrl"
+        >
           <div class="doc-cmp-input-ex-number-preview">
             <tng-input
               id="tax-group-rate"
@@ -174,8 +319,17 @@
           </div>
         </ng-template>
 
-        <ng-template appDocsExampleVariant value="tailwind-css" label="Tailwind CSS" panelTitle="Number controls (Tailwind CSS)" [codeTabs]="numberTailwindCodeTabs" [stackblitzUrl]="stackblitzTailwindUrl">
-          <div class="doc-cmp-input-ex-number-preview grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+        <ng-template
+          appDocsExampleVariant
+          value="tailwind-css"
+          label="Tailwind CSS"
+          panelTitle="Number controls (Tailwind CSS)"
+          [codeTabs]="numberTailwindCodeTabs"
+          [stackblitzUrl]="stackblitzTailwindUrl"
+        >
+          <div
+            class="doc-cmp-input-ex-number-preview grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2"
+          >
             <tng-input
               id="tax-group-rate-tailwind"
               type="number"
@@ -212,17 +366,51 @@
         defaultValue="plain-css"
         [codeBlockTheme]="codeBlockTheme()"
       >
-        <ng-template appDocsExampleVariant value="plain-css" label="Plain-CSS" panelTitle="Readonly and disabled states (Plain-CSS)" [codeTabs]="statesPlainCodeTabs" [stackblitzUrl]="stackblitzVanillaUrl">
+        <ng-template
+          appDocsExampleVariant
+          value="plain-css"
+          label="Plain-CSS"
+          panelTitle="Readonly and disabled states (Plain-CSS)"
+          [codeTabs]="statesPlainCodeTabs"
+          [stackblitzUrl]="stackblitzVanillaUrl"
+        >
           <div class="doc-cmp-input-ex-states-preview doc-cmp-input-ex-states-stack">
-            <tng-input type="text" value="Readonly API key" readonly (click)="focusProjectedInput($event)"></tng-input>
-            <tng-input type="text" value="Disabled while syncing" disabled (click)="focusProjectedInput($event)"></tng-input>
+            <tng-input
+              type="text"
+              value="Readonly API key"
+              readonly
+              (click)="focusProjectedInput($event)"
+            ></tng-input>
+            <tng-input
+              type="text"
+              value="Disabled while syncing"
+              disabled
+              (click)="focusProjectedInput($event)"
+            ></tng-input>
           </div>
         </ng-template>
 
-        <ng-template appDocsExampleVariant value="tailwind-css" label="Tailwind CSS" panelTitle="Readonly and disabled states (Tailwind CSS)" [codeTabs]="statesTailwindCodeTabs" [stackblitzUrl]="stackblitzTailwindUrl">
+        <ng-template
+          appDocsExampleVariant
+          value="tailwind-css"
+          label="Tailwind CSS"
+          panelTitle="Readonly and disabled states (Tailwind CSS)"
+          [codeTabs]="statesTailwindCodeTabs"
+          [stackblitzUrl]="stackblitzTailwindUrl"
+        >
           <div class="doc-cmp-input-ex-states-preview doc-cmp-input-ex-states-stack">
-            <tng-input type="text" value="Readonly API key" readonly (click)="focusProjectedInput($event)"></tng-input>
-            <tng-input type="text" value="Disabled while syncing" disabled (click)="focusProjectedInput($event)"></tng-input>
+            <tng-input
+              type="text"
+              value="Readonly API key"
+              readonly
+              (click)="focusProjectedInput($event)"
+            ></tng-input>
+            <tng-input
+              type="text"
+              value="Disabled while syncing"
+              disabled
+              (click)="focusProjectedInput($event)"
+            ></tng-input>
           </div>
         </ng-template>
       </app-docs-example-tabs-section>
