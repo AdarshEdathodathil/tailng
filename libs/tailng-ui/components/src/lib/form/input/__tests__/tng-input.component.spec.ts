@@ -54,11 +54,7 @@ class InputHostComponent {
     `,
   ],
   template: `
-    <tng-input
-      class="host-styled-input"
-      placeholder="Search docs"
-      ariaLabel="Search docs"
-    />
+    <tng-input class="host-styled-input" placeholder="Search docs" ariaLabel="Search docs" />
   `,
 })
 class HostStyledInputComponent {}
@@ -134,6 +130,27 @@ function dispatchPasteEvent(inputEl: HTMLInputElement, text: string): Event {
   return event;
 }
 
+function dispatchKeyboardFocus(inputEl: HTMLInputElement): void {
+  document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }));
+  inputEl.dispatchEvent(new FocusEvent('focus'));
+}
+
+function dispatchPointerFocus(inputEl: HTMLInputElement): void {
+  inputEl.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+  inputEl.dispatchEvent(new FocusEvent('focus'));
+}
+
+function dispatchPointerDoubleClickSelection(
+  inputEl: HTMLInputElement,
+  start: number,
+  end: number,
+): void {
+  inputEl.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+  inputEl.dispatchEvent(new FocusEvent('focus'));
+  inputEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+  setSelectionRangeForTest(inputEl, start, end);
+}
+
 function setSelectionRangeForTest(inputEl: HTMLInputElement, start: number, end = start): void {
   Object.defineProperty(inputEl, 'selectionStart', {
     configurable: true,
@@ -166,16 +183,20 @@ function makeSelectionApiUnavailableForTest(inputEl: HTMLInputElement): void {
   });
 }
 
+function makeSelectionApiCollapsedForTest(inputEl: HTMLInputElement, index: number): void {
+  Object.defineProperty(inputEl, 'selectionStart', {
+    configurable: true,
+    value: index,
+  });
+  Object.defineProperty(inputEl, 'selectionEnd', {
+    configurable: true,
+    value: index,
+  });
+}
+
 @Component({
   imports: [TngInputComponent],
-  template: `
-    <tng-input
-      type="number"
-      [step]="step"
-      [min]="min"
-      [max]="max"
-    />
-  `,
+  template: ` <tng-input type="number" [step]="step" [min]="min" [max]="max" /> `,
 })
 class OptionalNumberConstraintsHostComponent {
   public step: number | undefined = undefined;
@@ -292,10 +313,7 @@ const themeContractCss = [
     'utf8',
   ),
   readFileSync(
-    join(
-      process.cwd(),
-      'libs/tailng-ui/theme/src/lib/component-contracts/form/input/input.css',
-    ),
+    join(process.cwd(), 'libs/tailng-ui/theme/src/lib/component-contracts/form/input/input.css'),
     'utf8',
   ),
 ].join('\n');
@@ -340,7 +358,9 @@ describe('<tng-input> component', () => {
   });
 
   it('emits one facade event for native input, change, focus, blur, keydown, and keyup', async () => {
-    await TestBed.configureTestingModule({ imports: [EventFacadeHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [EventFacadeHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(EventFacadeHostComponent);
     fixture.detectChanges();
 
@@ -382,7 +402,9 @@ describe('<tng-input> component', () => {
   });
 
   it('does not prevent default typing, beforeinput, or IME composition events', async () => {
-    await TestBed.configureTestingModule({ imports: [EventFacadeHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [EventFacadeHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(EventFacadeHostComponent);
     fixture.detectChanges();
 
@@ -418,7 +440,8 @@ describe('<tng-input> component', () => {
     fixture.detectChanges();
 
     const host = fixture.debugElement.query(By.css('tng-input')).nativeElement as HTMLElement;
-    const inputField = fixture.debugElement.query(By.css('tng-input-field')).nativeElement as HTMLElement;
+    const inputField = fixture.debugElement.query(By.css('tng-input-field'))
+      .nativeElement as HTMLElement;
 
     expect(host.getAttribute('data-size')).toBe('lg');
     expect(host.getAttribute('data-appearance')).toBe('solid');
@@ -429,36 +452,45 @@ describe('<tng-input> component', () => {
   });
 
   it('surfaces host-level CSS variables for the theme contract to consume', async () => {
-    await TestBed.configureTestingModule({ imports: [HostStyledInputComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [HostStyledInputComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(HostStyledInputComponent);
     fixture.detectChanges();
 
     const host = fixture.debugElement.query(By.css('tng-input')).nativeElement as HTMLElement;
     const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
 
-    expect(getComputedStyle(host).getPropertyValue('--tng-input-bg').trim()).toBe('rgb(255, 248, 220)');
+    expect(getComputedStyle(host).getPropertyValue('--tng-input-bg').trim()).toBe(
+      'rgb(255, 248, 220)',
+    );
     expect(getComputedStyle(host).getPropertyValue('--tng-input-font-size').trim()).toBe('19px');
     expect(getComputedStyle(host).getPropertyValue('--tng-input-font-weight').trim()).toBe('600');
     expect(getComputedStyle(host).getPropertyValue('--tng-input-placeholder').trim()).toBe(
       'rgb(148, 163, 184)',
     );
-    expect(themeContractCss).toContain("--_tng-input-bg: var(--tng-input-bg, var(--_tng-input-bg-default));");
     expect(themeContractCss).toContain(
-      "--_tng-input-font-size: var(--tng-input-font-size, var(--_tng-input-font-size-default));",
+      '--_tng-input-bg: var(--tng-input-bg, var(--_tng-input-bg-default));',
     );
     expect(themeContractCss).toContain(
-      "color: var(--_tng-input-placeholder, var(--tng-semantic-foreground-muted));",
+      '--_tng-input-font-size: var(--tng-input-font-size, var(--_tng-input-font-size-default));',
+    );
+    expect(themeContractCss).toContain(
+      'color: var(--_tng-input-placeholder, var(--tng-semantic-foreground-muted));',
     );
     expect(inputEl.placeholder).toBe('Search docs');
   });
 
   it('renders custom controls and passes number constraints to the native input', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
     const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
-    const controls = fixture.debugElement.query(By.css('.tng-input-number-controls')).nativeElement as HTMLElement;
+    const controls = fixture.debugElement.query(By.css('.tng-input-number-controls'))
+      .nativeElement as HTMLElement;
     const buttons = fixture.debugElement.queryAll(By.css('.tng-input-number-button'));
 
     expect(inputEl.type).toBe('number');
@@ -472,7 +504,9 @@ describe('<tng-input> component', () => {
   });
 
   it('blocks invalid beforeinput text on number inputs', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -495,7 +529,9 @@ describe('<tng-input> component', () => {
   });
 
   it('allows valid beforeinput text on number inputs', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -516,7 +552,9 @@ describe('<tng-input> component', () => {
   });
 
   it('sanitizes messy pasted content for number inputs and emits one input event', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.componentInstance.value = '';
     fixture.detectChanges();
@@ -534,7 +572,9 @@ describe('<tng-input> component', () => {
   });
 
   it('normalizes pasted number edge cases into complete number strings', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
 
     const cases: ReadonlyArray<{
       current?: string;
@@ -571,7 +611,9 @@ describe('<tng-input> component', () => {
   });
 
   it('replaces the selected number input range with sanitized pasted content', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.componentInstance.value = '12345';
     fixture.detectChanges();
@@ -588,7 +630,9 @@ describe('<tng-input> component', () => {
   });
 
   it('replaces a selected default number value with pasted numbers across scenarios', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
 
     const cases: ReadonlyArray<{ current: string; expected: string; pasted: string }> = [
       { current: '42', pasted: '100', expected: '100' },
@@ -620,8 +664,112 @@ describe('<tng-input> component', () => {
     }
   });
 
+  it('replaces a tab-focused number value on paste when native number selection APIs are unavailable', async () => {
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(NumberInputHostComponent);
+    fixture.componentInstance.value = '100';
+    fixture.detectChanges();
+
+    const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
+    makeSelectionApiUnavailableForTest(inputEl);
+
+    dispatchKeyboardFocus(inputEl);
+    const pasteEvent = dispatchPasteEvent(inputEl, '50');
+    fixture.detectChanges();
+
+    expect(pasteEvent.defaultPrevented).toBe(true);
+    expect(inputEl.value).toBe('50');
+    expect(fixture.componentInstance.emittedValue).toBe('50');
+    expect(fixture.componentInstance.inputEventCount).toBe(1);
+    expect(fixture.componentInstance.inputEventValue).toBe('50');
+  });
+
+  it('replaces a tab-focused number value on paste when native number selection APIs report a collapsed end range', async () => {
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(NumberInputHostComponent);
+    fixture.componentInstance.value = '100';
+    fixture.detectChanges();
+
+    const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
+    makeSelectionApiCollapsedForTest(inputEl, inputEl.value.length);
+
+    dispatchKeyboardFocus(inputEl);
+    const pasteEvent = dispatchPasteEvent(inputEl, '50');
+    fixture.detectChanges();
+
+    expect(pasteEvent.defaultPrevented).toBe(true);
+    expect(inputEl.value).toBe('50');
+    expect(fixture.componentInstance.emittedValue).toBe('50');
+    expect(fixture.componentInstance.inputEventCount).toBe(1);
+    expect(fixture.componentInstance.inputEventValue).toBe('50');
+  });
+
+  it('keeps pointer-focused number paste at the caret instead of assuming select-all', async () => {
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(NumberInputHostComponent);
+    fixture.componentInstance.value = '100';
+    fixture.detectChanges();
+
+    const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
+    makeSelectionApiCollapsedForTest(inputEl, inputEl.value.length);
+
+    dispatchPointerFocus(inputEl);
+    const pasteEvent = dispatchPasteEvent(inputEl, '50');
+    fixture.detectChanges();
+
+    expect(pasteEvent.defaultPrevented).toBe(true);
+    expect(inputEl.value).toBe('10050');
+    expect(fixture.componentInstance.emittedValue).toBe('10050');
+    expect(fixture.componentInstance.inputEventCount).toBe(1);
+    expect(fixture.componentInstance.inputEventValue).toBe('10050');
+  });
+
+  it('replaces double-click selected number ranges with pasted numbers', async () => {
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
+
+    const cases: readonly {
+      current: string;
+      expected: string;
+      selection: readonly [number, number];
+    }[] = [
+      { current: '100', selection: [0, 3], expected: '50' },
+      { current: '100.987', selection: [0, 3], expected: '50.987' },
+      { current: '100.987', selection: [4, 7], expected: '100.50' },
+    ];
+
+    for (const { current, expected, selection } of cases) {
+      const fixture = TestBed.createComponent(NumberInputHostComponent);
+      fixture.componentInstance.value = current;
+      fixture.detectChanges();
+
+      const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
+
+      dispatchPointerDoubleClickSelection(inputEl, selection[0], selection[1]);
+      const pasteEvent = dispatchPasteEvent(inputEl, '50');
+      fixture.detectChanges();
+
+      expect(pasteEvent.defaultPrevented).toBe(true);
+      expect(inputEl.value).toBe(expected);
+      expect(fixture.componentInstance.emittedValue).toBe(expected);
+      expect(fixture.componentInstance.inputEventCount).toBe(1);
+      expect(fixture.componentInstance.inputEventValue).toBe(expected);
+
+      fixture.destroy();
+    }
+  });
+
   it('replaces Ctrl+A selected number values when native number selection APIs are unavailable', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
 
     const cases: ReadonlyArray<{
       current: string;
@@ -630,8 +778,20 @@ describe('<tng-input> component', () => {
       pasted: string;
       shortcut: KeyboardEventInit;
     }> = [
-      { current: '34', pasted: '34', expected: '34', emittedValue: null, shortcut: { ctrlKey: true } },
-      { current: '34', pasted: '56', expected: '56', emittedValue: '56', shortcut: { ctrlKey: true } },
+      {
+        current: '34',
+        pasted: '34',
+        expected: '34',
+        emittedValue: null,
+        shortcut: { ctrlKey: true },
+      },
+      {
+        current: '34',
+        pasted: '56',
+        expected: '56',
+        emittedValue: '56',
+        shortcut: { ctrlKey: true },
+      },
       {
         current: '-12.5',
         pasted: '$98.00x',
@@ -664,7 +824,9 @@ describe('<tng-input> component', () => {
   });
 
   it('preserves Ctrl+A selection through copy before replacing the number on paste', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.componentInstance.value = '34';
     fixture.detectChanges();
@@ -686,7 +848,9 @@ describe('<tng-input> component', () => {
   });
 
   it('does not sanitize paste events for readonly or disabled number inputs', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -717,7 +881,9 @@ describe('<tng-input> component', () => {
   });
 
   it('increments and decrements number values with the configured step', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -740,7 +906,9 @@ describe('<tng-input> component', () => {
   });
 
   it('emits the aliased input event when custom number controls change the value', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -755,7 +923,9 @@ describe('<tng-input> component', () => {
   });
 
   it('steps number values from ArrowUp and ArrowDown key presses', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -779,7 +949,9 @@ describe('<tng-input> component', () => {
   });
 
   it('jumps number values from PageUp and PageDown key presses', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -801,7 +973,9 @@ describe('<tng-input> component', () => {
   });
 
   it('moves number values to min and max from Home and End key presses', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -823,7 +997,9 @@ describe('<tng-input> component', () => {
   });
 
   it('does not intercept Enter or Space on number inputs', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -841,7 +1017,9 @@ describe('<tng-input> component', () => {
   });
 
   it('suppresses number key stepping when readonly or disabled', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NumberInputHostComponent);
     fixture.detectChanges();
 
@@ -872,7 +1050,9 @@ describe('<tng-input> component', () => {
   });
 
   it('allows the custom number controls to be hidden with a CSS override', async () => {
-    await TestBed.configureTestingModule({ imports: [NumberInputHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
     const styleElement = document.createElement('style');
     styleElement.textContent = `
       tng-input.hide-number-controls .tng-input-number-controls {
@@ -885,7 +1065,8 @@ describe('<tng-input> component', () => {
     fixture.detectChanges();
 
     const host = fixture.debugElement.query(By.css('tng-input')).nativeElement as HTMLElement;
-    const controls = fixture.debugElement.query(By.css('.tng-input-number-controls')).nativeElement as HTMLElement;
+    const controls = fixture.debugElement.query(By.css('.tng-input-number-controls'))
+      .nativeElement as HTMLElement;
 
     host.classList.add('hide-number-controls');
 
@@ -909,7 +1090,9 @@ describe('<tng-input> component', () => {
   });
 
   it('passes common native validation, mobile keyboard, form, and aria attributes to the internal input', async () => {
-    await TestBed.configureTestingModule({ imports: [NativeInputAttributeHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NativeInputAttributeHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NativeInputAttributeHostComponent);
     fixture.detectChanges();
 
@@ -928,7 +1111,9 @@ describe('<tng-input> component', () => {
   });
 
   it('accepts RegExp arrays for signal forms pattern metadata', async () => {
-    await TestBed.configureTestingModule({ imports: [NativeInputAttributeHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NativeInputAttributeHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NativeInputAttributeHostComponent);
 
     fixture.componentInstance.pattern = [/^[A-Z]+$/];
@@ -940,7 +1125,9 @@ describe('<tng-input> component', () => {
   });
 
   it('removes optional native input attributes when bindings are null or empty', async () => {
-    await TestBed.configureTestingModule({ imports: [NativeInputAttributeHostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [NativeInputAttributeHostComponent],
+    }).compileComponents();
     const fixture = TestBed.createComponent(NativeInputAttributeHostComponent);
     fixture.detectChanges();
 

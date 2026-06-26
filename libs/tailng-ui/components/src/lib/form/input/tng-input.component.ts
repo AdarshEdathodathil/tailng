@@ -1,12 +1,4 @@
-import {
-  Component,
-  HostBinding,
-  ViewChild,
-  input,
-  model,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, HostBinding, ViewChild, input, model, output, signal } from '@angular/core';
 import { booleanAttribute } from '@angular/core';
 import type { ElementRef, InputSignalWithTransform } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
@@ -30,7 +22,8 @@ type NumberTextMode = 'complete' | 'partial';
 
 function normalizeAttr(value: unknown): string | null {
   if (value === undefined || value === null) return null;
-  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') return null;
+  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean')
+    return null;
 
   const v = String(value).trim();
   return v.length > 0 ? v : null;
@@ -52,7 +45,9 @@ function normalizeNumberAttr(value: number | string | null | undefined): string 
   return normalized.length > 0 ? normalized : null;
 }
 
-function normalizeOptionalNumberInput(value: number | string | null | undefined): number | string | null {
+function normalizeOptionalNumberInput(
+  value: number | string | null | undefined,
+): number | string | null {
   return value ?? null;
 }
 
@@ -174,6 +169,16 @@ function clampSelectionIndex(value: number, max: number): number {
   return Math.min(Math.max(value, 0), max);
 }
 
+function clampSelectionRange(
+  range: { end: number; start: number },
+  max: number,
+): { end: number; start: number } {
+  return {
+    start: clampSelectionIndex(range.start, max),
+    end: clampSelectionIndex(range.end, max),
+  };
+}
+
 function readSelectionRange(
   inputElement: HTMLInputElement,
   fallbackRange: { end: number; start: number } | null = null,
@@ -223,6 +228,13 @@ function restoreCaret(inputElement: HTMLInputElement, index: number): void {
 
 function isSelectAllShortcut(event: KeyboardEvent): boolean {
   return event.key.toLowerCase() === 'a' && (event.ctrlKey || event.metaKey) && !event.altKey;
+}
+
+function isClipboardShortcut(event: KeyboardEvent): boolean {
+  const key = event.key.toLowerCase();
+  return (
+    (event.ctrlKey || event.metaKey) && !event.altKey && (key === 'c' || key === 'v' || key === 'x')
+  );
 }
 
 @Component({
@@ -277,20 +289,32 @@ export class TngInputComponent implements FormValueControl<string | null> {
   public readonly required = input<boolean, unknown>(false, {
     transform: booleanAttribute,
   });
-  public readonly maxValue = input<number | string | null, number | string | null | undefined>(null, {
-    alias: 'max',
-    transform: normalizeOptionalNumberInput,
-  });
-  public readonly maxlength = input<number | string | null, number | string | null | undefined>(null, {
-    transform: normalizeOptionalNumberInput,
-  });
-  public readonly minValue = input<number | string | null, number | string | null | undefined>(null, {
-    alias: 'min',
-    transform: normalizeOptionalNumberInput,
-  });
-  public readonly minlength = input<number | string | null, number | string | null | undefined>(null, {
-    transform: normalizeOptionalNumberInput,
-  });
+  public readonly maxValue = input<number | string | null, number | string | null | undefined>(
+    null,
+    {
+      alias: 'max',
+      transform: normalizeOptionalNumberInput,
+    },
+  );
+  public readonly maxlength = input<number | string | null, number | string | null | undefined>(
+    null,
+    {
+      transform: normalizeOptionalNumberInput,
+    },
+  );
+  public readonly minValue = input<number | string | null, number | string | null | undefined>(
+    null,
+    {
+      alias: 'min',
+      transform: normalizeOptionalNumberInput,
+    },
+  );
+  public readonly minlength = input<number | string | null, number | string | null | undefined>(
+    null,
+    {
+      transform: normalizeOptionalNumberInput,
+    },
+  );
   public readonly spellcheck = input<boolean | null, NullableBooleanInput>(null, {
     transform: coerceTngInputNullableBoolean,
   });
@@ -316,6 +340,7 @@ export class TngInputComponent implements FormValueControl<string | null> {
 
   private readonly formDisabled = signal(false);
   private numberSelectionRange: { end: number; start: number } | null = null;
+  private numberPointerFocusPending = false;
 
   // ---- Host attrs (optional, useful for styling/debug) ----
   @HostBinding('attr.data-slot')
@@ -381,6 +406,7 @@ export class TngInputComponent implements FormValueControl<string | null> {
 
     if (this.isNumberInput) {
       this.numberSelectionRange = null;
+      this.numberPointerFocusPending = false;
       const sanitized = sanitizeNumberText(next, 'partial');
       if (sanitized !== next) {
         next = sanitized;
@@ -417,16 +443,17 @@ export class TngInputComponent implements FormValueControl<string | null> {
     event.preventDefault();
 
     const insertion = sanitizeNumberText(clipboardText, 'partial');
+    const range =
+      this.numberSelectionRange === null
+        ? readSelectionRange(inputElement)
+        : clampSelectionRange(this.numberSelectionRange, inputElement.value.length);
     const next = sanitizeNumberText(
-      replaceNumberTextRange(
-        inputElement.value,
-        insertion,
-        readSelectionRange(inputElement, this.numberSelectionRange),
-      ),
+      replaceNumberTextRange(inputElement.value, insertion, range),
       'complete',
     );
 
     this.numberSelectionRange = null;
+    this.numberPointerFocusPending = false;
     inputElement.value = next;
     restoreCaret(inputElement, next.length);
     this.commitValue(next, createInputEvent(inputElement));
@@ -443,6 +470,8 @@ export class TngInputComponent implements FormValueControl<string | null> {
     const inputElement = readInputElement(event);
     if (inputElement !== null && this.isEditableNumberInput && isSelectAllShortcut(event)) {
       this.numberSelectionRange = { start: 0, end: inputElement.value.length };
+    } else if (this.isEditableNumberInput && !isClipboardShortcut(event)) {
+      this.numberSelectionRange = null;
     }
 
     switch (event.key) {
@@ -480,6 +509,7 @@ export class TngInputComponent implements FormValueControl<string | null> {
     const inputElement = this.inputControl?.nativeElement;
     if (inputElement === undefined) return;
 
+    this.numberSelectionRange = null;
     inputElement.focus();
 
     try {
@@ -492,6 +522,8 @@ export class TngInputComponent implements FormValueControl<string | null> {
       inputElement.value = this.nextSteppedValue(inputElement.value, delta, stepCount);
     }
 
+    this.numberSelectionRange = null;
+    this.numberPointerFocusPending = false;
     this.commitValue(inputElement.value, createInputEvent(inputElement));
   }
 
@@ -510,6 +542,8 @@ export class TngInputComponent implements FormValueControl<string | null> {
     const inputElement = this.inputControl?.nativeElement;
     if (inputElement === undefined) return;
 
+    this.numberSelectionRange = null;
+    this.numberPointerFocusPending = false;
     inputElement.value = formatNumberValue(boundaryValue);
     this.commitValue(inputElement.value, createInputEvent(inputElement));
   }
@@ -541,6 +575,11 @@ export class TngInputComponent implements FormValueControl<string | null> {
       event.stopPropagation();
     }
 
+    if (this.isNumberInput) {
+      this.numberSelectionRange = null;
+      this.numberPointerFocusPending = false;
+    }
+
     this.touchedChange.emit();
     if (event instanceof FocusEvent) {
       this.blurEvent.emit(event);
@@ -552,6 +591,28 @@ export class TngInputComponent implements FormValueControl<string | null> {
 
     event.stopPropagation();
     this.focusEvent.emit(event);
+
+    if (!this.isNumberInput) {
+      this.numberSelectionRange = null;
+      this.numberPointerFocusPending = false;
+      return;
+    }
+
+    const inputElement = readInputElement(event);
+    if (inputElement === null || !this.isEditableNumberInput || this.numberPointerFocusPending) {
+      this.numberSelectionRange = null;
+      this.numberPointerFocusPending = false;
+      return;
+    }
+
+    this.numberSelectionRange = { start: 0, end: inputElement.value.length };
+  }
+
+  public onPointerDown(event: unknown): void {
+    if (!(event instanceof Event) || !this.isNumberInput) return;
+
+    this.numberSelectionRange = null;
+    this.numberPointerFocusPending = this.isEditableNumberInput;
   }
 
   public onChangeEvent(event: unknown): void {
