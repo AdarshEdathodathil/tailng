@@ -11,7 +11,7 @@ export const daybookClassicThemePreset: ThemeDefinition = {
       base: '#f6edbd',
       canvas: '#f4e79f',
       muted: '#e7d989',
-      surface: '#f7ecd0',
+      surface: '#f8efc4',
     },
     foreground: {
       primary: '#111827',
