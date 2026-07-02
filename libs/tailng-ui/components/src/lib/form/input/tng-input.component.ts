@@ -380,6 +380,14 @@ export class TngInputComponent implements FormValueControl<string | null> {
     return this.formDisabled() || this.disabled();
   }
 
+  protected get nativeInputType(): TngInputType {
+    return this.isNumberInput ? 'text' : this.type();
+  }
+
+  protected get nativeInputMode(): string | null {
+    return normalizeAttr(this.inputmode()) ?? (this.isNumberInput ? 'decimal' : null);
+  }
+
   protected get isNumberInput(): boolean {
     return this.type() === 'number';
   }

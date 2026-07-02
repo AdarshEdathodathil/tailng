@@ -489,11 +489,14 @@ describe('<tng-input> component', () => {
     fixture.detectChanges();
 
     const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
+    const host = fixture.debugElement.query(By.css('tng-input')).nativeElement as HTMLElement;
     const controls = fixture.debugElement.query(By.css('.tng-input-number-controls'))
       .nativeElement as HTMLElement;
     const buttons = fixture.debugElement.queryAll(By.css('.tng-input-number-button'));
 
-    expect(inputEl.type).toBe('number');
+    expect(host.getAttribute('data-type')).toBe('number');
+    expect(inputEl.type).toBe('text');
+    expect(inputEl.getAttribute('inputmode')).toBe('decimal');
     expect(inputEl.getAttribute('min')).toBe('0');
     expect(inputEl.getAttribute('max')).toBe('2');
     expect(inputEl.getAttribute('step')).toBe('0.5');
@@ -548,6 +551,52 @@ describe('<tng-input> component', () => {
       setSelectionRangeForTest(inputEl, current.length);
 
       expect(dispatchBeforeInputEvent(inputEl, data).defaultPrevented).toBe(false);
+    }
+  });
+
+  it('allows negative and zero number values to be entered', async () => {
+    await TestBed.configureTestingModule({
+      imports: [NumberInputHostComponent],
+    }).compileComponents();
+
+    const values = ['-101', '-1', '0', '-.9', '-0.01'] as const;
+
+    for (const value of values) {
+      const fixture = TestBed.createComponent(NumberInputHostComponent);
+      fixture.componentInstance.value = '';
+      fixture.componentInstance.min = null;
+      fixture.componentInstance.max = null;
+      fixture.componentInstance.step = null;
+      fixture.detectChanges();
+
+      const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
+      let current = '';
+
+      for (const character of value) {
+        setSelectionRangeForTest(inputEl, current.length);
+
+        const beforeInputEvent = dispatchBeforeInputEvent(inputEl, character);
+        expect(beforeInputEvent.defaultPrevented).toBe(false);
+
+        current += character;
+        inputEl.value = current;
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        fixture.detectChanges();
+
+        expect(inputEl.value).toBe(current);
+      }
+
+      fixture.detectChanges();
+
+      const finalInputEl = fixture.debugElement.query(By.css('input'))
+        .nativeElement as HTMLInputElement;
+
+      expect(finalInputEl.value).toBe(value);
+      expect(fixture.componentInstance.emittedValue).toBe(value);
+      expect(fixture.componentInstance.inputEventCount).toBe(value.length);
+      expect(fixture.componentInstance.inputEventValue).toBe(value);
+
+      fixture.destroy();
     }
   });
 

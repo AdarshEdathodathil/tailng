@@ -10,7 +10,7 @@
     #inputControl
     tngInput
     class="tng-input-control"
-    [type]="type()"
+    [type]="nativeInputType"
     [disabled]="effectiveDisabled"
     [readonly]="readonly()"
     [required]="required()"
@@ -25,7 +25,7 @@
     [attr.enterkeyhint]="normalizeAttrValue(enterkeyhint())"
     [attr.form]="normalizeAttrValue(formAttr())"
     [attr.id]="normalizeAttrValue(id())"
-    [attr.inputmode]="normalizeAttrValue(inputmode())"
+    [attr.inputmode]="nativeInputMode"
     [attr.list]="normalizeAttrValue(list())"
     [attr.max]="normalizeNumberAttrValue(maxValue())"
     [attr.maxlength]="normalizeNumberAttrValue(maxlength())"
