@@ -54,7 +54,10 @@
             <td><code>indeterminate</code></td>
             <td><code>boolean</code></td>
             <td><code>false</code></td>
-            <td>Suppresses the value ARIA attributes and marks the root with <code>data-indeterminate</code>.</td>
+            <td>
+              Suppresses the value ARIA attributes and marks the root with
+              <code>data-indeterminate</code>.
+            </td>
           </tr>
         </tbody>
       </table>
@@ -64,9 +67,9 @@
   <section id="indicator-directive" class="headless-progress-bar-api-block">
     <h3>Indicator directive</h3>
     <p>
-      <code>tngProgressBarIndicator</code> is a structural hook only. It adds
-      <code>data-slot="progress-bar-indicator"</code> and leaves width and animation fully in your
-      hands.
+      <code>tngProgressBarIndicator</code> adds the stable indicator slot and automatically mirrors
+      the owning root's <code>data-state</code> and <code>data-indeterminate</code> hooks. Width and
+      animation remain in your hands.
     </p>
     <tng-code-block
       [code]="indicatorCode"
@@ -110,9 +113,21 @@
     <h3>Accessibility contract</h3>
     <ul class="headless-progress-bar-api-list">
       <li>The root always exposes <code>role="progressbar"</code>.</li>
-      <li>Determinate mode sets <code>aria-valuemin</code>, <code>aria-valuemax</code>, and <code>aria-valuenow</code>.</li>
-      <li>Indeterminate mode removes those value attributes, so provide a clear label through nearby text or <code>aria-label</code>.</li>
-      <li>Because the primitive does not render a label, owners are responsible for visible context and contrast.</li>
+      <li>
+        Determinate mode sets <code>aria-valuemin</code>, <code>aria-valuemax</code>, and
+        <code>aria-valuenow</code>.
+      </li>
+      <li>
+        Indeterminate mode removes those value attributes, so provide a clear label through nearby
+        text or <code>aria-label</code>.
+      </li>
+      <li>
+        Use <code>ariaValueText</code> when the numeric value needs a human-readable equivalent.
+      </li>
+      <li>
+        Because the primitive does not render a label, owners are responsible for visible context
+        and contrast.
+      </li>
     </ul>
   </section>
 </article>

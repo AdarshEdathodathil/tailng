@@ -1,7 +1,10 @@
 <div
   tngProgressBar
+  #progressBar="tngProgressBar"
   class="tng-progress-bar"
   [attr.aria-label]="ariaLabel()"
+  [attr.aria-labelledby]="ariaLabelledby()"
+  [ariaValueText]="ariaValueText()"
   [indeterminate]="indeterminate()"
   [max]="max()"
   [min]="min()"
@@ -10,7 +13,6 @@
   <span
     tngProgressBarIndicator
     class="tng-progress-bar-indicator"
-    [attr.data-indeterminate]="indeterminate() ? '' : null"
-    [style.width.%]="indeterminate() ? 40 : indicatorPercent()"
+    [style.width.%]="indeterminate() ? 40 : progressBar.percent()"
   ></span>
 </div>

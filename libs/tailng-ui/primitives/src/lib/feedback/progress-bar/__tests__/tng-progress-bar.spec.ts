@@ -25,19 +25,22 @@ function getByTestId<T extends Element>(
     <div
       tngProgressBar
       data-testid="progress-bar"
+      [ariaValueText]="ariaValueText()"
       [indeterminate]="indeterminate()"
       [max]="max()"
       [min]="min()"
       [value]="value()"
-    ></div>
-    <span tngProgressBarIndicator data-testid="progress-indicator"></span>
+    >
+      <span tngProgressBarIndicator data-testid="progress-indicator"></span>
+    </div>
   `,
 })
 class ProgressBarPrimitivesHostComponent {
+  public readonly ariaValueText = signal<string | null>(null);
   public readonly indeterminate = signal(false);
-  public readonly max = signal(100);
-  public readonly min = signal(0);
-  public readonly value = signal(0);
+  public readonly max = signal<number | string>(100);
+  public readonly min = signal<number | string>(0);
+  public readonly value = signal<number | string>(0);
 }
 
 describe('tng-progress-bar primitives', () => {
@@ -72,18 +75,23 @@ describe('tng-progress-bar primitives', () => {
     const fixture = TestBed.configureTestingModule({
       imports: [ProgressBarPrimitivesHostComponent],
     }).createComponent(ProgressBarPrimitivesHostComponent);
-    fixture.componentInstance.min.set(10);
-    fixture.componentInstance.max.set(210);
-    fixture.componentInstance.value.set(85);
+    fixture.componentInstance.min.set('10');
+    fixture.componentInstance.max.set('210');
+    fixture.componentInstance.value.set('85');
     fixture.detectChanges();
 
     const progressBar = getByTestId<HTMLElement>(fixture, 'progress-bar');
     expect(progressBar.getAttribute('data-slot')).toBe('progress-bar');
+    expect(progressBar.getAttribute('data-state')).toBe('determinate');
     expect(progressBar.getAttribute('role')).toBe('progressbar');
     expect(progressBar.getAttribute('aria-valuemin')).toBe('10');
     expect(progressBar.getAttribute('aria-valuemax')).toBe('210');
     expect(progressBar.getAttribute('aria-valuenow')).toBe('85');
     expect(progressBar.hasAttribute('data-indeterminate')).toBe(false);
+
+    const indicator = getByTestId<HTMLElement>(fixture, 'progress-indicator');
+    expect(indicator.getAttribute('data-state')).toBe('determinate');
+    expect(indicator.hasAttribute('data-indeterminate')).toBe(false);
   });
 
   it('clamps invalid range/value combinations to a safe progress range', () => {
@@ -114,15 +122,35 @@ describe('tng-progress-bar primitives', () => {
     expect(progressBar.getAttribute('aria-valuemax')).toBeNull();
     expect(progressBar.getAttribute('aria-valuenow')).toBeNull();
     expect(progressBar.hasAttribute('data-indeterminate')).toBe(true);
+
+    const indicator = getByTestId<HTMLElement>(fixture, 'progress-indicator');
+    expect(progressBar.getAttribute('data-state')).toBe('indeterminate');
+    expect(indicator.getAttribute('data-state')).toBe('indeterminate');
+    expect(indicator.hasAttribute('data-indeterminate')).toBe(true);
   });
 
-  it('applies data-slot hook on the indicator directive', () => {
+  it('exposes normalized range and percent and forwards aria-valuetext', () => {
     const fixture = TestBed.configureTestingModule({
       imports: [ProgressBarPrimitivesHostComponent],
     }).createComponent(ProgressBarPrimitivesHostComponent);
+    fixture.componentInstance.min.set(50);
+    fixture.componentInstance.max.set(150);
+    fixture.componentInstance.value.set(75);
+    fixture.componentInstance.ariaValueText.set('One quarter complete');
     fixture.detectChanges();
 
+    const progressBar = getByTestId<HTMLElement>(fixture, 'progress-bar');
     const indicator = getByTestId<HTMLElement>(fixture, 'progress-indicator');
     expect(indicator.getAttribute('data-slot')).toBe('progress-bar-indicator');
+    expect(progressBar.getAttribute('aria-valuetext')).toBe('One quarter complete');
+
+    const directive = fixture.debugElement.children[0].injector.get(TngProgressBar);
+    expect(directive.range()).toEqual({ min: 50, max: 150, value: 75 });
+    expect(directive.percent()).toBe(25);
+
+    fixture.componentInstance.value.set(200);
+    fixture.detectChanges();
+    expect(directive.range()).toEqual({ min: 50, max: 150, value: 150 });
+    expect(directive.percent()).toBe(100);
   });
 });

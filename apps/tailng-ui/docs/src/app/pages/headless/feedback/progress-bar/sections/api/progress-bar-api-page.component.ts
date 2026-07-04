@@ -9,8 +9,8 @@ import { TngCodeBlockComponent } from '@tailng-ui/components';
 })
 export class HeadlessProgressBarApiPageComponent {
   protected readonly rootCode = [
-    '<div tngProgressBar [min]="0" [max]="100" [value]="68" class="progress-track">',
-    '  <span tngProgressBarIndicator [style.width.%]="68" class="progress-indicator"></span>',
+    '<div tngProgressBar aria-label="Upload progress" [min]="0" [max]="100" [value]="68" #progress="tngProgressBar" class="progress-track">',
+    '  <span tngProgressBarIndicator [style.width.%]="progress.percent()" class="progress-indicator"></span>',
     '</div>',
     '',
   ].join('\n');

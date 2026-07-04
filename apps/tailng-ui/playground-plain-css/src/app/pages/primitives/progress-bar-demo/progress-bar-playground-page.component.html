@@ -3,14 +3,24 @@
     <section class="card">
       <h2>Primitives (`tngProgressBar`)</h2>
       <div class="stack">
-        <div tngProgressBar [value]="completion" class="primitive-track">
+        <div
+          tngProgressBar
+          aria-label="Upload progress"
+          [value]="completion"
+          class="primitive-track"
+        >
           <span
             tngProgressBarIndicator
             class="primitive-indicator"
             [style.width.%]="completion"
           ></span>
         </div>
-        <div tngProgressBar [indeterminate]="true" class="primitive-track">
+        <div
+          tngProgressBar
+          aria-label="Loading data"
+          [indeterminate]="true"
+          class="primitive-track"
+        >
           <span tngProgressBarIndicator class="primitive-indicator indeterminate"></span>
         </div>
       </div>
@@ -20,7 +30,7 @@
       <h2>Components (`tng-progress-bar`)</h2>
       <div class="stack">
         <tng-progress-bar [value]="completion" ariaLabel="Upload progress"></tng-progress-bar>
-        <tng-progress-bar [value]="34"></tng-progress-bar>
+        <tng-progress-bar [value]="34" ariaLabel="Background sync"></tng-progress-bar>
         <tng-progress-bar [indeterminate]="true" ariaLabel="Loading data"></tng-progress-bar>
       </div>
     </section>

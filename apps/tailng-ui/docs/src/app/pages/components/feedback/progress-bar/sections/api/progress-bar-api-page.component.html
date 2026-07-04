@@ -49,7 +49,9 @@
             <td><code>max</code></td>
             <td><code>number</code></td>
             <td><code>100</code></td>
-            <td>Upper bound used to clamp <code>value</code>; never falls below <code>min</code>.</td>
+            <td>
+              Upper bound used to clamp <code>value</code>; never falls below <code>min</code>.
+            </td>
           </tr>
           <tr>
             <td><code>value</code></td>
@@ -61,13 +63,28 @@
             <td><code>indeterminate</code></td>
             <td><code>boolean</code></td>
             <td><code>false</code></td>
-            <td>Hides <code>aria-valuenow</code>, <code>aria-valuemin</code>, and <code>aria-valuemax</code>.</td>
+            <td>
+              Hides <code>aria-valuenow</code>, <code>aria-valuemin</code>, and
+              <code>aria-valuemax</code>.
+            </td>
           </tr>
           <tr>
             <td><code>ariaLabel</code></td>
             <td><code>string | null</code></td>
             <td><code>null</code></td>
-            <td>Supplies an explicit accessible name when surrounding context is not enough.</td>
+            <td>Supplies a direct accessible name. Use this or <code>ariaLabelledby</code>.</td>
+          </tr>
+          <tr>
+            <td><code>ariaLabelledby</code></td>
+            <td><code>string | null</code></td>
+            <td><code>null</code></td>
+            <td>References the ID of visible text that names the progress bar.</td>
+          </tr>
+          <tr>
+            <td><code>ariaValueText</code></td>
+            <td><code>string | null</code></td>
+            <td><code>null</code></td>
+            <td>Provides a human-readable value such as “Three of five files”.</td>
           </tr>
         </tbody>
       </table>

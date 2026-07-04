@@ -30,6 +30,8 @@ function getRequired<T extends Element>(root: ParentNode, selector: string): T {
     <tng-progress-bar
       data-testid="progress-host"
       [ariaLabel]="ariaLabel()"
+      [ariaLabelledby]="ariaLabelledby()"
+      [ariaValueText]="ariaValueText()"
       [indeterminate]="indeterminate()"
       [max]="max()"
       [min]="min()"
@@ -39,6 +41,8 @@ function getRequired<T extends Element>(root: ParentNode, selector: string): T {
 })
 class ProgressBarComponentHostComponent {
   public readonly ariaLabel = signal<string | null>('Upload progress');
+  public readonly ariaLabelledby = signal<string | null>(null);
+  public readonly ariaValueText = signal<string | null>(null);
   public readonly indeterminate = signal(false);
   public readonly max = signal(100);
   public readonly min = signal(0);
@@ -72,12 +76,14 @@ describe('tng-progress-bar component', () => {
     const indicator = getRequired<HTMLElement>(host, '[data-slot="progress-bar-indicator"]');
 
     expect(root.getAttribute('role')).toBe('progressbar');
+    expect(root.getAttribute('data-state')).toBe('determinate');
     expect(root.getAttribute('aria-label')).toBe('Upload progress');
     expect(root.getAttribute('aria-valuemin')).toBe('0');
     expect(root.getAttribute('aria-valuemax')).toBe('100');
     expect(root.getAttribute('aria-valuenow')).toBe('60');
     expect(root.hasAttribute('data-indeterminate')).toBe(false);
     expect(indicator.style.width).toBe('60%');
+    expect(indicator.getAttribute('data-state')).toBe('determinate');
   });
 
   it('switches to indeterminate mode without aria range values', () => {
@@ -97,7 +103,9 @@ describe('tng-progress-bar component', () => {
     expect(root.getAttribute('aria-valuemax')).toBeNull();
     expect(root.getAttribute('aria-valuenow')).toBeNull();
     expect(root.hasAttribute('data-indeterminate')).toBe(true);
+    expect(root.getAttribute('data-state')).toBe('indeterminate');
     expect(indicator.hasAttribute('data-indeterminate')).toBe(true);
+    expect(indicator.getAttribute('data-state')).toBe('indeterminate');
     expect(indicator.style.width).toBe('40%');
   });
 
@@ -120,5 +128,21 @@ describe('tng-progress-bar component', () => {
     expect(root.getAttribute('aria-valuemax')).toBe('80');
     expect(root.getAttribute('aria-valuenow')).toBe('80');
     expect(indicator.style.width).toBe('100%');
+  });
+
+  it('forwards referenced naming and human-readable value text', () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ProgressBarComponentHostComponent],
+    }).createComponent(ProgressBarComponentHostComponent);
+    fixture.componentInstance.ariaLabel.set(null);
+    fixture.componentInstance.ariaLabelledby.set('upload-label');
+    fixture.componentInstance.ariaValueText.set('Three of five files');
+    fixture.detectChanges();
+
+    const host = getByTestId<HTMLElement>(fixture, 'progress-host');
+    const root = getRequired<HTMLElement>(host, '[data-slot="progress-bar"]');
+    expect(root.getAttribute('aria-label')).toBeNull();
+    expect(root.getAttribute('aria-labelledby')).toBe('upload-label');
+    expect(root.getAttribute('aria-valuetext')).toBe('Three of five files');
   });
 });

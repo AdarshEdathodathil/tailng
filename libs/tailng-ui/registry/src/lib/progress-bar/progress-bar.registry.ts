@@ -1,6 +1,6 @@
 import type { RegistryItemSource } from '../registry.types';
 
-const progressBarPrimitiveTsTemplate = `import { booleanAttribute, Directive, HostBinding, input } from '@angular/core';
+const progressBarPrimitiveTsTemplate = `import { booleanAttribute, computed, Directive, HostBinding, inject, input } from '@angular/core';
 
 function normalizeFiniteNumber(value: number, fallback: number): number {
   return Number.isFinite(value) ? value : fallback;
@@ -40,6 +40,7 @@ export function resolveTngProgressBarRange(
   exportAs: 'tngProgressBar',
 })
 export class TngProgressBarPrimitive {
+  public readonly ariaValueText = input<string | null>(null);
   public readonly indeterminate = input<boolean, boolean | string>(false, {
     transform: booleanAttribute,
   });
@@ -56,13 +57,23 @@ export class TngProgressBarPrimitive {
       typeof value === 'number' ? value : Number(value),
   });
 
+  public readonly range = computed(() =>
+    resolveTngProgressBarRange(this.min(), this.max(), this.value()),
+  );
+
+  public readonly percent = computed(() => {
+    const range = this.range();
+    const denominator = range.max - range.min;
+    return denominator <= 0 ? 100 : ((range.value - range.min) / denominator) * 100;
+  });
+
   @HostBinding('attr.aria-valuemax')
   protected get ariaValueMaxAttr(): string | null {
     if (this.indeterminate()) {
       return null;
     }
 
-    return String(this.range.max);
+    return String(this.range().max);
   }
 
   @HostBinding('attr.aria-valuemin')
@@ -71,7 +82,7 @@ export class TngProgressBarPrimitive {
       return null;
     }
 
-    return String(this.range.min);
+    return String(this.range().min);
   }
 
   @HostBinding('attr.aria-valuenow')
@@ -80,12 +91,22 @@ export class TngProgressBarPrimitive {
       return null;
     }
 
-    return String(this.range.value);
+    return String(this.range().value);
+  }
+
+  @HostBinding('attr.aria-valuetext')
+  protected get ariaValueTextAttr(): string | null {
+    return this.ariaValueText();
   }
 
   @HostBinding('attr.data-indeterminate')
   protected get dataIndeterminateAttr(): '' | null {
     return this.indeterminate() ? '' : null;
+  }
+
+  @HostBinding('attr.data-state')
+  protected get dataStateAttr(): 'determinate' | 'indeterminate' {
+    return this.indeterminate() ? 'indeterminate' : 'determinate';
   }
 
   @HostBinding('attr.data-slot')
@@ -94,13 +115,6 @@ export class TngProgressBarPrimitive {
   @HostBinding('attr.role')
   protected readonly roleAttr = 'progressbar' as const;
 
-  private get range(): Readonly<{
-    max: number;
-    min: number;
-    value: number;
-  }> {
-    return resolveTngProgressBarRange(this.min(), this.max(), this.value());
-  }
 }
 
 @Directive({
@@ -108,12 +122,31 @@ export class TngProgressBarPrimitive {
   exportAs: 'tngProgressBarIndicator',
 })
 export class TngProgressBarIndicatorPrimitive {
+  private readonly progressBar = inject(TngProgressBarPrimitive, {
+    optional: true,
+    skipSelf: true,
+  });
+
+  @HostBinding('attr.data-indeterminate')
+  protected get dataIndeterminateAttr(): '' | null {
+    return this.progressBar?.indeterminate() ? '' : null;
+  }
+
   @HostBinding('attr.data-slot')
   protected readonly dataSlot = 'progress-bar-indicator' as const;
+
+  @HostBinding('attr.data-state')
+  protected get dataStateAttr(): 'determinate' | 'indeterminate' | null {
+    if (this.progressBar === null) {
+      return null;
+    }
+
+    return this.progressBar.indeterminate() ? 'indeterminate' : 'determinate';
+  }
 }
 `;
 
-const progressBarComponentTsTemplate = `import { booleanAttribute, Component, computed, input } from '@angular/core';
+const progressBarComponentTsTemplate = `import { booleanAttribute, Component, input } from '@angular/core';
 import {
   normalizeTngProgressBarMax,
   normalizeTngProgressBarMin,
@@ -140,6 +173,8 @@ export function toTngProgressBarPercent(min: number, max: number, value: number)
 })
 export class TngProgressBar {
   public readonly ariaLabel = input<string | null>(null);
+  public readonly ariaLabelledby = input<string | null>(null);
+  public readonly ariaValueText = input<string | null>(null);
   public readonly indeterminate = input<boolean, boolean | string>(false, {
     transform: booleanAttribute,
   });
@@ -156,16 +191,16 @@ export class TngProgressBar {
       typeof value === 'number' ? value : Number(value),
   });
 
-  protected readonly indicatorPercent = computed<number>(() =>
-    toTngProgressBarPercent(this.min(), this.max(), this.value()),
-  );
 }
 `;
 
 const progressBarTemplateHtml = `<div
   tngProgressBar
+  #progressBar="tngProgressBar"
   class="tng-progress-bar"
   [attr.aria-label]="ariaLabel()"
+  [attr.aria-labelledby]="ariaLabelledby()"
+  [ariaValueText]="ariaValueText()"
   [indeterminate]="indeterminate()"
   [max]="max()"
   [min]="min()"
@@ -174,8 +209,7 @@ const progressBarTemplateHtml = `<div
   <span
     tngProgressBarIndicator
     class="tng-progress-bar-indicator"
-    [attr.data-indeterminate]="indeterminate() ? '' : null"
-    [style.width.%]="indeterminate() ? 40 : indicatorPercent()"
+    [style.width.%]="indeterminate() ? 40 : progressBar.percent()"
   ></span>
 </div>
 `;
@@ -186,24 +220,31 @@ const progressBarTemplateCss = `:host {
 }
 
 .tng-progress-bar {
-  background: var(--tng-semantic-background-surface, #e2e8f0);
-  border-radius: 9999px;
-  height: 0.625rem;
+  background: var(
+    --tng-progress-bar-track,
+    var(--tng-semantic-background-muted, #e2e8f0)
+  );
+  border-radius: var(--tng-progress-bar-radius, 9999px);
+  height: var(--tng-progress-bar-height, 0.625rem);
   overflow: hidden;
   position: relative;
   width: 100%;
 }
 
 .tng-progress-bar-indicator {
-  background: var(--tng-semantic-accent-brand, #2563eb);
+  background: var(
+    --tng-progress-bar-indicator,
+    var(--tng-semantic-accent-brand, #2563eb)
+  );
   border-radius: inherit;
   display: block;
   height: 100%;
-  transition: width 180ms ease;
+  transition: width var(--tng-progress-bar-transition-duration, 180ms) ease;
 }
 
 .tng-progress-bar-indicator[data-indeterminate] {
-  animation: tng-progress-bar-indeterminate 1.1s ease-in-out infinite;
+  animation: tng-progress-bar-indeterminate
+    var(--tng-progress-bar-indeterminate-duration, 1.1s) ease-in-out infinite;
 }
 
 @keyframes tng-progress-bar-indeterminate {
@@ -212,6 +253,17 @@ const progressBarTemplateCss = `:host {
   }
   100% {
     transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tng-progress-bar-indicator {
+    transition: none;
+  }
+
+  .tng-progress-bar-indicator[data-indeterminate] {
+    animation: none;
+    transform: translateX(75%);
   }
 }
 `;

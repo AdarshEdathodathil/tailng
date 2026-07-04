@@ -1,4 +1,4 @@
-import { booleanAttribute, Directive, HostBinding, input } from '@angular/core';
+import { booleanAttribute, computed, Directive, HostBinding, inject, input } from '@angular/core';
 
 function normalizeFiniteNumber(value: number, fallback: number): number {
   return Number.isFinite(value) ? value : fallback;
@@ -38,6 +38,7 @@ export function resolveTngProgressBarRange(
   exportAs: 'tngProgressBar',
 })
 export class TngProgressBar {
+  public readonly ariaValueText = input<string | null>(null);
   public readonly indeterminate = input<boolean, boolean | string>(false, {
     transform: booleanAttribute,
   });
@@ -54,13 +55,23 @@ export class TngProgressBar {
       typeof value === 'number' ? value : Number(value),
   });
 
+  public readonly range = computed(() =>
+    resolveTngProgressBarRange(this.min(), this.max(), this.value()),
+  );
+
+  public readonly percent = computed(() => {
+    const range = this.range();
+    const denominator = range.max - range.min;
+    return denominator <= 0 ? 100 : ((range.value - range.min) / denominator) * 100;
+  });
+
   @HostBinding('attr.aria-valuemax')
   protected get ariaValueMaxAttr(): string | null {
     if (this.indeterminate()) {
       return null;
     }
 
-    return String(this.range.max);
+    return String(this.range().max);
   }
 
   @HostBinding('attr.aria-valuemin')
@@ -69,7 +80,7 @@ export class TngProgressBar {
       return null;
     }
 
-    return String(this.range.min);
+    return String(this.range().min);
   }
 
   @HostBinding('attr.aria-valuenow')
@@ -78,7 +89,12 @@ export class TngProgressBar {
       return null;
     }
 
-    return String(this.range.value);
+    return String(this.range().value);
+  }
+
+  @HostBinding('attr.aria-valuetext')
+  protected get ariaValueTextAttr(): string | null {
+    return this.ariaValueText();
   }
 
   @HostBinding('attr.data-indeterminate')
@@ -86,19 +102,16 @@ export class TngProgressBar {
     return this.indeterminate() ? '' : null;
   }
 
+  @HostBinding('attr.data-state')
+  protected get dataStateAttr(): 'determinate' | 'indeterminate' {
+    return this.indeterminate() ? 'indeterminate' : 'determinate';
+  }
+
   @HostBinding('attr.data-slot')
   protected readonly dataSlot = 'progress-bar' as const;
 
   @HostBinding('attr.role')
   protected readonly roleAttr = 'progressbar' as const;
-
-  private get range(): Readonly<{
-    max: number;
-    min: number;
-    value: number;
-  }> {
-    return resolveTngProgressBarRange(this.min(), this.max(), this.value());
-  }
 }
 
 @Directive({
@@ -106,6 +119,22 @@ export class TngProgressBar {
   exportAs: 'tngProgressBarIndicator',
 })
 export class TngProgressBarIndicator {
+  private readonly progressBar = inject(TngProgressBar, { optional: true, skipSelf: true });
+
+  @HostBinding('attr.data-indeterminate')
+  protected get dataIndeterminateAttr(): '' | null {
+    return this.progressBar?.indeterminate() ? '' : null;
+  }
+
   @HostBinding('attr.data-slot')
   protected readonly dataSlot = 'progress-bar-indicator' as const;
+
+  @HostBinding('attr.data-state')
+  protected get dataStateAttr(): 'determinate' | 'indeterminate' | null {
+    if (this.progressBar === null) {
+      return null;
+    }
+
+    return this.progressBar.indeterminate() ? 'indeterminate' : 'determinate';
+  }
 }

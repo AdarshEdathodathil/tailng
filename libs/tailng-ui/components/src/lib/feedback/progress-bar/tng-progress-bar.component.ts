@@ -1,4 +1,4 @@
-import { booleanAttribute, Component, computed, input } from '@angular/core';
+import { booleanAttribute, Component, input } from '@angular/core';
 import {
   normalizeTngProgressBarMax,
   normalizeTngProgressBarMin,
@@ -25,6 +25,8 @@ export function toTngProgressBarPercent(min: number, max: number, value: number)
 })
 export class TngProgressBarComponent {
   public readonly ariaLabel = input<string | null>(null);
+  public readonly ariaLabelledby = input<string | null>(null);
+  public readonly ariaValueText = input<string | null>(null);
   public readonly indeterminate = input<boolean, boolean | string>(false, {
     transform: booleanAttribute,
   });
@@ -40,9 +42,5 @@ export class TngProgressBarComponent {
     transform: (value: number | string): number =>
       typeof value === 'number' ? value : Number(value),
   });
-
-  protected readonly indicatorPercent = computed<number>(() =>
-    toTngProgressBarPercent(this.min(), this.max(), this.value()),
-  );
 }
 export { TngProgressBarComponent as TngProgressBar };

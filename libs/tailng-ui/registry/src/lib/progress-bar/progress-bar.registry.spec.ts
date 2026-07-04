@@ -14,11 +14,20 @@ describe('progress-bar registry item', () => {
     );
     expect(componentFile?.content).toContain('export class TngProgressBar');
     expect(componentFile?.content).toContain('toTngProgressBarPercent');
+    expect(componentFile?.content).toContain('ariaLabelledby');
 
     const primitiveFile = progressBarRegistryItem.files.find((file) =>
       file.path.endsWith('tailng-ui/progress-bar/tng-progress-bar-primitive.ts'),
     );
     expect(primitiveFile?.content).toContain('export class TngProgressBarPrimitive');
+    expect(primitiveFile?.content).toContain('readonly percent = computed');
+    expect(primitiveFile?.content).toContain("HostBinding('attr.data-state')");
+
+    const cssFile = progressBarRegistryItem.files.find((file) =>
+      file.path.endsWith('tailng-ui/progress-bar/tng-progress-bar.css'),
+    );
+    expect(cssFile?.content).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(cssFile?.content).toContain('--tng-progress-bar-track');
 
     const indexFile = progressBarRegistryItem.files.find((file) =>
       file.path.endsWith('tailng-ui/progress-bar/index.ts'),

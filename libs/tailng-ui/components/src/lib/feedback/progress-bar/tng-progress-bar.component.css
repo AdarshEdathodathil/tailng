@@ -4,24 +4,36 @@
 }
 
 .tng-progress-bar {
-  background: var(--tng-semantic-background-surface);
-  border-radius: 9999px;
-  height: 0.625rem;
+  background: var(--tng-progress-bar-track, var(--tng-semantic-background-muted, #e2e8f0));
+  border-radius: var(--tng-progress-bar-radius, 9999px);
+  height: var(--tng-progress-bar-height, 0.625rem);
   overflow: hidden;
   position: relative;
   width: 100%;
 }
 
 .tng-progress-bar-indicator {
-  background: var(--tng-semantic-accent-brand);
+  background: var(--tng-progress-bar-indicator, var(--tng-semantic-accent-brand, #2563eb));
   border-radius: inherit;
   display: block;
   height: 100%;
-  transition: width 180ms ease;
+  transition: width var(--tng-progress-bar-transition-duration, 180ms) ease;
 }
 
 .tng-progress-bar-indicator[data-indeterminate] {
-  animation: tng-progress-bar-indeterminate 1.1s ease-in-out infinite;
+  animation: tng-progress-bar-indeterminate var(--tng-progress-bar-indeterminate-duration, 1.1s)
+    ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tng-progress-bar-indicator {
+    transition: none;
+  }
+
+  .tng-progress-bar-indicator[data-indeterminate] {
+    animation: none;
+    transform: translateX(75%);
+  }
 }
 
 @keyframes tng-progress-bar-indeterminate {
