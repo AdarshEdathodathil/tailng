@@ -49,7 +49,8 @@ export const COMPONENTS_GETTING_STARTED_GROUP: ComponentsDocsGroup = {
       id: 'configure-theme',
       slug: 'configure-theme',
       title: 'Configure Theme',
-      description: 'Apply and customize the TailNG theme using CSS variables, dark mode, and Tailwind integration.',
+      description:
+        'Apply and customize the TailNG theme using CSS variables, dark mode, and Tailwind integration.',
     },
     {
       id: 'signal-form-demo',
@@ -350,6 +351,12 @@ export const COMPONENTS_FEEDBACK_GROUP: ComponentsDocsGroup = {
       slug: 'progress-spinner',
       title: 'Progress Spinner',
       description: 'Circular determinate and indeterminate loading states with aria semantics.',
+    },
+    {
+      id: 'confetti',
+      slug: 'confetti',
+      title: 'Confetti',
+      description: 'Controlled decorative paper bursts for successful actions and milestones.',
     },
     {
       id: 'skeleton',

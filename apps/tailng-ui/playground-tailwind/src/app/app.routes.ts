@@ -11,9 +11,7 @@ export const appRoutes: Route[] = [
       {
         path: '',
         loadComponent: () =>
-          import('./pages/home/home-page.component').then(
-            (module) => module.HomePageComponent,
-          ),
+          import('./pages/home/home-page.component').then((module) => module.HomePageComponent),
       },
       {
         path: 'theme',
@@ -102,9 +100,9 @@ export const appRoutes: Route[] = [
       {
         path: 'separator',
         loadComponent: () =>
-          import(
-            './pages/primitives/separator-demo/separator-playground-page.component'
-          ).then((module) => module.SeparatorPlaygroundPageComponent),
+          import('./pages/primitives/separator-demo/separator-playground-page.component').then(
+            (module) => module.SeparatorPlaygroundPageComponent,
+          ),
       },
       {
         path: 'empty',
@@ -121,6 +119,13 @@ export const appRoutes: Route[] = [
           ).then((module) => module.ProgressBarPlaygroundPageComponent),
       },
       {
+        path: 'confetti',
+        loadComponent: () =>
+          import('./pages/components/confetti-demo/confetti-playground-page.component').then(
+            (module) => module.ConfettiPlaygroundPageComponent,
+          ),
+      },
+      {
         path: 'progress-spinner',
         loadComponent: () =>
           import(
@@ -130,9 +135,9 @@ export const appRoutes: Route[] = [
       {
         path: 'skeleton',
         loadComponent: () =>
-          import(
-            './pages/primitives/skeleton-demo/skeleton-playground-page.component'
-          ).then((module) => module.SkeletonPlaygroundPageComponent),
+          import('./pages/primitives/skeleton-demo/skeleton-playground-page.component').then(
+            (module) => module.SkeletonPlaygroundPageComponent,
+          ),
       },
       {
         path: 'input',
@@ -144,86 +149,86 @@ export const appRoutes: Route[] = [
       {
         path: 'label',
         loadComponent: () =>
-          import(
-            './pages/primitives/label-demo/label-playground-page.component'
-          ).then((module) => module.LabelPlaygroundPageComponent),
+          import('./pages/primitives/label-demo/label-playground-page.component').then(
+            (module) => module.LabelPlaygroundPageComponent,
+          ),
       },
       {
         path: 'input-otp',
         loadComponent: () =>
-          import(
-            './pages/components/input-otp-demo/input-otp-playground-page.component'
-          ).then((module) => module.InputOtpPlaygroundPageComponent),
+          import('./pages/components/input-otp-demo/input-otp-playground-page.component').then(
+            (module) => module.InputOtpPlaygroundPageComponent,
+          ),
       },
       {
         path: 'radio',
         loadComponent: () =>
-          import(
-            './pages/primitives/radio-demo/radio-playground-page.component'
-          ).then((module) => module.RadioPlaygroundPageComponent),
+          import('./pages/primitives/radio-demo/radio-playground-page.component').then(
+            (module) => module.RadioPlaygroundPageComponent,
+          ),
       },
       {
         path: 'checkbox',
         loadComponent: () =>
-          import(
-            './pages/primitives/checkbox-demo/checkbox-playground-page.component'
-          ).then((module) => module.CheckboxPlaygroundPageComponent),
+          import('./pages/primitives/checkbox-demo/checkbox-playground-page.component').then(
+            (module) => module.CheckboxPlaygroundPageComponent,
+          ),
       },
       {
         path: 'textarea',
         loadComponent: () =>
-          import(
-            './pages/primitives/textarea-demo/textarea-playground-page.component'
-          ).then((module) => module.TextareaPlaygroundPageComponent),
+          import('./pages/primitives/textarea-demo/textarea-playground-page.component').then(
+            (module) => module.TextareaPlaygroundPageComponent,
+          ),
       },
       {
         path: 'listbox',
         loadComponent: () =>
-          import(
-            './pages/primitives/listbox-demo/listbox-playground-page.component'
-          ).then((module) => module.ListboxPlaygroundPageComponent),
+          import('./pages/primitives/listbox-demo/listbox-playground-page.component').then(
+            (module) => module.ListboxPlaygroundPageComponent,
+          ),
       },
       {
         path: 'dialog',
         loadComponent: () =>
-          import(
-            './pages/components/dialog-demo/dialog-playground-page.component'
-          ).then((module) => module.DialogPlaygroundPageComponent),
+          import('./pages/components/dialog-demo/dialog-playground-page.component').then(
+            (module) => module.DialogPlaygroundPageComponent,
+          ),
       },
       {
         path: 'popover',
         loadComponent: () =>
-          import(
-            './pages/components/popover-demo/popover-playground-page.component'
-          ).then((module) => module.PopoverPlaygroundPageComponent),
+          import('./pages/components/popover-demo/popover-playground-page.component').then(
+            (module) => module.PopoverPlaygroundPageComponent,
+          ),
       },
       {
         path: 'datepicker',
         loadComponent: () =>
-          import(
-            './pages/components/datepicker-demo/datepicker-playground-page.component'
-          ).then((module) => module.DatepickerPlaygroundPageComponent),
+          import('./pages/components/datepicker-demo/datepicker-playground-page.component').then(
+            (module) => module.DatepickerPlaygroundPageComponent,
+          ),
       },
       {
         path: 'tooltip',
         loadComponent: () =>
-          import(
-            './pages/components/tooltip-demo/tooltip-playground-page.component'
-          ).then((module) => module.TooltipPlaygroundPageComponent),
+          import('./pages/components/tooltip-demo/tooltip-playground-page.component').then(
+            (module) => module.TooltipPlaygroundPageComponent,
+          ),
       },
       {
         path: 'toast',
         loadComponent: () =>
-          import(
-            './pages/components/toast-demo/toast-playground-page.component'
-          ).then((module) => module.ToastPlaygroundPageComponent),
+          import('./pages/components/toast-demo/toast-playground-page.component').then(
+            (module) => module.ToastPlaygroundPageComponent,
+          ),
       },
       {
         path: 'icons',
         loadComponent: () =>
-          import(
-            './pages/icons/icon-demo/icon-playground-page.component'
-          ).then((module) => module.IconPlaygroundPageComponent),
+          import('./pages/icons/icon-demo/icon-playground-page.component').then(
+            (module) => module.IconPlaygroundPageComponent,
+          ),
       },
       {
         path: 'context-menu',
@@ -235,9 +240,9 @@ export const appRoutes: Route[] = [
       {
         path: 'menubar',
         loadComponent: () =>
-          import(
-            './pages/components/menubar-demo/menubar-playground-page.component'
-          ).then((module) => module.MenubarPlaygroundPageComponent),
+          import('./pages/components/menubar-demo/menubar-playground-page.component').then(
+            (module) => module.MenubarPlaygroundPageComponent,
+          ),
       },
       {
         path: 'navigation-menu',
@@ -249,30 +254,30 @@ export const appRoutes: Route[] = [
       {
         path: 'breadcrumb',
         loadComponent: () =>
-          import(
-            './pages/components/breadcrumb-demo/breadcrumb-playground-page.component'
-          ).then((module) => module.BreadcrumbPlaygroundPageComponent),
+          import('./pages/components/breadcrumb-demo/breadcrumb-playground-page.component').then(
+            (module) => module.BreadcrumbPlaygroundPageComponent,
+          ),
       },
       {
         path: 'toolbar',
         loadComponent: () =>
-          import(
-            './pages/components/toolbar-demo/toolbar-playground-page.component'
-          ).then((module) => module.ToolbarPlaygroundPageComponent),
+          import('./pages/components/toolbar-demo/toolbar-playground-page.component').then(
+            (module) => module.ToolbarPlaygroundPageComponent,
+          ),
       },
       {
         path: 'tabs',
         loadComponent: () =>
-          import(
-            './pages/components/tabs-demo/tabs-playground-page.component'
-          ).then((module) => module.TabsPlaygroundPageComponent),
+          import('./pages/components/tabs-demo/tabs-playground-page.component').then(
+            (module) => module.TabsPlaygroundPageComponent,
+          ),
       },
       {
         path: 'stepper',
         loadComponent: () =>
-          import(
-            './pages/components/stepper-demo/stepper-playground-page.component'
-          ).then((module) => module.StepperPlaygroundPageComponent),
+          import('./pages/components/stepper-demo/stepper-playground-page.component').then(
+            (module) => module.StepperPlaygroundPageComponent,
+          ),
       },
       {
         path: 'toggle-group',
@@ -291,37 +296,37 @@ export const appRoutes: Route[] = [
       {
         path: 'switch',
         loadComponent: () =>
-          import(
-            './pages/components/switch-demo/switch-playground-page.component'
-          ).then((module) => module.SwitchPlaygroundPageComponent),
+          import('./pages/components/switch-demo/switch-playground-page.component').then(
+            (module) => module.SwitchPlaygroundPageComponent,
+          ),
       },
       {
         path: 'toggle',
         loadComponent: () =>
-          import(
-            './pages/components/toggle-demo/toggle-playground-page.component'
-          ).then((module) => module.TogglePlaygroundPageComponent),
+          import('./pages/components/toggle-demo/toggle-playground-page.component').then(
+            (module) => module.TogglePlaygroundPageComponent,
+          ),
       },
       {
         path: 'slider',
         loadComponent: () =>
-          import(
-            './pages/components/slider-demo/slider-playground-page.component'
-          ).then((module) => module.SliderPlaygroundPageComponent),
+          import('./pages/components/slider-demo/slider-playground-page.component').then(
+            (module) => module.SliderPlaygroundPageComponent,
+          ),
       },
       {
         path: 'chips',
         loadComponent: () =>
-          import(
-            './pages/components/chips-demo/chips-playground-page.component'
-          ).then((module) => module.ChipsPlaygroundPageComponent),
+          import('./pages/components/chips-demo/chips-playground-page.component').then(
+            (module) => module.ChipsPlaygroundPageComponent,
+          ),
       },
       {
         path: 'select',
         loadComponent: () =>
-          import(
-            './pages/components/select-demo/select-playground-page.component'
-          ).then((module) => module.SelectPlaygroundPageComponent),
+          import('./pages/components/select-demo/select-playground-page.component').then(
+            (module) => module.SelectPlaygroundPageComponent,
+          ),
       },
       {
         path: 'autocomplete',
@@ -340,30 +345,30 @@ export const appRoutes: Route[] = [
       {
         path: 'multiselect',
         loadComponent: () =>
-          import(
-            './pages/components/multiselect-demo/multiselect-playground-page.component'
-          ).then((module) => module.MultiselectPlaygroundPageComponent),
+          import('./pages/components/multiselect-demo/multiselect-playground-page.component').then(
+            (module) => module.MultiselectPlaygroundPageComponent,
+          ),
       },
       {
         path: 'grid',
         loadComponent: () =>
-          import(
-            './pages/components/grid-demo/grid-playground-page.component'
-          ).then((module) => module.GridPlaygroundPageComponent),
+          import('./pages/components/grid-demo/grid-playground-page.component').then(
+            (module) => module.GridPlaygroundPageComponent,
+          ),
       },
       {
         path: 'tree',
         loadComponent: () =>
-          import(
-            './pages/components/tree-demo/tree-playground-page.component'
-          ).then((module) => module.TreePlaygroundPageComponent),
+          import('./pages/components/tree-demo/tree-playground-page.component').then(
+            (module) => module.TreePlaygroundPageComponent,
+          ),
       },
       {
         path: 'drawer',
         loadComponent: () =>
-          import(
-            './pages/components/drawer-demo/drawer-playground-page.component'
-          ).then((module) => module.DrawerPlaygroundPageComponent),
+          import('./pages/components/drawer-demo/drawer-playground-page.component').then(
+            (module) => module.DrawerPlaygroundPageComponent,
+          ),
       },
       {
         path: 'bottom-sheet',

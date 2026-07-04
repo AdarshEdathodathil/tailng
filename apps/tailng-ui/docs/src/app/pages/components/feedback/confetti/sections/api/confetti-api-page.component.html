@@ -1,0 +1,72 @@
+<article class="confetti-doc">
+  <h2>API reference</h2>
+  <section id="component" class="confetti-block">
+    <h3>TngConfetti</h3>
+    <p>
+      A standalone component exported as both <code>TngConfetti</code> and
+      <code>TngConfettiComponent</code>.
+    </p>
+  </section>
+  <section id="inputs" class="confetti-block">
+    <h3>Inputs</h3>
+    <table class="confetti-table">
+      <tr>
+        <th>Name</th>
+        <th>Type / default</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td>active</td>
+        <td>boolean / false</td>
+        <td>Launch on a false-to-true transition.</td>
+      </tr>
+      <tr>
+        <td>origin</td>
+        <td>'bottom' | 'center' / 'bottom'</td>
+        <td>Burst origin.</td>
+      </tr>
+      <tr>
+        <td>variant</td>
+        <td>'paper' / 'paper'</td>
+        <td>V1 visual variant.</td>
+      </tr>
+      <tr>
+        <td>duration</td>
+        <td>number / 3000</td>
+        <td>Total lifecycle in milliseconds.</td>
+      </tr>
+      <tr>
+        <td>pieces</td>
+        <td>number / 120</td>
+        <td>Clamped to 0–300.</td>
+      </tr>
+      <tr>
+        <td>fullscreen</td>
+        <td>boolean / true</td>
+        <td>Viewport or positioned-container overlay.</td>
+      </tr>
+      <tr>
+        <td>reducedMotion</td>
+        <td>boolean | 'auto' / 'auto'</td>
+        <td>System preference or explicit override.</td>
+      </tr>
+      <tr>
+        <td>colors</td>
+        <td>string[] | null / null</td>
+        <td>Particle palette.</td>
+      </tr>
+      <tr>
+        <td>zIndex</td>
+        <td>number | null / null</td>
+        <td>Overlay stacking override.</td>
+      </tr>
+    </table>
+  </section>
+  <section id="output" class="confetti-block">
+    <h3>Output</h3>
+    <p>
+      <code>completed</code> emits once after a launch. Reset <code>active</code> to false before
+      launching again.
+    </p>
+  </section>
+</article>

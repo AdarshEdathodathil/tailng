@@ -6,6 +6,7 @@ export * from './lib/dropdown-menu/dropdown-menu.registry';
 export * from './lib/context-menu/context-menu.registry';
 export * from './lib/code-block/code-block.registry';
 export * from './lib/copy/copy.registry';
+export * from './lib/confetti/confetti.registry';
 export * from './lib/menubar/menubar.registry';
 export * from './lib/navigation-menu/navigation-menu.registry';
 export * from './lib/pagination/pagination.registry';

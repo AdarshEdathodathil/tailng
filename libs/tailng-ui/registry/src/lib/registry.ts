@@ -12,6 +12,7 @@ import { chipsRegistryItem } from './chips/chips.registry';
 import { codeBlockRegistryItem } from './code-block/code-block.registry';
 import { collapsibleRegistryItem } from './collapsible/collapsible.registry';
 import { comboboxRegistryItem } from './combobox/combobox.registry';
+import { confettiRegistryItem } from './confetti/confetti.registry';
 import { contextmenuRegistryItem } from './context-menu/context-menu.registry';
 import { copyRegistryItem } from './copy/copy.registry';
 import { dialogRegistryItem } from './dialog/dialog.registry';
@@ -69,6 +70,7 @@ const rawRegistry: readonly RegistryItemSource[] = [
   menuRegistryItem,
   contextmenuRegistryItem,
   codeBlockRegistryItem,
+  confettiRegistryItem,
   copyRegistryItem,
   menubarRegistryItem,
   navigationmenuRegistryItem,

@@ -1,0 +1,33 @@
+<article class="confetti-doc">
+  <h2>Examples</h2>
+  <section id="success-actions" class="confetti-block">
+    <h3>Payment and GST success</h3>
+    <div class="confetti-actions">
+      <button type="button" (click)="launch('bottom')">Payment received</button
+      ><button type="button" (click)="launch('center', true, ['#14b8a6', '#f59e0b', '#8b5cf6'])">
+        GST reconciled
+      </button>
+    </div>
+  </section>
+  <section id="contained-burst" class="confetti-block">
+    <h3>Contained burst</h3>
+    <div class="confetti-stage">
+      <button type="button" (click)="launch('bottom', false)">Celebrate this card</button
+      ><tng-confetti
+        [active]="active()"
+        [origin]="origin()"
+        [fullscreen]="fullscreen()"
+        [colors]="colors()"
+        [pieces]="160"
+        (completed)="complete()"
+      />
+    </div>
+  </section>
+  <section id="controlled-reset" class="confetti-block">
+    <h3>Controlled reset</h3>
+    <pre class="confetti-code">
+&lt;tng-confetti [active]="saved()" (completed)="saved.set(false)" /&gt;</pre
+    >
+    <p>Resetting in <code>completed</code> arms the next false-to-true launch.</p>
+  </section>
+</article>

@@ -71,6 +71,10 @@ const registryInstallMetadata: Readonly<Record<string, RegistryInstallMetadata>>
     importPath: './tailng-ui/checkbox',
     importSymbols: ['TngCheckbox', 'TngCheckboxPrimitive'],
   },
+  confetti: {
+    importPath: './tailng-ui/confetti',
+    importSymbols: ['TngConfetti'],
+  },
   chips: {
     importPath: './tailng-ui/chips',
     importSymbols: ['TngChips', 'TngChipsPrimitive'],

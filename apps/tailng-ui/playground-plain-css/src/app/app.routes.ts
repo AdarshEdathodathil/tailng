@@ -119,6 +119,13 @@ export const appRoutes: Route[] = [
           ).then((module) => module.ProgressBarPlaygroundPageComponent),
       },
       {
+        path: 'confetti',
+        loadComponent: () =>
+          import('./pages/components/confetti-demo/confetti-playground-page.component').then(
+            (module) => module.ConfettiPlaygroundPageComponent,
+          ),
+      },
+      {
         path: 'progress-spinner',
         loadComponent: () =>
           import(

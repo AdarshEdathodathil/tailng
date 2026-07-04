@@ -1,12 +1,11 @@
 /**
  * @vitest-environment node
  */
-import { afterEach, expect, it, vi } from 'vitest';
-
 import { getRegistryItem, listRegistryItemNames, type RegistryItem } from '@tailng-ui/registry';
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
+import { afterEach, expect, it, vi } from 'vitest';
 import { runCli } from './index';
 
 type CliRegistryModule = Readonly<{
@@ -50,11 +49,15 @@ async function captureCli(
 ): Promise<Readonly<{ exitCode: number; stderr: string; stdout: string }>> {
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
-  const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(((chunk: string | Uint8Array) => {
+  const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(((
+    chunk: string | Uint8Array,
+  ) => {
     stdoutChunks.push(toCapturedText(chunk));
     return true;
   }) as typeof process.stdout.write);
-  const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(((chunk: string | Uint8Array) => {
+  const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(((
+    chunk: string | Uint8Array,
+  ) => {
     stderrChunks.push(toCapturedText(chunk));
     return true;
   }) as typeof process.stderr.write);
@@ -144,7 +147,12 @@ it('tailng cli integration: add without a component name prints help and exits n
 it('tailng cli integration: invalid --cwd prints an error and exits non-zero', async (): Promise<void> => {
   const targetRoot = await createTargetRoot();
   const missingDirectory = path.join(targetRoot, 'does-not-exist');
-  const { exitCode, stderr, stdout } = await captureCli(['add', 'button', '--cwd', missingDirectory]);
+  const { exitCode, stderr, stdout } = await captureCli([
+    'add',
+    'button',
+    '--cwd',
+    missingDirectory,
+  ]);
 
   expect(exitCode).toBe(1);
   expect(stdout).toBe('');
@@ -220,10 +228,9 @@ it('tailng cli integration: registry paths resolving outside the target root are
     listRegistryItemNames: () => ['danger'],
   };
 
-  const { exitCode, stderr, stdout } = await captureCli(
-    ['add', 'danger', '--cwd', targetRoot],
-    { registry: maliciousRegistry },
-  );
+  const { exitCode, stderr, stdout } = await captureCli(['add', 'danger', '--cwd', targetRoot], {
+    registry: maliciousRegistry,
+  });
 
   expect(exitCode).toBe(1);
   expect(stdout).toBe('');
@@ -480,9 +487,7 @@ it('tailng cli integration: add writes button-toggle source files', async (): Pr
 
   expect(exitCode).toBe(0);
   expect(
-    await pathExists(
-      path.join(targetRoot, 'src/app/tailng-ui/button-toggle/tng-button-toggle.ts'),
-    ),
+    await pathExists(path.join(targetRoot, 'src/app/tailng-ui/button-toggle/tng-button-toggle.ts')),
   ).toBe(true);
   expect(
     await pathExists(
@@ -849,6 +854,22 @@ it('tailng cli integration: add writes progress-bar source files', async (): Pro
   ).toBe(true);
 });
 
+it('tailng cli integration: list and add support confetti', async (): Promise<void> => {
+  const targetRoot = await createTargetRoot();
+  expect(registryModule.listRegistryItemNames()).toContain('confetti');
+
+  const exitCode = await runCli(['add', 'confetti', '--cwd', targetRoot], {
+    registry: registryModule,
+  });
+  expect(exitCode).toBe(0);
+  expect(
+    await pathExists(path.join(targetRoot, 'src/app/tailng-ui/confetti/tng-confetti.ts')),
+  ).toBe(true);
+  expect(
+    await pathExists(path.join(targetRoot, 'src/app/tailng-ui/confetti/tng-confetti.utils.ts')),
+  ).toBe(true);
+});
+
 it('tailng cli integration: add writes progress-spinner source files', async (): Promise<void> => {
   const targetRoot = await createTargetRoot();
 
@@ -884,10 +905,7 @@ it('tailng cli integration: spinner alias resolves to progress-spinner source fi
   ).toBe(true);
   expect(
     await pathExists(
-      path.join(
-        targetRoot,
-        'src/app/tailng-ui/progress-spinner/tng-progress-spinner-primitive.ts',
-      ),
+      path.join(targetRoot, 'src/app/tailng-ui/progress-spinner/tng-progress-spinner-primitive.ts'),
     ),
   ).toBe(true);
 });
@@ -900,9 +918,9 @@ it('tailng cli integration: add writes skeleton source files', async (): Promise
   });
 
   expect(exitCode).toBe(0);
-  expect(await pathExists(path.join(targetRoot, 'src/app/tailng-ui/skeleton/tng-skeleton.ts'))).toBe(
-    true,
-  );
+  expect(
+    await pathExists(path.join(targetRoot, 'src/app/tailng-ui/skeleton/tng-skeleton.ts')),
+  ).toBe(true);
   expect(
     await pathExists(path.join(targetRoot, 'src/app/tailng-ui/skeleton/tng-skeleton-primitive.ts')),
   ).toBe(true);

@@ -847,6 +847,33 @@ export const docsComponentOutlineItemsBySlug: Readonly<
       { id: 'indeterminate-handoff', label: 'Indeterminate handoff' },
     ],
   },
+  confetti: {
+    overview: [
+      { id: 'imports', label: 'Import' },
+      { id: 'controlled-celebration', label: 'Controlled celebration' },
+      { id: 'accessibility-baseline', label: 'Accessibility baseline' },
+    ],
+    api: [
+      { id: 'component', label: 'Component' },
+      { id: 'inputs', label: 'Inputs' },
+      { id: 'output', label: 'Output' },
+    ],
+    styling: [
+      { id: 'css-variables', label: 'CSS variables' },
+      { id: 'container-overlay', label: 'Container overlay' },
+      { id: 'performance', label: 'Performance' },
+    ],
+    examples: [
+      { id: 'success-actions', label: 'Success actions' },
+      { id: 'contained-burst', label: 'Contained burst' },
+      { id: 'controlled-reset', label: 'Controlled reset' },
+    ],
+    'ownable-install': [
+      { id: 'install-from-registry', label: 'Install from registry' },
+      { id: 'generated-files', label: 'Generated files' },
+      { id: 'import-and-usage', label: 'Import and usage' },
+    ],
+  },
   radio: {
     overview: [
       { id: 'imports', label: 'Imports' },

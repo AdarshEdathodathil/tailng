@@ -1,0 +1,4 @@
+<article class="confetti-doc"><h2>Confetti overview</h2><p>Confetti renders a lightweight decorative paper burst after a successful action without blocking clicks or focus.</p>
+<section id="imports" class="confetti-block"><h3>Import</h3><pre class="confetti-code">import &#123; TngConfetti &#125; from '&#64;tailng-ui/components';</pre></section>
+<section id="controlled-celebration" class="confetti-block"><h3>Controlled celebration</h3><div class="confetti-actions"><button type="button" (click)="launch()">Celebrate</button></div><tng-confetti [active]="active()" (completed)="complete()"/></section>
+<section id="accessibility-baseline" class="confetti-block"><h3>Accessibility baseline</h3><p>The overlay is aria-hidden and pointer-transparent. Announce success separately with a toast, alert, or live region. System reduced-motion preferences are honored by default.</p></section></article>

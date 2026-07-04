@@ -1,0 +1,27 @@
+<article class="demo">
+  <h2>Confetti</h2>
+  <p>Controlled paper bursts remain decorative and never intercept input.</p>
+  <div class="actions">
+    <button type="button" (click)="launch('bottom')">Fullscreen bottom</button>
+    <button
+      type="button"
+      (click)="launch('center', true, false, ['#06b6d4', '#8b5cf6', '#f43f5e'])"
+    >
+      Center + palette
+    </button>
+    <button type="button" (click)="launch('bottom', false)">Contained burst</button>
+    <button type="button" (click)="launch('bottom', true, true)">Reduced-motion completion</button>
+  </div>
+  <section class="stage">
+    <strong>Container target</strong><span>Completions: {{ completions() }}</span>
+    <tng-confetti
+      [active]="active()"
+      [origin]="origin()"
+      [fullscreen]="fullscreen()"
+      [reducedMotion]="reducedMotion()"
+      [colors]="colors()"
+      [pieces]="140"
+      (completed)="onCompleted()"
+    />
+  </section>
+</article>

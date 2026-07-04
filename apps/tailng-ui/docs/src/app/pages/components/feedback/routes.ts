@@ -1,8 +1,5 @@
 import type { Routes } from '@angular/router';
-import {
-  COMPONENTS_FEEDBACK_GROUP,
-  toComponentsDocsRouteData,
-} from '../component-docs.data';
+import { COMPONENTS_FEEDBACK_GROUP, toComponentsDocsRouteData } from '../component-docs.data';
 
 const group = COMPONENTS_FEEDBACK_GROUP;
 const defaultItem = group.items[0];
@@ -26,6 +23,10 @@ const progressSpinnerItem = group.items.find((item) => item.slug === 'progress-s
 if (progressSpinnerItem === undefined) {
   throw new Error('Missing "progress-spinner" in components feedback docs group.');
 }
+const confettiItem = group.items.find((item) => item.slug === 'confetti');
+if (confettiItem === undefined) {
+  throw new Error('Missing "confetti" in components feedback docs group.');
+}
 const skeletonItem = group.items.find((item) => item.slug === 'skeleton');
 if (skeletonItem === undefined) {
   throw new Error('Missing "skeleton" in components feedback docs group.');
@@ -36,6 +37,7 @@ const feedbackLandingSlugs = new Set([
   emptyItem.slug,
   progressBarItem.slug,
   progressSpinnerItem.slug,
+  confettiItem.slug,
   skeletonItem.slug,
 ]);
 
@@ -68,6 +70,11 @@ export const COMPONENTS_FEEDBACK_ROUTES: Routes = [
       import('./progress-spinner/routes').then(
         (module) => module.COMPONENTS_FEEDBACK_PROGRESS_SPINNER_ROUTES,
       ),
+  },
+  {
+    path: confettiItem.slug,
+    loadChildren: () =>
+      import('./confetti/routes').then((module) => module.COMPONENTS_FEEDBACK_CONFETTI_ROUTES),
   },
   {
     path: skeletonItem.slug,

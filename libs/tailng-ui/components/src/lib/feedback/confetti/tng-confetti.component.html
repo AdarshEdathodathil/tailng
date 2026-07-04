@@ -1,0 +1,29 @@
+@if (running()) {
+  <div
+    class="tng-confetti-overlay"
+    aria-hidden="true"
+    data-slot="confetti"
+    [attr.data-fullscreen]="launchFullscreen()"
+    [attr.data-origin]="launchOrigin()"
+    [style.--tng-confetti-duration]="launchDuration() + 'ms'"
+    [style.--tng-confetti-z-index]="launchZIndex()"
+  >
+    @for (piece of renderedPieces(); track piece.id) {
+      <span
+        class="tng-confetti-piece"
+        [style.--tng-confetti-start-x]="piece.startX + '%'"
+        [style.--tng-confetti-start-y]="piece.startY + '%'"
+        [style.--tng-confetti-apex-x]="piece.apexX + '%'"
+        [style.--tng-confetti-apex-y]="piece.apexY + '%'"
+        [style.--tng-confetti-end-x]="piece.endX + '%'"
+        [style.--tng-confetti-end-y]="piece.endY + '%'"
+        [style.--tng-confetti-rotation]="piece.rotation + 'deg'"
+        [style.--tng-confetti-delay]="piece.delay + 'ms'"
+        [style.--tng-confetti-piece-duration]="piece.animationDuration + 'ms'"
+        [style.--tng-confetti-piece-color]="piece.color"
+        [style.--tng-confetti-scale]="piece.scale"
+        [style.--tng-confetti-aspect-ratio]="piece.aspectRatio"
+      ></span>
+    }
+  </div>
+}
