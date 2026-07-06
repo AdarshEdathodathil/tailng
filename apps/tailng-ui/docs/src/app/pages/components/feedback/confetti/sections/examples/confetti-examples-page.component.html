@@ -1,33 +1,194 @@
-<article class="confetti-doc">
-  <h2>Examples</h2>
-  <section id="success-actions" class="confetti-block">
-    <h3>Payment and GST success</h3>
-    <div class="confetti-actions">
-      <button type="button" (click)="launch('bottom')">Payment received</button
-      ><button type="button" (click)="launch('center', true, ['#14b8a6', '#f59e0b', '#8b5cf6'])">
-        GST reconciled
-      </button>
-    </div>
-  </section>
-  <section id="contained-burst" class="confetti-block">
-    <h3>Contained burst</h3>
-    <div class="confetti-stage">
-      <button type="button" (click)="launch('bottom', false)">Celebrate this card</button
-      ><tng-confetti
-        [active]="active()"
-        [origin]="origin()"
-        [fullscreen]="fullscreen()"
-        [colors]="colors()"
-        [pieces]="160"
-        (completed)="complete()"
-      />
-    </div>
-  </section>
-  <section id="controlled-reset" class="confetti-block">
-    <h3>Controlled reset</h3>
-    <pre class="confetti-code">
-&lt;tng-confetti [active]="saved()" (completed)="saved.set(false)" /&gt;</pre
+<article class="confetti-examples">
+  <h2 class="confetti-examples-title">Examples</h2>
+  <p class="confetti-examples-lead">
+    Use fullscreen bursts for major success events, contain celebrations inside focused surfaces,
+    and reset controlled state after every completed launch.
+  </p>
+
+  <section id="success-actions" class="confetti-examples-block">
+    <app-docs-example-tabs-section
+      heading="Payment and GST success"
+      description="Celebrate successful financial workflows with bottom or center-origin bursts."
+      ariaLabel="Confetti success action examples"
+      tabListAriaLabel="Confetti success action style variants"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
     >
-    <p>Resetting in <code>completed</code> arms the next false-to-true launch.</p>
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain-CSS"
+        panelTitle="Success actions (plain CSS)"
+        [codeTabs]="successPlainTabs"
+      >
+        <section class="confetti-success-actions confetti-success-actions--plain">
+          <button type="button" (click)="launch(successPlain)">Payment received</button>
+          <button
+            type="button"
+            (click)="launch(successPlain, 'center', ['#14b8a6', '#f59e0b', '#8b5cf6'])"
+          >
+            GST reconciled
+          </button>
+        </section>
+        <tng-confetti
+          [active]="successPlain.active()"
+          [origin]="successPlain.origin()"
+          [colors]="successPlain.colors()"
+          (completed)="complete(successPlain)"
+        />
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Success actions (Tailwind)"
+        [codeTabs]="successTailwindTabs"
+      >
+        <section
+          class="flex flex-wrap gap-3 rounded-xl border border-[var(--tng-semantic-border-subtle)] bg-[color-mix(in_srgb,var(--tng-semantic-background-surface)_88%,transparent)] p-4"
+        >
+          <button
+            class="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            type="button"
+            (click)="launch(successTailwind)"
+          >
+            Payment received
+          </button>
+          <button
+            class="rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white transition hover:bg-violet-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+            type="button"
+            (click)="launch(successTailwind, 'center', ['#14b8a6', '#f59e0b', '#8b5cf6'])"
+          >
+            GST reconciled
+          </button>
+        </section>
+        <tng-confetti
+          [active]="successTailwind.active()"
+          [origin]="successTailwind.origin()"
+          [colors]="successTailwind.colors()"
+          (completed)="complete(successTailwind)"
+        />
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="contained-burst" class="confetti-examples-block">
+    <app-docs-example-tabs-section
+      heading="Contained burst"
+      description="Set fullscreen to false inside a positioned, clipped ancestor to keep the effect local."
+      ariaLabel="Contained confetti examples"
+      tabListAriaLabel="Contained confetti style variants"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain-CSS"
+        panelTitle="Contained celebration (plain CSS)"
+        [codeTabs]="containedPlainTabs"
+      >
+        <section class="confetti-contained-card confetti-contained-card--plain">
+          <strong>Quarterly close complete</strong>
+          <p>The celebration remains clipped to this positioned card.</p>
+          <button type="button" (click)="launch(containedPlain)">Celebrate this card</button>
+          <tng-confetti
+            [active]="containedPlain.active()"
+            [fullscreen]="false"
+            [pieces]="90"
+            (completed)="complete(containedPlain)"
+          />
+        </section>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Contained celebration (Tailwind)"
+        [codeTabs]="containedTailwindTabs"
+      >
+        <section
+          class="relative grid min-h-56 content-center gap-3 overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+        >
+          <strong>Quarterly close complete</strong>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            The celebration remains clipped to this positioned card.
+          </p>
+          <button
+            class="w-fit rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+            type="button"
+            (click)="launch(containedTailwind)"
+          >
+            Celebrate this card
+          </button>
+          <tng-confetti
+            [active]="containedTailwind.active()"
+            [fullscreen]="false"
+            [pieces]="90"
+            (completed)="complete(containedTailwind)"
+          />
+        </section>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="controlled-reset" class="confetti-examples-block">
+    <app-docs-example-tabs-section
+      heading="Controlled reset"
+      description="Reset active from completed so every later false-to-true transition launches again."
+      ariaLabel="Controlled confetti reset examples"
+      tabListAriaLabel="Controlled confetti reset style variants"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain-CSS"
+        panelTitle="Repeatable celebration (plain CSS)"
+        [codeTabs]="resetPlainTabs"
+      >
+        <section class="confetti-reset-row confetti-reset-row--plain">
+          <button type="button" [disabled]="resetPlain.active()" (click)="launch(resetPlain)">
+            Celebrate again
+          </button>
+          <span aria-live="polite">Completed bursts: {{ resetPlain.completions() }}</span>
+        </section>
+        <tng-confetti
+          [active]="resetPlain.active()"
+          [duration]="1800"
+          (completed)="complete(resetPlain)"
+        />
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Repeatable celebration (Tailwind)"
+        [codeTabs]="resetTailwindTabs"
+      >
+        <section
+          class="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--tng-semantic-border-subtle)] bg-[color-mix(in_srgb,var(--tng-semantic-background-surface)_88%,transparent)] p-4"
+        >
+          <button
+            class="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            type="button"
+            [disabled]="resetTailwind.active()"
+            (click)="launch(resetTailwind)"
+          >
+            Celebrate again
+          </button>
+          <span aria-live="polite">Completed bursts: {{ resetTailwind.completions() }}</span>
+        </section>
+        <tng-confetti
+          [active]="resetTailwind.active()"
+          [duration]="1800"
+          (completed)="complete(resetTailwind)"
+        />
+      </ng-template>
+    </app-docs-example-tabs-section>
   </section>
 </article>

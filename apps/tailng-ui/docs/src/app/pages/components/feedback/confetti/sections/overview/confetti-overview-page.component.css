@@ -1,0 +1,62 @@
+:host {
+  display: block;
+}
+.confetti-overview {
+  display: grid;
+  gap: 1.25rem;
+  padding-bottom: 2rem;
+}
+.confetti-overview-title {
+  font-size: clamp(1.55rem, 1.5vw + 1rem, 2rem);
+  font-weight: 700;
+  margin: 0;
+}
+.confetti-overview-lead {
+  color: var(--tng-semantic-foreground-secondary);
+  line-height: 1.55;
+  margin: 0;
+  max-inline-size: 68ch;
+}
+.confetti-overview-block {
+  background: color-mix(in srgb, var(--tng-semantic-background-surface) 92%, transparent);
+  border: 1px solid var(--tng-semantic-border-subtle);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+.confetti-overview-preview--plain {
+  align-items: center;
+  background: color-mix(in srgb, var(--tng-semantic-background-canvas) 72%, transparent);
+  border: 1px solid var(--tng-semantic-border-subtle);
+  border-radius: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+.confetti-overview-preview--plain p {
+  margin: 0;
+}
+.confetti-overview-preview--plain button {
+  appearance: none;
+  background: var(--tng-semantic-accent-brand);
+  border: 0;
+  border-radius: 0.65rem;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  padding: 0.65rem 1rem;
+}
+.confetti-overview-preview--plain button:focus-visible {
+  outline: 2px solid var(--tng-semantic-accent-brand);
+  outline-offset: 2px;
+}
+.confetti-overview-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding-inline-start: 1.25rem;
+}

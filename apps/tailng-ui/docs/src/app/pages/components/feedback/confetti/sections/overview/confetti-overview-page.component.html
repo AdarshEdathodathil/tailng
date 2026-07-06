@@ -1,4 +1,77 @@
-<article class="confetti-doc"><h2>Confetti overview</h2><p>Confetti renders a lightweight decorative paper burst after a successful action without blocking clicks or focus.</p>
-<section id="imports" class="confetti-block"><h3>Import</h3><pre class="confetti-code">import &#123; TngConfetti &#125; from '&#64;tailng-ui/components';</pre></section>
-<section id="controlled-celebration" class="confetti-block"><h3>Controlled celebration</h3><div class="confetti-actions"><button type="button" (click)="launch()">Celebrate</button></div><tng-confetti [active]="active()" (completed)="complete()"/></section>
-<section id="accessibility-baseline" class="confetti-block"><h3>Accessibility baseline</h3><p>The overlay is aria-hidden and pointer-transparent. Announce success separately with a toast, alert, or live region. System reduced-motion preferences are honored by default.</p></section></article>
+<article class="confetti-overview">
+  <h2 class="confetti-overview-title">Confetti overview</h2>
+  <p class="confetti-overview-lead">
+    Confetti renders a lightweight decorative paper burst after a successful action without blocking
+    clicks or focus.
+  </p>
+
+  <section id="imports" class="confetti-overview-block">
+    <h3>Import</h3>
+    <tng-code-block
+      [code]="componentImportCode"
+      adapter="shiki"
+      language="ts"
+      title="Component import"
+      [theme]="codeBlockTheme()"
+      [lineNumbers]="false"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+  </section>
+
+  <section id="controlled-celebration" class="confetti-overview-block">
+    <app-docs-example-tabs-section
+      heading="Controlled celebration"
+      description="Trigger the same controlled confetti behavior from a plain CSS or Tailwind-authored success surface."
+      ariaLabel="Confetti overview examples"
+      tabListAriaLabel="Confetti overview style variants"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain-CSS"
+        panelTitle="Invoice success (plain CSS)"
+        [codeTabs]="plainCssCodeTabs"
+      >
+        <section class="confetti-overview-preview confetti-overview-preview--plain">
+          <p>Invoice created successfully.</p>
+          <button type="button" (click)="launch(plainActive)">Celebrate</button>
+        </section>
+        <tng-confetti [active]="plainActive()" (completed)="complete(plainActive)" />
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Invoice success (Tailwind)"
+        [codeTabs]="tailwindCodeTabs"
+      >
+        <section
+          class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--tng-semantic-border-subtle)] bg-[color-mix(in_srgb,var(--tng-semantic-background-surface)_88%,transparent)] p-4"
+        >
+          <p>Invoice created successfully.</p>
+          <button
+            class="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            type="button"
+            (click)="launch(tailwindActive)"
+          >
+            Celebrate
+          </button>
+        </section>
+        <tng-confetti [active]="tailwindActive()" (completed)="complete(tailwindActive)" />
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="accessibility-baseline" class="confetti-overview-block">
+    <h3>Accessibility baseline</h3>
+    <ul class="confetti-overview-list">
+      <li>The overlay is decorative, aria-hidden, and pointer-transparent.</li>
+      <li>Announce success separately with a toast, alert, or live region.</li>
+      <li>System reduced-motion preferences are honored by default.</li>
+    </ul>
+  </section>
+</article>

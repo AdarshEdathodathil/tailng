@@ -1,0 +1,108 @@
+:host {
+  display: block;
+}
+
+.confetti-examples {
+  display: grid;
+  gap: 1.25rem;
+  padding-bottom: 2rem;
+}
+
+.confetti-examples-title {
+  font-size: clamp(1.55rem, 1.5vw + 1rem, 2rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+.confetti-examples-lead {
+  color: var(--tng-semantic-foreground-secondary);
+  line-height: 1.55;
+  margin: 0;
+  max-inline-size: 68ch;
+}
+
+.confetti-examples-block {
+  background: color-mix(in srgb, var(--tng-semantic-background-surface) 92%, transparent);
+  border: 1px solid var(--tng-semantic-border-subtle);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.confetti-success-actions,
+.confetti-reset-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.confetti-success-actions--plain,
+.confetti-reset-row--plain {
+  background: color-mix(in srgb, var(--tng-semantic-background-canvas) 72%, transparent);
+  border: 1px solid var(--tng-semantic-border-subtle);
+  border-radius: 0.9rem;
+  padding: 1rem;
+}
+
+.confetti-success-actions--plain button,
+.confetti-contained-card--plain button,
+.confetti-reset-row--plain button {
+  appearance: none;
+  background: var(--tng-semantic-accent-brand);
+  border: 0;
+  border-radius: 0.65rem;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  min-height: 2.5rem;
+  padding: 0.6rem 0.95rem;
+  transition:
+    filter 160ms ease,
+    opacity 160ms ease;
+}
+
+.confetti-success-actions--plain button:hover,
+.confetti-contained-card--plain button:hover,
+.confetti-reset-row--plain button:hover {
+  filter: brightness(0.92);
+}
+
+.confetti-success-actions--plain button:focus-visible,
+.confetti-contained-card--plain button:focus-visible,
+.confetti-reset-row--plain button:focus-visible {
+  outline: 2px solid var(--tng-semantic-accent-brand);
+  outline-offset: 2px;
+}
+
+.confetti-contained-card {
+  min-height: 14rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.confetti-contained-card--plain {
+  background: color-mix(in srgb, var(--tng-semantic-background-canvas) 72%, transparent);
+  border: 1px solid var(--tng-semantic-border-subtle);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  place-content: center start;
+}
+
+.confetti-contained-card--plain p {
+  color: var(--tng-semantic-foreground-secondary);
+  margin: 0;
+}
+
+.confetti-contained-card--plain button {
+  justify-self: start;
+}
+
+.confetti-reset-row--plain button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
