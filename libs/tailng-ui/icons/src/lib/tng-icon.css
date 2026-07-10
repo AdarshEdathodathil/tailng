@@ -14,10 +14,10 @@
   align-items: center;
   color: currentColor;
   display: inline-flex;
-  font-size: 1em;
+  font-size: var(--tng-icon-size, 1em);
   justify-content: center;
 }
 
 .tng-icon__svg {
-  font-size: 1em;
+  font-size: var(--tng-icon-size, 1em);
 }

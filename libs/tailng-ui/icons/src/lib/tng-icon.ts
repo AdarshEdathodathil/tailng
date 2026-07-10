@@ -1,19 +1,13 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { NgIcon } from '@ng-icons/core';
 import { TNG_ICON_RESOLVER, type TngIconResolver } from './icons';
 import { bindIconSvgEffect } from './tng-icon.loader-effect';
-import { normalizeOptionalString } from './tng-icon.normalizers';
+import { normalizeIconSize, normalizeOptionalString } from './tng-icon.normalizers';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
+    '[style.--tng-icon-size]': 'size()',
     class: 'tng-icon',
   },
   imports: [NgIcon],
@@ -26,6 +20,9 @@ export class TngIcon {
   public readonly icon = input.required<string>();
   public readonly label = input<string | null, string | null | undefined>(null, {
     transform: normalizeOptionalString,
+  });
+  public readonly size = input<string | null, string | number | null | undefined>(null, {
+    transform: normalizeIconSize,
   });
   private readonly iconResolver: TngIconResolver = inject(TNG_ICON_RESOLVER);
   private readonly svgSignal = signal<string | null>(null);

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { TngMenuGroupLabel, TngMenubarItem, TngMenuItem, TngMenuSeparator } from '@tailng-ui/primitives';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TngMenubarComponent } from './tng-menubar.component';
 import { TngMenuComponent } from '../menu/tng-menu.component';
 
@@ -45,6 +45,55 @@ async function flushMenubarOverlayLayout(): Promise<void> {
     }
   }
   await flushMicrotask();
+}
+
+function mockElementRect(
+  element: HTMLElement,
+  rect: Readonly<{ height: number; left: number; top: number; width: number }>,
+): void {
+  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+    right: rect.left + rect.width,
+    bottom: rect.top + rect.height,
+    x: rect.left,
+    y: rect.top,
+    toJSON: () => ({}),
+  } as DOMRect);
+}
+
+function mockWrapperCascadeRects(options: Readonly<{
+  file: HTMLElement;
+  fileMenu: HTMLElement;
+  importTrigger: HTMLElement;
+  importMenu: HTMLElement;
+  gitTrigger?: HTMLElement;
+  gitMenu?: HTMLElement;
+}>): void {
+  mockElementRect(options.file, { left: 24, top: 20, width: 72, height: 34 });
+  mockElementRect(options.fileMenu, { left: 0, top: 0, width: 192, height: 132 });
+  mockElementRect(options.importTrigger, { left: 32, top: 48, width: 160, height: 32 });
+  mockElementRect(options.importMenu, { left: 0, top: 0, width: 184, height: 104 });
+
+  if (options.gitTrigger !== undefined) {
+    mockElementRect(options.gitTrigger, { left: 212, top: 72, width: 156, height: 32 });
+  }
+
+  if (options.gitMenu !== undefined) {
+    mockElementRect(options.gitMenu, { left: 0, top: 0, width: 176, height: 92 });
+  }
+}
+
+function expectMenuPanelRenderable(menu: HTMLElement): void {
+  expect(menu.getAttribute('data-state')).toBe('open');
+  expect(menu.hasAttribute('hidden')).toBe(false);
+  expect(menu.getAttribute('data-positioning-state')).toBeNull();
+  expect(menu.parentElement).toBe(document.body);
+  expect(menu.style.position).toBe('fixed');
+  expect(menu.style.left).not.toBe('');
+  expect(menu.style.top).not.toBe('');
 }
 
 @Component({
@@ -143,6 +192,10 @@ class CascadedWrapperHostComponent {}
 class CascadedWrapperDemoLikeHostComponent {}
 
 describe('tng-menubar component', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('attaches the primitive menubar directive to host and wires aria-label', () => {
     const fixture = TestBed.configureTestingModule({
       imports: [HostComponent],
@@ -173,6 +226,14 @@ describe('tng-menubar component', () => {
     const importGitTrigger = fixture.nativeElement.querySelector('[data-testid="import-git"]') as HTMLButtonElement;
     const gitGithub = fixture.nativeElement.querySelector('[data-testid="git-github"]') as HTMLButtonElement;
     const gitGitlab = fixture.nativeElement.querySelector('[data-testid="git-gitlab"]') as HTMLButtonElement;
+    mockWrapperCascadeRects({
+      file,
+      fileMenu,
+      importTrigger,
+      importMenu,
+      gitTrigger: importGitTrigger,
+      gitMenu,
+    });
 
     file.click();
     fixture.detectChanges();
@@ -192,7 +253,9 @@ describe('tng-menubar component', () => {
     fixture.detectChanges();
     await flushMenubarOverlayLayout();
 
+    expectMenuPanelRenderable(importMenu);
     expect(gitMenu.getAttribute('data-state')).toBe('open');
+    expectMenuPanelRenderable(gitMenu);
     expect(gitMenu.getAttribute('aria-activedescendant')).toBe(gitGithub.id);
     expect(document.activeElement).toBe(gitMenu);
 
@@ -210,7 +273,7 @@ describe('tng-menubar component', () => {
     expect(fileMenu.getAttribute('data-state')).toBe('open');
   });
 
-  it('keeps first submenu level open and active when ArrowDown is pressed inside it', () => {
+  it('keeps first submenu level open and active when ArrowDown is pressed inside it', async () => {
     const fixture = TestBed.configureTestingModule({
       imports: [CascadedWrapperHostComponent],
     }).createComponent(CascadedWrapperHostComponent);
@@ -223,6 +286,13 @@ describe('tng-menubar component', () => {
     const importTrigger = fixture.nativeElement.querySelector('[data-testid="item-import"]') as HTMLButtonElement;
     const importCsv = fixture.nativeElement.querySelector('[data-testid="import-csv"]') as HTMLButtonElement;
     const importGitTrigger = fixture.nativeElement.querySelector('[data-testid="import-git"]') as HTMLButtonElement;
+    mockWrapperCascadeRects({
+      file,
+      fileMenu,
+      importTrigger,
+      importMenu,
+      gitTrigger: importGitTrigger,
+    });
 
     file.click();
     fixture.detectChanges();
@@ -230,10 +300,13 @@ describe('tng-menubar component', () => {
     keydown(fileMenu, 'ArrowDown');
     keydown(fileMenu, 'ArrowRight');
     fixture.detectChanges();
+    await flushMenubarOverlayLayout();
+    fixture.detectChanges();
 
     expect(fileMenu.getAttribute('aria-activedescendant')).toBe(importTrigger.id);
     expect(importMenu.getAttribute('aria-activedescendant')).toBe(importCsv.id);
     expect(importMenu.getAttribute('data-state')).toBe('open');
+    expectMenuPanelRenderable(importMenu);
 
     const parentActiveBefore = fileMenu.getAttribute('aria-activedescendant');
     keydown(importMenu, 'ArrowDown');
@@ -258,6 +331,13 @@ describe('tng-menubar component', () => {
     const fileImportTrigger = fixture.nativeElement.querySelector('[data-testid="file-import"]') as HTMLButtonElement;
     const importCsv = fixture.nativeElement.querySelector('[data-testid="import-csv"]') as HTMLButtonElement;
     const importGit = fixture.nativeElement.querySelector('[data-testid="import-git"]') as HTMLButtonElement;
+    mockWrapperCascadeRects({
+      file,
+      fileMenu,
+      importTrigger: fileImportTrigger,
+      importMenu,
+      gitTrigger: importGit,
+    });
 
     file.click();
     fixture.detectChanges();
@@ -271,6 +351,7 @@ describe('tng-menubar component', () => {
     expect(fileMenu.getAttribute('aria-activedescendant')).toBe(fileImportTrigger.id);
     expect(importMenu.getAttribute('aria-activedescendant')).toBe(importCsv.id);
     expect(importMenu.getAttribute('data-state')).toBe('open');
+    expectMenuPanelRenderable(importMenu);
     expect(document.activeElement).toBe(importMenu);
 
     const rootActiveBefore = fileMenu.getAttribute('aria-activedescendant');
@@ -297,6 +378,14 @@ describe('tng-menubar component', () => {
     const importGitTrigger = fixture.nativeElement.querySelector('[data-testid="import-git"]') as HTMLButtonElement;
     const gitGithub = fixture.nativeElement.querySelector('[data-testid="git-github"]') as HTMLButtonElement;
     const gitGitlab = fixture.nativeElement.querySelector('[data-testid="git-gitlab"]') as HTMLButtonElement;
+    mockWrapperCascadeRects({
+      file,
+      fileMenu,
+      importTrigger: fixture.nativeElement.querySelector('[data-testid="item-import"]') as HTMLButtonElement,
+      importMenu,
+      gitTrigger: importGitTrigger,
+      gitMenu,
+    });
 
     file.click();
     fixture.detectChanges();
@@ -311,7 +400,9 @@ describe('tng-menubar component', () => {
     await flushMenubarOverlayLayout();
 
     expect(importMenu.getAttribute('aria-activedescendant')).toBe(importGitTrigger.id);
+    expectMenuPanelRenderable(importMenu);
     expect(gitMenu.getAttribute('aria-activedescendant')).toBe(gitGithub.id);
+    expectMenuPanelRenderable(gitMenu);
     expect(document.activeElement).toBe(gitMenu);
 
     await flushMicrotask();
@@ -340,6 +431,14 @@ describe('tng-menubar component', () => {
     const importMenu = fixture.nativeElement.querySelector('[data-testid="import-menu"]') as HTMLElement;
     const gitMenu = fixture.nativeElement.querySelector('[data-testid="git-menu"]') as HTMLElement;
     const gitGitlab = fixture.nativeElement.querySelector('[data-testid="git-gitlab"]') as HTMLButtonElement;
+    mockWrapperCascadeRects({
+      file,
+      fileMenu,
+      importTrigger: fixture.nativeElement.querySelector('[data-testid="item-import"]') as HTMLButtonElement,
+      importMenu,
+      gitTrigger: fixture.nativeElement.querySelector('[data-testid="import-git"]') as HTMLButtonElement,
+      gitMenu,
+    });
 
     file.click();
     fixture.detectChanges();
@@ -354,6 +453,8 @@ describe('tng-menubar component', () => {
     await flushMenubarOverlayLayout();
 
     expect(gitMenu.getAttribute('data-state')).toBe('open');
+    expectMenuPanelRenderable(importMenu);
+    expectMenuPanelRenderable(gitMenu);
     expect(document.activeElement).toBe(gitMenu);
 
     importMenu.focus();
@@ -382,6 +483,14 @@ describe('tng-menubar component', () => {
     const fileMenu = fixture.nativeElement.querySelector('[data-testid="file-menu"]') as HTMLElement;
     const importMenu = fixture.nativeElement.querySelector('[data-testid="import-menu"]') as HTMLElement;
     const gitMenu = fixture.nativeElement.querySelector('[data-testid="git-menu"]') as HTMLElement;
+    mockWrapperCascadeRects({
+      file,
+      fileMenu,
+      importTrigger: fixture.nativeElement.querySelector('[data-testid="item-import"]') as HTMLButtonElement,
+      importMenu,
+      gitTrigger: fixture.nativeElement.querySelector('[data-testid="import-git"]') as HTMLButtonElement,
+      gitMenu,
+    });
 
     file.click();
     fixture.detectChanges();
@@ -421,6 +530,14 @@ describe('tng-menubar component', () => {
     const importTrigger = fixture.nativeElement.querySelector('[data-testid="item-import"]') as HTMLButtonElement;
     const importGitTrigger = fixture.nativeElement.querySelector('[data-testid="import-git"]') as HTMLButtonElement;
     const gitGithub = fixture.nativeElement.querySelector('[data-testid="git-github"]') as HTMLButtonElement;
+    mockWrapperCascadeRects({
+      file,
+      fileMenu,
+      importTrigger,
+      importMenu,
+      gitTrigger: importGitTrigger,
+      gitMenu,
+    });
 
     file.click();
     fixture.detectChanges();
@@ -428,10 +545,15 @@ describe('tng-menubar component', () => {
     importTrigger.click();
     fixture.detectChanges();
     expect(importMenu.getAttribute('data-state')).toBe('open');
+    await flushMenubarOverlayLayout();
+    expectMenuPanelRenderable(importMenu);
 
     importGitTrigger.click();
     fixture.detectChanges();
     expect(gitMenu.getAttribute('data-state')).toBe('open');
+    await flushMenubarOverlayLayout();
+    expectMenuPanelRenderable(importMenu);
+    expectMenuPanelRenderable(gitMenu);
 
     gitGithub.click();
     fixture.detectChanges();
@@ -442,5 +564,8 @@ describe('tng-menubar component', () => {
     expect(importMenu.getAttribute('data-state')).toBe('closed');
     expect(fileMenu.getAttribute('data-state')).toBe('closed');
     expect(file.getAttribute('aria-expanded')).toBe('false');
+    expect(fixture.nativeElement.contains(fileMenu)).toBe(true);
+    expect(fileMenu.contains(importMenu)).toBe(true);
+    expect(fileMenu.contains(gitMenu)).toBe(true);
   });
 });

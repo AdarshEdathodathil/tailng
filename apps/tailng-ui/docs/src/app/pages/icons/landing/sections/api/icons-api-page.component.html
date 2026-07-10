@@ -1,0 +1,215 @@
+<section class="grid gap-8">
+  <div class="grid gap-2">
+    <h2 class="m-0 text-2xl font-semibold">API</h2>
+    <p class="m-0 max-w-3xl text-sm text-tng-fg-secondary md:text-base">
+      Configure icon packs once, then render resolved SVGs through the standalone
+      <code class="font-mono text-xs">&lt;tng-icon&gt;</code> component.
+    </p>
+  </div>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <div
+        class="mb-1 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-tng-fg-secondary"
+      >
+        <tng-icon icon="layers" class="h-4 w-4" />
+        <span>Custom Packs</span>
+      </div>
+      <tng-card-title>Using Bootstrap Icons</tng-card-title>
+      <tng-card-description>
+        Register a custom pack to use Bootstrap Icons, or any other <code class="font-mono text-xs">@ng-icons</code>
+        set, alongside the built-in Lucide pack.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="grid gap-6 text-sm text-tng-fg-secondary md:text-base">
+        <div class="grid gap-2">
+          <p class="m-0 text-xs font-semibold uppercase tracking-[0.12em] text-tng-fg-secondary">
+            Install the Bootstrap icon set
+          </p>
+          <tng-tabs ariaLabel="Package manager" [defaultValue]="'pnpm'" class="grid gap-3">
+            <div tngTabList class="flex flex-wrap gap-2" ariaLabel="Package manager">
+              <button type="button" tngTab value="pnpm" class="installation-tab-trigger">pnpm</button>
+              <button type="button" tngTab value="npm" class="installation-tab-trigger">npm</button>
+              <button type="button" tngTab value="yarn" class="installation-tab-trigger">yarn</button>
+            </div>
+            <div tngTabPanel value="pnpm" class="min-w-0">
+              <tng-code-block
+                [code]="bootstrapInstallPnpmCode"
+                adapter="shiki"
+                language="bash"
+                [theme]="codeBlockTheme()"
+                [sanitizeHtml]="false"
+                [wrap]="true"
+                title="pnpm"
+                [lineNumbers]="false"
+              />
+            </div>
+            <div tngTabPanel value="npm" class="min-w-0">
+              <tng-code-block
+                [code]="bootstrapInstallNpmCode"
+                adapter="shiki"
+                language="bash"
+                [theme]="codeBlockTheme()"
+                [sanitizeHtml]="false"
+                [wrap]="true"
+                title="npm"
+                [lineNumbers]="false"
+              />
+            </div>
+            <div tngTabPanel value="yarn" class="min-w-0">
+              <tng-code-block
+                [code]="bootstrapInstallYarnCode"
+                adapter="shiki"
+                language="bash"
+                [theme]="codeBlockTheme()"
+                [sanitizeHtml]="false"
+                [wrap]="true"
+                title="yarn"
+                [lineNumbers]="false"
+              />
+            </div>
+          </tng-tabs>
+        </div>
+
+        <div class="grid gap-2">
+          <p class="m-0 text-xs font-semibold uppercase tracking-[0.12em] text-tng-fg-secondary">
+            Register the pack with <code class="font-mono text-xs">createTngIconPack</code>
+          </p>
+          <tng-code-block
+            [code]="bootstrapProviderCode"
+            adapter="shiki"
+            language="typescript"
+            [theme]="codeBlockTheme()"
+            [sanitizeHtml]="false"
+            [wrap]="true"
+            title="icons.provider.ts"
+          />
+        </div>
+
+        <div class="grid gap-2">
+          <p class="m-0 text-xs font-semibold uppercase tracking-[0.12em] text-tng-fg-secondary">
+            Use in templates
+          </p>
+          <tng-code-block
+            [code]="bootstrapUsageCode"
+            adapter="shiki"
+            language="html"
+            [theme]="codeBlockTheme()"
+            [sanitizeHtml]="false"
+            [wrap]="true"
+            title="my.component.html"
+          />
+        </div>
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>createTngIconPack</tng-card-title>
+      <tng-card-description>
+        Create named icon packs from local SVG strings, remote SVG URLs, or generated icon modules.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="grid gap-6 text-sm text-tng-fg-secondary md:text-base">
+        <tng-code-block
+          [code]="staticSvgPackCode"
+          adapter="shiki"
+          language="typescript"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="static SVG pack"
+        />
+        <tng-code-block
+          [code]="urlFetchPackCode"
+          adapter="shiki"
+          language="typescript"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="remote SVG pack"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>provideTngIcons</tng-card-title>
+      <tng-card-description>
+        Provide additional packs, set the default pack, or explicitly override a built-in pack.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="grid gap-6 text-sm text-tng-fg-secondary md:text-base">
+        <tng-code-block
+          [code]="multiplePacksCode"
+          adapter="shiki"
+          language="typescript"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="multiple packs"
+        />
+        <tng-code-block
+          [code]="overrideBuiltinCode"
+          adapter="shiki"
+          language="typescript"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="override built-in Lucide icons"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <div
+        class="mb-1 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-tng-fg-secondary"
+      >
+        <tng-icon icon="book-open" class="h-4 w-4" />
+        <span>Reference</span>
+      </div>
+      <tng-card-title>TngIcon Inputs</tng-card-title>
+      <tng-card-description>
+        Public types and component inputs exported from <code class="font-mono text-xs">@tailng-ui/icons</code>.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="grid gap-6 text-sm text-tng-fg-secondary md:text-base">
+        <tng-code-block
+          [code]="apiProvideTngIconsCode"
+          adapter="shiki"
+          language="typescript"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="TngProvideIconsOptions"
+        />
+        <tng-code-block
+          [code]="apiCreateTngIconPackCode"
+          adapter="shiki"
+          language="typescript"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="createTngIconPack"
+        />
+        <tng-code-block
+          [code]="apiTngIconInputsCode"
+          adapter="shiki"
+          language="typescript"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="TngIcon inputs"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+</section>

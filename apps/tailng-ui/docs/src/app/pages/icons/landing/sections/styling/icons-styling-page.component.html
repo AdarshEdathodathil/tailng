@@ -1,0 +1,118 @@
+<section class="grid gap-8">
+  <div class="grid gap-2">
+    <h2 class="m-0 text-2xl font-semibold">Styling</h2>
+    <p class="m-0 max-w-3xl text-sm text-tng-fg-secondary md:text-base">
+      Size icons through the public input or CSS custom property, and let icon color inherit from
+      the surrounding UI.
+    </p>
+  </div>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>Size Input</tng-card-title>
+      <tng-card-description>
+        Use <code class="font-mono text-xs">size</code> for one-off sizing. Numeric values are
+        normalized to pixels.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="grid gap-4 text-sm text-tng-fg-secondary md:text-base">
+        <div class="flex flex-wrap items-center gap-5 text-tng-fg-primary">
+          <tng-icon icon="home" size="1rem" />
+          <tng-icon icon="home" size="1.25rem" />
+          <tng-icon icon="home" [size]="24" />
+        </div>
+        <tng-code-block
+          [code]="sizeInputCode"
+          adapter="shiki"
+          language="html"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="size input"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>CSS Variable Sizing</tng-card-title>
+      <tng-card-description>
+        Use <code class="font-mono text-xs">--tng-icon-size</code> when a class, theme, or parent
+        component owns the icon size.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="grid gap-4 text-sm text-tng-fg-secondary md:text-base">
+        <div class="flex flex-wrap items-center gap-5 text-tng-fg-primary">
+          <tng-icon icon="home" class="[--tng-icon-size:1.25rem]" />
+          <tng-icon icon="settings" class="[--tng-icon-size:1.5rem]" />
+        </div>
+        <tng-code-block
+          [code]="cssVariableCode"
+          adapter="shiki"
+          language="html"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="CSS variable"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>Color Inheritance</tng-card-title>
+      <tng-card-description>
+        Icons render with <code class="font-mono text-xs">currentColor</code>, so color should
+        usually come from the parent control or text context.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="grid gap-4 text-sm text-tng-fg-secondary md:text-base">
+        <div class="flex flex-wrap items-center gap-5">
+          <span class="inline-flex items-center gap-2 text-tng-fg-secondary">
+            <tng-icon icon="settings" size="1.1rem" />
+            Secondary
+          </span>
+          <span class="inline-flex items-center gap-2 text-tng-accent-brand">
+            <tng-icon icon="sparkles" size="1.1rem" />
+            Brand
+          </span>
+        </div>
+        <tng-code-block
+          [code]="colorInheritanceCode"
+          adapter="shiki"
+          language="html"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="currentColor"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>Accessibility Styling</tng-card-title>
+      <tng-card-description>
+        Decorative icons are hidden from assistive technology by default. Add
+        <code class="font-mono text-xs">label</code> only when the icon itself conveys meaning.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <tng-code-block
+        [code]="accessibilityStylingCode"
+        adapter="shiki"
+        language="html"
+        [theme]="codeBlockTheme()"
+        [sanitizeHtml]="false"
+        [wrap]="true"
+        title="accessibility"
+      />
+    </tng-card-content>
+  </tng-card>
+</section>

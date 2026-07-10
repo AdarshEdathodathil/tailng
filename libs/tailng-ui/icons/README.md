@@ -75,12 +75,32 @@ import { TngIcon } from '@tailng-ui/icons';
 @Component({
   standalone: true,
   imports: [TngIcon],
-  template: `<tng-icon icon="bell" />`,
+  template: `<tng-icon icon="bell" size="1.25rem" />`,
 })
 export class ExampleComponent {}
 ```
 
 With zero config, `icon="bell"` resolves to `lucide:bell`.
+
+## Sizing icons
+
+Use the `size` input for one-off sizing:
+
+```html
+<tng-icon icon="home" size="1.25rem" /> <tng-icon icon="home" [size]="20" />
+```
+
+Use `--tng-icon-size` when CSS should own the size:
+
+```html
+<tng-icon icon="home" class="my-icon" />
+```
+
+```css
+.my-icon {
+  --tng-icon-size: 1.25rem;
+}
+```
 
 ## Core contract
 

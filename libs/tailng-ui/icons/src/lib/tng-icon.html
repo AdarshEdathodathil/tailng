@@ -1,18 +1,19 @@
 @if (hasSvg()) {
-  <ng-icon
-    class="tng-icon__svg"
-    [svg]="svg()"
-    [attr.aria-hidden]="iconAriaHidden()"
-    [attr.aria-label]="iconAriaLabel()"
-    [attr.role]="iconRole()"
-  />
+<ng-icon
+  class="tng-icon__svg"
+  size="var(--tng-icon-size, 1em)"
+  [svg]="svg()"
+  [attr.aria-hidden]="iconAriaHidden()"
+  [attr.aria-label]="iconAriaLabel()"
+  [attr.role]="iconRole()"
+/>
 } @else {
-  <span
-    class="tng-icon__fallback"
-    [attr.aria-hidden]="iconAriaHidden()"
-    [attr.aria-label]="iconAriaLabel()"
-    [attr.role]="iconRole()"
-  >
-    ◻
-  </span>
+<span
+  class="tng-icon__fallback"
+  [attr.aria-hidden]="iconAriaHidden()"
+  [attr.aria-label]="iconAriaLabel()"
+  [attr.role]="iconRole()"
+>
+  ◻
+</span>
 }

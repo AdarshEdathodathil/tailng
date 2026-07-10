@@ -3,26 +3,119 @@ import {
   DestroyRef,
   ElementRef,
   HostBinding,
-  HostListener,
   NgZone,
   ViewEncapsulation,
   inject,
   input,
 } from '@angular/core';
-import { computeOverlayPosition } from '@tailng-ui/cdk';
+import {
+  computeOverlayPosition,
+  createPortalManager,
+  createTngIdFactory,
+  getGlobalElementScrollLockManager,
+  getGlobalScrollLockManager,
+  isTngAnchorVisibleInScrollAncestors,
+  resolveTngScrollableAncestors,
+  type TngOverlayScrollStrategy,
+  type TngPortalDocument,
+} from '@tailng-ui/cdk';
 import {
   TNG_MENU_DEFER_HOST_FOCUS_UNTIL_POSITIONED,
   TngMenu as TngMenuPrimitive,
 } from '@tailng-ui/primitives';
 
 const MAX_FOCUS_SYNC_ATTEMPTS = 4;
+const MENU_Z_INDEX =
+  'var(--tng-menu-z-overlay, var(--tng-menu-overlay-z-index, var(--tng-z-overlay, 50)))';
+const PORTALLED_MENU_THEME_VARS = [
+  '--tng-menu-radius',
+  '--tng-menu-padding',
+  '--tng-menu-item-py',
+  '--tng-menu-item-px',
+  '--tng-menu-item-radius',
+  '--tng-menu-item-font-size',
+  '--tng-menu-item-font-weight',
+  '--tng-menu-item-font-weight-active',
+  '--tng-menu-item-gap',
+  '--tng-menu-item-min-height',
+  '--tng-menu-item-disabled-opacity',
+  '--tng-menu-item-bg-hover',
+  '--tng-menu-item-bg-active',
+  '--tng-menu-item-bg-selected',
+  '--tng-menu-item-fg',
+  '--tng-menu-item-fg-active',
+  '--tng-menu-item-fg-selected',
+  '--tng-menu-item-shadow-hover',
+  '--tng-menu-item-shadow-active',
+  '--tng-menu-border',
+  '--tng-menu-border-strong',
+  '--tng-menu-bg',
+  '--tng-menu-surface',
+  '--tng-menu-surface-muted',
+  '--tng-menu-fg',
+  '--tng-menu-muted',
+  '--tng-menu-brand',
+  '--tng-menu-focus-ring',
+  '--tng-menu-shadow-ink',
+  '--tng-menu-shadow',
+  '--tng-menu-shadow-focus',
+  '--tng-menu-panel-shadow-focus',
+  '--tng-menu-z-overlay',
+  '--tng-menu-overlay-z-index',
+  '--tng-z-overlay',
+  '--tng-menu-z-backdrop',
+  '--tng-menu-backdrop-z-index',
+  '--tng-z-backdrop',
+  '--tng-menu-ease',
+  '--tng-radius-panel',
+  '--tng-radius-item',
+  '--tng-control-height-md',
+  '--tng-text-body',
+  '--tng-font-weight-medium',
+  '--tng-font-weight-semibold',
+  '--tng-disabled-opacity',
+  '--tng-duration-normal',
+  '--tng-easing',
+  '--tng-semantic-border-subtle',
+  '--tng-semantic-border-strong',
+  '--tng-semantic-background-canvas',
+  '--tng-semantic-background-surface',
+  '--tng-semantic-background-muted',
+  '--tng-semantic-foreground-primary',
+  '--tng-semantic-foreground-secondary',
+  '--tng-semantic-accent-brand',
+  '--tng-semantic-focus-ring',
+] as const;
+
+const createMenuOverlayLockId = createTngIdFactory('tng-menu-overlay-lock');
+
+type InlineStyleSnapshot = Readonly<{
+  priority: string;
+  value: string;
+}>;
 
 function rectFromClientRect(r: DOMRect | ClientRect): { left: number; top: number; width: number; height: number } {
   return { left: r.left, top: r.top, width: r.width, height: r.height };
 }
 
-function viewportRect(): { left: number; top: number; width: number; height: number } {
-  return { left: 0, top: 0, width: window.innerWidth || 1024, height: window.innerHeight || 768 };
+function viewportRect(win: Window): { left: number; top: number; width: number; height: number } {
+  return { left: 0, top: 0, width: win.innerWidth || 1024, height: win.innerHeight || 768 };
+}
+
+function getOwnerWindow(documentRef: Document): Window {
+  if (documentRef.defaultView !== null) {
+    return documentRef.defaultView;
+  }
+
+  if (typeof window !== 'undefined') {
+    return window;
+  }
+
+  return globalThis as unknown as Window;
+}
+
+function isInside(target: EventTarget | null, element: HTMLElement): boolean {
+  return target instanceof Node && element.contains(target);
 }
 
 @Component({
@@ -45,40 +138,51 @@ export class TngMenuComponent {
   private readonly primitive = inject<TngMenuPrimitive>(TngMenuPrimitive);
   private readonly destroyRef = inject(DestroyRef);
   private readonly ngZone = inject(NgZone);
+  private readonly ownerDocument = this.hostRef.nativeElement.ownerDocument;
+  private readonly ownerWindow = getOwnerWindow(this.ownerDocument);
+  private readonly instanceId = createMenuOverlayLockId();
+  private readonly portalManager = createPortalManager({
+    documentRef: this.ownerDocument as unknown as TngPortalDocument,
+    isBrowser: this.ownerDocument.defaultView !== null,
+  });
+  private readonly scrollLock = getGlobalScrollLockManager({ documentRef: this.ownerDocument });
+  private readonly elementScrollLock = getGlobalElementScrollLockManager({ documentRef: this.ownerDocument });
   private lastOpenState = false;
   private focusSyncQueued = false;
   private focusSyncAttempts = 0;
 
+  private placeholder: Comment | null = null;
+  private originalParent: Node | null = null;
   private removeResizeListener: (() => void) | null = null;
   private removeScrollListener: (() => void) | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private scrollAncestors: readonly HTMLElement[] = [];
   private rafId: number | null = null;
+  private portalled = false;
+  private closeIfAnchorHiddenOnNextPosition = false;
+  private inlineThemeSnapshots = new Map<string, InlineStyleSnapshot>();
+  private inlineColorSchemeSnapshot: InlineStyleSnapshot | null = null;
   /** Retries when overlay rect is 0×0 before first placement (layout not ready yet). */
   private initialPlacementRetryCount = 0;
 
   public readonly ariaLabel = input<string>('Menu');
+  public readonly scrollStrategy = input<TngOverlayScrollStrategy>('reposition');
 
   @HostBinding('attr.aria-label')
   protected get hostAriaLabel(): string {
     return this.ariaLabel();
   }
 
-  @HostListener('window:scroll')
-  protected onWindowScroll(): void {
-    if (!this.primitive.isOpen()) {
-      return;
-    }
-
-    setTimeout((): void => {
-      this.ngZone.run((): void => {
-        this.primitive.close(true);
-      });
-    }, 0);
-  }
-
   public constructor() {
+    const host = this.hostRef.nativeElement;
+    this.placeholder = this.ownerDocument.createComment('tng-menu-anchor');
+    this.captureOriginalLocation();
+
     this.destroyRef.onDestroy(() => {
       this.detachPositioningListeners();
+      this.restoreToPlaceholder();
+      this.placeholder = null;
+      this.originalParent = null;
     });
   }
 
@@ -88,11 +192,13 @@ export class TngMenuComponent {
     if (!this.lastOpenState && isOpen) {
       this.initialPlacementRetryCount = 0;
       this.setPositioningPending(true);
+      this.mountToBody();
       this.attachPositioningListeners();
       this.queuePositioning();
     } else if (this.lastOpenState && !isOpen) {
       this.detachPositioningListeners();
       this.clearPositioningStyles();
+      this.restoreToPlaceholder();
     }
 
     if (!isOpen) {
@@ -113,13 +219,13 @@ export class TngMenuComponent {
       return;
     }
 
-    const host = this.hostRef.nativeElement;
-    const activeElement = document.activeElement;
-    const deepestOpenSubmenu = this.getDeepestOpenSubmenu(host);
+    const activeElement = this.ownerDocument.activeElement;
+    const deepestOpenSubmenu = this.getDeepestOpenSubmenu();
     const hasFocusInDeepestOpenSubmenu =
       deepestOpenSubmenu !== null &&
       activeElement instanceof Node &&
       deepestOpenSubmenu.contains(activeElement);
+    const host = this.hostRef.nativeElement;
     const hasFocusInsideHost = activeElement instanceof Node && host.contains(activeElement);
 
     const shouldSyncFocusToHostOrDeepestSubmenu =
@@ -133,7 +239,7 @@ export class TngMenuComponent {
   private queuePositioning(): void {
     if (this.rafId !== null) return;
     this.ngZone.runOutsideAngular(() => {
-      this.rafId = requestAnimationFrame(() => {
+      this.rafId = this.ownerWindow.requestAnimationFrame(() => {
         this.rafId = null;
         this.reposition();
       });
@@ -149,6 +255,17 @@ export class TngMenuComponent {
       this.clearPositioningPending();
       return;
     }
+
+    if (
+      this.closeIfAnchorHiddenOnNextPosition &&
+      this.scrollStrategy() === 'reposition' &&
+      !isTngAnchorVisibleInScrollAncestors(trigger, this.scrollAncestors)
+    ) {
+      this.closeIfAnchorHiddenOnNextPosition = false;
+      this.ngZone.run((): void => this.primitive.close(true));
+      return;
+    }
+    this.closeIfAnchorHiddenOnNextPosition = false;
 
     const isSubmenu = this.primitive.getParentMenu() !== null;
 
@@ -173,7 +290,7 @@ export class TngMenuComponent {
     ) {
       this.initialPlacementRetryCount += 1;
       this.ngZone.runOutsideAngular(() => {
-        requestAnimationFrame(() => {
+        this.ownerWindow.requestAnimationFrame(() => {
           if (!this.primitive.isOpen()) {
             return;
           }
@@ -189,7 +306,7 @@ export class TngMenuComponent {
 
     overlay = rectFromClientRect(host.getBoundingClientRect());
 
-    const viewport = viewportRect();
+    const viewport = viewportRect(this.ownerWindow);
 
     const result = computeOverlayPosition({
       anchorRect: anchor,
@@ -201,7 +318,7 @@ export class TngMenuComponent {
     });
 
     host.style.position = 'fixed';
-    host.style.zIndex = 'var(--tng-menu-z-overlay, var(--tng-menu-overlay-z-index, var(--tng-z-overlay, 50)))';
+    host.style.zIndex = MENU_Z_INDEX;
     host.style.margin = '0';
     host.style.left = `${result.x}px`;
     host.style.top = `${result.y}px`;
@@ -241,20 +358,153 @@ export class TngMenuComponent {
     host.removeAttribute('data-positioning-state');
   }
 
+  private mountToBody(): void {
+    const host = this.hostRef.nativeElement;
+    const body = this.ownerDocument.body;
+    if (body === null || host.parentNode === body) {
+      return;
+    }
+
+    this.captureOriginalLocation();
+    this.syncPortalledThemeVars();
+    this.portalled = this.portalManager.mount({
+      node: host,
+      portalId: this.instanceId,
+    });
+  }
+
+  private captureOriginalLocation(): void {
+    const host = this.hostRef.nativeElement;
+    if (this.placeholder === null || this.placeholder.parentNode !== null) {
+      return;
+    }
+
+    const parent = host.parentNode;
+    if (parent === null) {
+      return;
+    }
+
+    this.originalParent = parent;
+    parent.insertBefore(this.placeholder, host);
+  }
+
+  private restoreToPlaceholder(): void {
+    const host = this.hostRef.nativeElement;
+
+    if (this.portalled) {
+      this.portalManager.unmount(this.instanceId);
+      this.portalled = false;
+    }
+
+    if (this.placeholder?.parentNode !== null && this.placeholder?.parentNode !== undefined) {
+      this.placeholder.parentNode.insertBefore(host, this.placeholder);
+    } else if (this.originalParent !== null) {
+      this.originalParent.appendChild(host);
+    }
+
+    this.restorePortalledThemeVars();
+  }
+
+  private syncPortalledThemeVars(): void {
+    const host = this.hostRef.nativeElement;
+    const hostStyles = host.style;
+    const computedStyles = this.ownerWindow.getComputedStyle(host);
+
+    this.inlineThemeSnapshots.clear();
+    for (const cssVar of PORTALLED_MENU_THEME_VARS) {
+      this.inlineThemeSnapshots.set(cssVar, {
+        value: hostStyles.getPropertyValue(cssVar),
+        priority: hostStyles.getPropertyPriority(cssVar),
+      });
+
+      const value = computedStyles.getPropertyValue(cssVar).trim();
+      if (value !== '') {
+        hostStyles.setProperty(cssVar, value);
+      } else {
+        hostStyles.removeProperty(cssVar);
+      }
+    }
+
+    this.inlineColorSchemeSnapshot = {
+      value: hostStyles.getPropertyValue('color-scheme'),
+      priority: hostStyles.getPropertyPriority('color-scheme'),
+    };
+
+    const colorScheme = computedStyles.colorScheme?.trim();
+    if (colorScheme !== '' && colorScheme !== 'normal') {
+      hostStyles.colorScheme = colorScheme;
+    } else {
+      hostStyles.removeProperty('color-scheme');
+    }
+  }
+
+  private restorePortalledThemeVars(): void {
+    const hostStyles = this.hostRef.nativeElement.style;
+
+    for (const [cssVar, snapshot] of this.inlineThemeSnapshots) {
+      if (snapshot.value !== '') {
+        hostStyles.setProperty(cssVar, snapshot.value, snapshot.priority);
+      } else {
+        hostStyles.removeProperty(cssVar);
+      }
+    }
+
+    if (this.inlineColorSchemeSnapshot !== null) {
+      if (this.inlineColorSchemeSnapshot.value !== '') {
+        hostStyles.setProperty(
+          'color-scheme',
+          this.inlineColorSchemeSnapshot.value,
+          this.inlineColorSchemeSnapshot.priority,
+        );
+      } else {
+        hostStyles.removeProperty('color-scheme');
+      }
+    }
+
+    this.inlineThemeSnapshots.clear();
+    this.inlineColorSchemeSnapshot = null;
+  }
+
   private attachPositioningListeners(): void {
     if (this.removeResizeListener) return;
 
+    const trigger = this.primitive.getTriggerElement();
+    this.scrollAncestors = trigger !== null ? resolveTngScrollableAncestors(trigger) : [];
+
+    if (this.scrollStrategy() === 'block') {
+      this.scrollLock.acquire(this.instanceId);
+      this.elementScrollLock.acquire(this.instanceId, this.scrollAncestors);
+    }
+
     const schedule = (): void => this.queuePositioning();
     this.ngZone.runOutsideAngular(() => {
-      window.addEventListener('resize', schedule);
-      this.removeResizeListener = (): void => window.removeEventListener('resize', schedule);
+      this.ownerWindow.addEventListener('resize', schedule);
+      this.removeResizeListener = (): void => this.ownerWindow.removeEventListener('resize', schedule);
       this.removeScrollListener = null;
 
-      if ('ResizeObserver' in window) {
-        this.resizeObserver = new ResizeObserver(() => schedule());
-        const trigger = this.primitive.getTriggerElement();
-        if (trigger) this.resizeObserver.observe(trigger);
-        this.resizeObserver.observe(this.hostRef.nativeElement);
+      if (this.scrollStrategy() !== 'block') {
+        const onScroll = (event: Event): void => {
+          if (isInside(event.target, this.hostRef.nativeElement)) {
+            return;
+          }
+
+          if (this.scrollStrategy() === 'close') {
+            this.ngZone.run((): void => this.primitive.close(true));
+            return;
+          }
+
+          this.closeIfAnchorHiddenOnNextPosition = true;
+          schedule();
+        };
+        this.ownerWindow.addEventListener('scroll', onScroll, true);
+        this.removeScrollListener = (): void => this.ownerWindow.removeEventListener('scroll', onScroll, true);
+      }
+
+      if ('ResizeObserver' in this.ownerWindow) {
+        const resizeObserver = new ResizeObserver(() => schedule());
+        if (trigger) resizeObserver.observe(trigger);
+        resizeObserver.observe(this.hostRef.nativeElement);
+        this.resizeObserver = resizeObserver;
       }
     });
   }
@@ -277,9 +527,13 @@ export class TngMenuComponent {
     this.removeScrollListener?.();
     this.removeResizeListener = null;
     this.removeScrollListener = null;
+    this.scrollLock.release(this.instanceId);
+    this.elementScrollLock.release(this.instanceId);
+    this.scrollAncestors = [];
+    this.closeIfAnchorHiddenOnNextPosition = false;
 
     if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
+      this.ownerWindow.cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
 
@@ -305,7 +559,7 @@ export class TngMenuComponent {
     }
 
     const host = this.hostRef.nativeElement;
-    const activeElement = document.activeElement;
+    const activeElement = this.ownerDocument.activeElement;
     const focusMenuHost =
       activeElement instanceof Element
         ? (activeElement.closest('[data-slot="menu"][data-state="open"]') as HTMLElement | null)
@@ -317,12 +571,16 @@ export class TngMenuComponent {
       return;
     }
 
-    const deepestOpenSubmenu = this.getDeepestOpenSubmenu(host);
+    const deepestOpenSubmenu = this.getDeepestOpenSubmenu();
 
     if (deepestOpenSubmenu !== null) {
+      if (deepestOpenSubmenu.getAttribute('data-positioning-state') === 'pending') {
+        return;
+      }
+
       if (!(activeElement instanceof Node) || !deepestOpenSubmenu.contains(activeElement)) {
         this.focusSyncAttempts += 1;
-        deepestOpenSubmenu.focus();
+        deepestOpenSubmenu.focus({ preventScroll: true });
       }
       return;
     }
@@ -332,44 +590,33 @@ export class TngMenuComponent {
     }
 
     this.focusSyncAttempts += 1;
-    host.focus();
+    host.focus({ preventScroll: true });
   }
 
   private shouldDeferFocusToDeeperCascadePanel(host: HTMLElement, focusMenuHost: HTMLElement | null): boolean {
     if (!(focusMenuHost instanceof HTMLElement) || focusMenuHost === host) {
       return false;
     }
-    if (host.contains(focusMenuHost)) {
-      return false;
-    }
 
-    const ordered = this.getOpenMenuPanelsUnderMenubar(host);
-    const hostIndex = ordered.indexOf(host);
-    const focusIndex = ordered.indexOf(focusMenuHost);
-    if (hostIndex === -1 || focusIndex === -1) {
-      return false;
+    let openSubmenu = this.primitive.getOpenSubmenu();
+    while (openSubmenu !== null) {
+      const openSubmenuHost = openSubmenu.getHostElement();
+      if (openSubmenuHost === focusMenuHost || openSubmenuHost.contains(focusMenuHost)) {
+        return true;
+      }
+      openSubmenu = openSubmenu.getOpenSubmenu();
     }
-    return focusIndex > hostIndex;
+    return false;
   }
 
-  private getOpenMenuPanelsUnderMenubar(host: HTMLElement): HTMLElement[] {
-    const menubar = host.closest('[data-slot="menubar"], [role="menubar"]');
-    if (!menubar) {
-      return [];
+  private getDeepestOpenSubmenu(): HTMLElement | null {
+    let deepestOpenSubmenu: HTMLElement | null = null;
+    let openSubmenu = this.primitive.getOpenSubmenu();
+    while (openSubmenu !== null) {
+      deepestOpenSubmenu = openSubmenu.getHostElement();
+      openSubmenu = openSubmenu.getOpenSubmenu();
     }
-    return Array.from(menubar.querySelectorAll<HTMLElement>('[data-slot="menu"][data-state="open"]'));
-  }
-
-  private getDeepestOpenSubmenu(host: HTMLElement): HTMLElement | null {
-    const openNestedMenus = Array.from(
-      host.querySelectorAll<HTMLElement>('[data-slot="menu"][data-state="open"]'),
-    ).filter((menuElement) => menuElement !== host);
-
-    if (openNestedMenus.length === 0) {
-      return null;
-    }
-
-    return openNestedMenus[openNestedMenus.length - 1] ?? null;
+    return deepestOpenSubmenu;
   }
 }
 export { TngMenuComponent as TngMenu };

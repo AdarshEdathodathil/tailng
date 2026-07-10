@@ -1,212 +1,133 @@
-import { DOCUMENT } from '@angular/common';
-import { Component, inject, signal, type OnDestroy } from '@angular/core';
-import {
-  TngCardComponent,
-  TngCardContentComponent,
-  TngCardDescriptionComponent,
-  TngCardHeaderComponent,
-  TngCardTitleComponent,
-  TngCodeBlockComponent,
-  TngTabsComponent,
-} from '@tailng-ui/components';
-import { TngIcon } from '@tailng-ui/icons';
-import { TngTab, TngTabList, TngTabPanel } from '@tailng-ui/primitives';
-import { observeDocsCodeThemeChanges, resolveDocsCodeBlockTheme } from '../../../shared/util';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter, map, startWith } from 'rxjs/operators';
+import { DocsComponentSectionTabsComponent } from '../../../shared/component-section-tabs/docs-component-section-tabs.component';
+import { DocsComponentSectionOutlineComponent } from '../../../shared/section-outline/docs-component-section-outline.component';
+import type { DocsSectionRailItem } from '../../../shared/section-rail/docs-section-rail.component';
+
+type IconsDocSectionId = 'api' | 'examples' | 'overview' | 'styling';
+
+const iconsDocSectionIds: readonly IconsDocSectionId[] = [
+  'overview',
+  'api',
+  'styling',
+  'examples',
+] as const;
+
+const defaultIconsDocSection: IconsDocSectionId = 'overview';
+
+const iconsSectionTabs = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'api', label: 'API' },
+  { value: 'styling', label: 'Styling' },
+  { value: 'examples', label: 'Examples' },
+] as const;
+
+const iconsOutlineItemsBySection: Readonly<
+  Record<IconsDocSectionId, readonly DocsSectionRailItem[]>
+> = {
+  overview: [
+    { id: 'installation', label: 'Installation' },
+    { id: 'default-setup', label: 'Default setup' },
+    { id: 'basic-usage', label: 'Basic usage' },
+    { id: 'icon-reference-syntax', label: 'Icon reference syntax' },
+  ],
+  api: [
+    { id: 'provide-tng-icons', label: 'provideTngIcons' },
+    { id: 'create-tng-icon-pack', label: 'createTngIconPack' },
+    { id: 'tng-icon-inputs', label: 'TngIcon inputs' },
+  ],
+  styling: [
+    { id: 'size-input', label: 'Size input' },
+    { id: 'css-variable-sizing', label: 'CSS variable sizing' },
+    { id: 'color-inheritance', label: 'Color inheritance' },
+    { id: 'accessibility-styling', label: 'Accessibility styling' },
+  ],
+  examples: [
+    { id: 'accessibility-examples', label: 'Accessibility' },
+    { id: 'size-examples', label: 'Size input' },
+    { id: 'css-variable-example', label: 'CSS variable sizing' },
+    { id: 'pack-reference-examples', label: 'Pack references' },
+    { id: 'custom-pack-example', label: 'Custom pack API' },
+  ],
+} as const;
+
+function isIconsDocSectionId(value: string): value is IconsDocSectionId {
+  return iconsDocSectionIds.includes(value as IconsDocSectionId);
+}
 
 @Component({
   selector: 'app-icons-page',
-  imports: [
-    TngCardComponent,
-    TngCardHeaderComponent,
-    TngCardTitleComponent,
-    TngCardDescriptionComponent,
-    TngCardContentComponent,
-    TngCodeBlockComponent,
-    TngTabsComponent,
-    TngTabList,
-    TngTab,
-    TngTabPanel,
-    TngIcon,
-  ],
+  imports: [RouterOutlet, DocsComponentSectionTabsComponent, DocsComponentSectionOutlineComponent],
   templateUrl: './icons-page.component.html',
-  styleUrl: './icons-page.component.css',
 })
-export class IconsPageComponent implements OnDestroy {
-  private readonly documentRef = inject(DOCUMENT);
-
-  public readonly codeBlockTheme = signal<'github-dark' | 'github-light'>(
-    resolveDocsCodeBlockTheme(this.documentRef),
+export class IconsPageComponent {
+  private readonly router = inject(Router);
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+      startWith(this.router.url),
+    ),
+    { initialValue: this.router.url },
   );
 
-  private readonly colorSchemeObserver = observeDocsCodeThemeChanges(
-    this.documentRef,
-    this.codeBlockTheme,
-  );
-
-  // Installation
-  protected readonly installPnpmCode =
-    'pnpm add @tailng-ui/icons @ng-icons/core @ng-icons/lucide';
-  protected readonly installNpmCode =
-    'npm install @tailng-ui/icons @ng-icons/core @ng-icons/lucide';
-  protected readonly installYarnCode =
-    'yarn add @tailng-ui/icons @ng-icons/core @ng-icons/lucide';
-
-  // Basic provider setup
-  protected readonly basicProviderCode = `// app.config.ts
-import { ApplicationConfig } from '@angular/core';
-import { provideTngIcons } from '@tailng-ui/icons';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideTngIcons(), // uses Lucide by default
-  ],
-};`;
-
-  // Basic usage
-  protected readonly basicUsageCode = `<!-- decorative icon alongside text (aria-hidden by default) -->
-<tng-icon icon="home" class="h-5 w-5" />
-
-<!-- meaningful standalone icon with accessible label -->
-<tng-icon icon="search" label="Search" class="h-5 w-5" />
-
-<!-- kebab-case and camelCase icon names are both supported -->
-<tng-icon icon="arrow-right" class="h-4 w-4" />
-<tng-icon icon="arrowRight" class="h-4 w-4" />`;
-
-  // Pack reference syntax
-  protected readonly packRefSyntaxCode = `<!-- no prefix → uses the default pack (lucide) -->
-<tng-icon icon="star" />
-
-<!-- explicit pack:name syntax -->
-<tng-icon icon="lucide:star" />
-<tng-icon icon="bootstrap:star-fill" />
-<tng-icon icon="flags:us" />`;
-
-  // Bootstrap install
-  protected readonly bootstrapInstallPnpmCode = 'pnpm add @ng-icons/bootstrap-icons';
-  protected readonly bootstrapInstallNpmCode = 'npm install @ng-icons/bootstrap-icons';
-  protected readonly bootstrapInstallYarnCode = 'yarn add @ng-icons/bootstrap-icons';
-
-  // Bootstrap pack setup
-  protected readonly bootstrapProviderCode = `// icons.provider.ts
-import { createTngIconPack, provideTngIcons, type TngIconLoader } from '@tailng-ui/icons';
-
-function createBootstrapLoader(exportName: string): TngIconLoader {
-  return async () => {
-    const mod = await import('@ng-icons/bootstrap-icons') as Record<string, unknown>;
-    const svg = mod[exportName];
-    if (typeof svg !== 'string') {
-      throw new Error(\`Bootstrap icon "\${exportName}" not found.\`);
+  public readonly tabs = iconsSectionTabs;
+  public readonly activeSection = computed<IconsDocSectionId>(() => {
+    const section = this.resolveSectionFromUrl(this.currentUrl());
+    return section ?? defaultIconsDocSection;
+  });
+  public readonly outlineItems = computed<readonly DocsSectionRailItem[]>(() => {
+    return iconsOutlineItemsBySection[this.activeSection()];
+  });
+  public readonly outlineTitle = computed<string>(() => {
+    switch (this.activeSection()) {
+      case 'api':
+        return 'API content';
+      case 'styling':
+        return 'Styling content';
+      case 'examples':
+        return 'Examples content';
+      case 'overview':
+      default:
+        return 'Overview content';
     }
-    return svg;
-  };
-}
+  });
+  public readonly outlineAriaLabel = computed<string>(() => {
+    return `Icons ${this.activeSection()} section navigation`;
+  });
 
-const bootstrapPack = createTngIconPack('bootstrap', {
-  'star-fill': createBootstrapLoader('bootstrapStarFill'),
-  'bell':      createBootstrapLoader('bootstrapBell'),
-  'x-circle':  createBootstrapLoader('bootstrapXCircle'),
-  // add more icons as needed
-});
+  private resolveSectionFromUrl(rawUrl: string): IconsDocSectionId | null {
+    const path = this.normalizeUrl(rawUrl);
+    const segments = path.split('/').filter((segment) => segment.length > 0);
+    const section = segments[segments.length - 1];
 
-export const tngIconProviders = provideTngIcons({
-  packs: [bootstrapPack],
-});`;
+    if (section === undefined || !isIconsDocSectionId(section)) {
+      return null;
+    }
 
-  // Multiple packs + explicit default
-  protected readonly multiplePacksCode = `export const tngIconProviders = provideTngIcons({
-  defaultPack: 'lucide',          // default pack when no prefix is given
-  packs: [bootstrapPack, brandPack],
-});`;
+    return section;
+  }
 
-  // Use bootstrap icons in template
-  protected readonly bootstrapUsageCode = `<!-- explicit pack prefix -->
-<tng-icon icon="bootstrap:star-fill" class="h-5 w-5" />
-<tng-icon icon="bootstrap:bell" class="h-5 w-5" />
+  private normalizeUrl(rawUrl: string): string {
+    const queryIndex = rawUrl.indexOf('?');
+    const hashIndex = rawUrl.indexOf('#');
+    let endIndex = rawUrl.length;
 
-<!-- when bootstrap is set as defaultPack, prefix is optional -->
-<tng-icon icon="star-fill" class="h-5 w-5" />`;
+    if (queryIndex >= 0) {
+      endIndex = Math.min(endIndex, queryIndex);
+    }
 
-  // Static SVG custom pack
-  protected readonly staticSvgPackCode = `import { createTngIconPack, provideTngIcons, type TngIconLoader } from '@tailng-ui/icons';
+    if (hashIndex >= 0) {
+      endIndex = Math.min(endIndex, hashIndex);
+    }
 
-function staticSvg(svg: string): TngIconLoader {
-  return () => Promise.resolve(svg);
-}
+    const normalized = rawUrl.slice(0, endIndex);
+    if (normalized.length > 1 && normalized.endsWith('/')) {
+      return normalized.slice(0, -1);
+    }
 
-const brandPack = createTngIconPack('brand', {
-  logo: staticSvg(
-    '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2Z"/></svg>',
-  ),
-  wordmark: staticSvg(
-    '<svg viewBox="0 0 80 24" fill="currentColor"><text y="18" font-size="16">MyApp</text></svg>',
-  ),
-});
-
-export const tngIconProviders = provideTngIcons({ packs: [brandPack] });`;
-
-  // URL-fetched SVG pack
-  protected readonly urlFetchPackCode = `import { createTngIconPack, provideTngIcons, type TngIconLoader } from '@tailng-ui/icons';
-
-const CDN = 'https://cdn.example.com/icons';
-
-function remoteSvg(path: string): TngIconLoader {
-  return async () => {
-    const res = await fetch(\`\${CDN}/\${path}.svg\`);
-    if (!res.ok) throw new Error(\`Failed to load icon: \${path}\`);
-    return res.text();
-  };
-}
-
-const remoteIconPack = createTngIconPack('remote', {
-  avatar: remoteSvg('avatar'),
-  dashboard: remoteSvg('dashboard'),
-});
-
-export const tngIconProviders = provideTngIcons({ packs: [remoteIconPack] });`;
-
-  // Override builtin
-  protected readonly overrideBuiltinCode = `provideTngIcons({
-  allowBuiltinOverride: true,
-  packs: [
-    // Replace individual Lucide icons with your own SVGs
-    createTngIconPack('lucide', {
-      home: () => Promise.resolve('<svg viewBox="0 0 24 24"><!-- custom --></svg>'),
-    }),
-  ],
-})`;
-
-  // API types
-  protected readonly apiProvideTngIconsCode = `interface TngProvideIconsOptions {
-  /** Additional icon packs to register alongside the built-in Lucide pack. */
-  packs?: TngIconPack[];
-
-  /**
-   * Pack used when no prefix is given in an icon ref.
-   * Defaults to 'lucide'.
-   */
-  defaultPack?: string;
-
-  /**
-   * Allow a custom pack to shadow a built-in pack name (e.g. 'lucide').
-   * Defaults to false.
-   */
-  allowBuiltinOverride?: boolean;
-}`;
-
-  protected readonly apiCreateTngIconPackCode = `function createTngIconPack(
-  name: string,
-  icons: Record<string, TngIconLoader>,
-): TngIconPack;
-
-// TngIconLoader: a function that returns the SVG markup as a string
-type TngIconLoader = () => Promise<string>;`;
-
-  protected readonly apiTngIconInputsCode = `// <tng-icon> component inputs
-icon: string;          // required — icon name or "pack:name" ref
-label?: string | null; // accessible label; omit for decorative icons`;
-
-  public ngOnDestroy(): void {
-    this.colorSchemeObserver?.disconnect();
+    return normalized;
   }
 }

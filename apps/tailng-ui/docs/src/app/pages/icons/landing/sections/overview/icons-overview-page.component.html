@@ -1,0 +1,143 @@
+<section class="grid gap-8">
+  <div class="grid gap-2">
+    <h1 class="m-0 text-3xl font-semibold">Icons</h1>
+    <p class="m-0 max-w-3xl text-sm text-tng-fg-secondary md:text-base">
+      <code class="font-mono text-xs md:text-sm">@tailng-ui/icons</code> provides a lazy-loading
+      icon system with built-in Lucide support and an extensible pack API for any SVG icon set.
+    </p>
+  </div>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <div
+        class="mb-1 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-tng-fg-secondary"
+      >
+        <tng-icon icon="package" class="h-4 w-4" />
+        <span>Getting Started</span>
+      </div>
+      <tng-card-title>Installation</tng-card-title>
+      <tng-card-description>
+        Install the icons package along with the <code class="font-mono text-xs">@ng-icons</code> peer dependencies for
+        Lucide (the default built-in pack).
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="grid gap-4 text-sm text-tng-fg-secondary md:text-base">
+        <tng-tabs ariaLabel="Package manager" [defaultValue]="'pnpm'" class="grid gap-3">
+          <div tngTabList class="flex flex-wrap gap-2" ariaLabel="Package manager">
+            <button type="button" tngTab value="pnpm" class="installation-tab-trigger">pnpm</button>
+            <button type="button" tngTab value="npm" class="installation-tab-trigger">npm</button>
+            <button type="button" tngTab value="yarn" class="installation-tab-trigger">yarn</button>
+          </div>
+          <div tngTabPanel value="pnpm" class="min-w-0">
+            <tng-code-block
+              [code]="installPnpmCode"
+              adapter="shiki"
+              language="bash"
+              [theme]="codeBlockTheme()"
+              [sanitizeHtml]="false"
+              [wrap]="true"
+              title="pnpm"
+              [lineNumbers]="false"
+            />
+          </div>
+          <div tngTabPanel value="npm" class="min-w-0">
+            <tng-code-block
+              [code]="installNpmCode"
+              adapter="shiki"
+              language="bash"
+              [theme]="codeBlockTheme()"
+              [sanitizeHtml]="false"
+              [wrap]="true"
+              title="npm"
+              [lineNumbers]="false"
+            />
+          </div>
+          <div tngTabPanel value="yarn" class="min-w-0">
+            <tng-code-block
+              [code]="installYarnCode"
+              adapter="shiki"
+              language="bash"
+              [theme]="codeBlockTheme()"
+              [sanitizeHtml]="false"
+              [wrap]="true"
+              title="yarn"
+              [lineNumbers]="false"
+            />
+          </div>
+        </tng-tabs>
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <div
+        class="mb-1 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-tng-fg-secondary"
+      >
+        <tng-icon icon="settings" class="h-4 w-4" />
+        <span>Configuration</span>
+      </div>
+      <tng-card-title>Default Setup - Lucide Icons</tng-card-title>
+      <tng-card-description>
+        Call <code class="font-mono text-xs">provideTngIcons()</code> in your application config. With no arguments,
+        Lucide is registered as the default pack.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="grid gap-4 text-sm text-tng-fg-secondary md:text-base">
+        <tng-code-block
+          [code]="basicProviderCode"
+          adapter="shiki"
+          language="typescript"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="app.config.ts"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>Basic Usage</tng-card-title>
+      <tng-card-description>
+        Import <code class="font-mono text-xs">TngIcon</code> and use the
+        <code class="font-mono text-xs">&lt;tng-icon&gt;</code> element. Icons load lazily on first use.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <tng-code-block
+        [code]="basicUsageCode"
+        adapter="shiki"
+        language="html"
+        [theme]="codeBlockTheme()"
+        [sanitizeHtml]="false"
+        [wrap]="true"
+        title="my.component.html"
+      />
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>Icon Reference Syntax</tng-card-title>
+      <tng-card-description>
+        Icon names can be plain, resolved against the default pack, or prefixed with
+        <code class="font-mono text-xs">pack-name:</code> to reference a specific pack.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <tng-code-block
+        [code]="packRefSyntaxCode"
+        adapter="shiki"
+        language="html"
+        [theme]="codeBlockTheme()"
+        [sanitizeHtml]="false"
+        [wrap]="true"
+        title="pack:name syntax"
+      />
+    </tng-card-content>
+  </tng-card>
+</section>

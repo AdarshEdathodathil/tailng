@@ -516,4 +516,61 @@
       </ng-template>
     </app-docs-example-tabs-section>
   </section>
+
+  <section class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Sticky header overlay"
+      description="A menu trigger inside a sticky blurred header stays aligned while the shell scrolls."
+      ariaLabel="Sticky header menu example"
+      tabListAriaLabel="Sticky header menu tabs"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain-CSS"
+        panelTitle="Sticky filtered header menu"
+        [codeTabs]="stickyHeaderCodeTabs"
+      >
+        <div class="docs-example-stage menu-examples-app-shell-stage">
+          <div class="menu-examples-app-shell">
+            <header class="menu-examples-app-shell-header">
+              <div class="menu-examples-app-shell-title">
+                <span>Workspace</span>
+                <small>Review queue</small>
+              </div>
+              <tng-icon
+                id="menu-examples-sticky-header-trigger"
+                icon="palette"
+                tabindex="0"
+                aria-label="Theme"
+                class="menu-examples-app-shell-trigger"
+                [tngMenuTriggerFor]="stickyHeaderMenu"
+              />
+              <tng-menu
+                #stickyHeaderMenu="tngMenu"
+                ariaLabel="Theme menu"
+                scrollStrategy="reposition"
+                (tngMenuSelect)="onStickyHeaderSelect($event)"
+              >
+                <div tngMenuGroupLabel>Theme</div>
+                <button type="button" tngMenuItem tngMenuItemValue="System theme">System</button>
+                <button type="button" tngMenuItem tngMenuItemValue="Light theme">Light</button>
+                <button type="button" tngMenuItem tngMenuItemValue="Dark theme">Dark</button>
+              </tng-menu>
+            </header>
+            <div class="menu-examples-app-shell-body" aria-hidden="true">
+              <div class="menu-examples-app-shell-row"></div>
+              <div class="menu-examples-app-shell-row"></div>
+              <div class="menu-examples-app-shell-row"></div>
+              <div class="menu-examples-app-shell-row"></div>
+              <div class="menu-examples-app-shell-row"></div>
+            </div>
+          </div>
+        </div>
+        <p class="docs-overview-state">last shell command: {{ stickyHeaderCommand() }}</p>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
 </article>

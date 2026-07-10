@@ -11,32 +11,29 @@ export function bindIconSvgEffect(
   iconLoader: IconLoader,
   setSvgSignal: SetSvgSignal,
 ): void {
-  effect(
-    (onCleanup): void => {
-      const iconRef = normalizeIconRef(readIconRef());
-      if (iconRef === null) {
-        setSvgSignal(null);
-        return;
-      }
+  effect((onCleanup): void => {
+    const iconRef = normalizeIconRef(readIconRef());
+    if (iconRef === null) {
+      setSvgSignal(null);
+      return;
+    }
 
-      let cancelled = false;
-      void iconLoader
-        .loadIcon(iconRef)
-        .then((resolvedSvg): void => {
-          if (!cancelled) {
-            setSvgSignal(resolvedSvg ?? null);
-          }
-        })
-        .catch((): void => {
-          if (!cancelled) {
-            setSvgSignal(null);
-          }
-        });
-
-      onCleanup((): void => {
-        cancelled = true;
+    let cancelled = false;
+    void iconLoader
+      .loadIcon(iconRef)
+      .then((resolvedSvg): void => {
+        if (!cancelled) {
+          setSvgSignal(resolvedSvg ?? null);
+        }
+      })
+      .catch((): void => {
+        if (!cancelled) {
+          setSvgSignal(null);
+        }
       });
-    },
-    { allowSignalWrites: true },
-  );
+
+    onCleanup((): void => {
+      cancelled = true;
+    });
+  });
 }

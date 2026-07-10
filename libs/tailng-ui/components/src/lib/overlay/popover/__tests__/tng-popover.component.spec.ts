@@ -397,11 +397,11 @@ describe('tng-popover component behavior', () => {
     getByTestId<HTMLButtonElement>(fixture, 'menu-trigger').click();
     await settle(fixture);
 
-    getByTestId<HTMLButtonElement>(fixture, 'menu-item').click();
+    getFromDocument<HTMLButtonElement>('[data-testid="menu-item"]').click();
     await settle(fixture);
 
     expect(fixture.componentInstance.closeReasons).toEqual([]);
     expect(findPanel(fixture)?.getAttribute('hidden')).toBeNull();
-    expect(getByTestId<HTMLElement>(fixture, 'menu').getAttribute('data-state')).toBe('closed');
+    expect(getFromDocument<HTMLElement>('[data-testid="menu"]').getAttribute('data-state')).toBe('closed');
   });
 });

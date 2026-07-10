@@ -137,3 +137,82 @@
   color: var(--tng-semantic-foreground-muted);
   opacity: 0.48;
 }
+
+.menu-examples-app-shell-stage {
+  justify-items: stretch;
+}
+
+.menu-examples-app-shell {
+  background: var(--tng-semantic-background-surface);
+  border: 1px solid var(--tng-semantic-border-subtle);
+  border-radius: 1rem;
+  max-height: 17rem;
+  overflow: auto;
+  width: min(100%, 34rem);
+}
+
+.menu-examples-app-shell-header {
+  align-items: center;
+  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--tng-semantic-background-canvas) 82%, transparent);
+  border-bottom: 1px solid var(--tng-semantic-border-subtle);
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0.85rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.menu-examples-app-shell-title {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.menu-examples-app-shell-title span {
+  color: var(--tng-semantic-foreground-primary);
+  font-weight: 700;
+}
+
+.menu-examples-app-shell-title small {
+  color: var(--tng-semantic-foreground-secondary);
+  font-size: 0.78rem;
+}
+
+.menu-examples-app-shell-trigger {
+  align-items: center;
+  border-radius: 0.55rem;
+  color: var(--tng-semantic-foreground-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 2.25rem;
+  justify-content: center;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+  width: 2.25rem;
+}
+
+.menu-examples-app-shell-trigger:hover,
+.menu-examples-app-shell-trigger[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--tng-semantic-accent-brand) 10%, transparent);
+  color: var(--tng-semantic-foreground-primary);
+}
+
+.menu-examples-app-shell-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--tng-semantic-accent-brand) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.menu-examples-app-shell-body {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+.menu-examples-app-shell-row {
+  background: color-mix(in srgb, var(--tng-semantic-background-canvas) 72%, var(--tng-semantic-background-surface));
+  border: 1px solid var(--tng-semantic-border-subtle);
+  border-radius: 0.75rem;
+  height: 3.25rem;
+}

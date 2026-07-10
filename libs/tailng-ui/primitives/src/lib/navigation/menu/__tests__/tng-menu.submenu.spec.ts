@@ -36,6 +36,17 @@ function pointerdown(el: HTMLElement): PointerEvent {
   return event;
 }
 
+function pointerenter(el: HTMLElement, pointerType = 'mouse'): PointerEvent {
+  const event = new PointerEvent('pointerenter', {
+    bubbles: true,
+    cancelable: true,
+    pointerType,
+  });
+
+  el.dispatchEvent(event);
+  return event;
+}
+
 @Component({
   imports: [TngMenu, TngMenuItem, TngMenuTrigger],
   template: `
@@ -232,6 +243,82 @@ describe('tng-menu submenu behavior', () => {
     expect(submenu.getAttribute('data-state')).toBe('open');
     expect(submenu.getAttribute('aria-activedescendant')).toBe(firstSubItem.id);
     expect(document.activeElement).toBe(submenu);
+  });
+
+  it('opens a submenu on pointer hover from a submenu-trigger item', () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [MenuSubmenuHostComponent],
+    }).createComponent(MenuSubmenuHostComponent);
+
+    fixture.detectChanges();
+
+    const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
+    const menu = fixture.nativeElement.querySelector('[data-testid="menu"]') as HTMLElement;
+    const submenu = fixture.nativeElement.querySelector('[data-testid="submenu"]') as HTMLElement;
+    const submenuTrigger = fixture.nativeElement.querySelector('[data-testid="item-more"]') as HTMLButtonElement;
+    const firstSubItem = fixture.nativeElement.querySelector('[data-testid="sub-item-a"]') as HTMLButtonElement;
+
+    click(trigger);
+    fixture.detectChanges();
+
+    pointerenter(submenuTrigger);
+    fixture.detectChanges();
+
+    expect(menu.getAttribute('data-state')).toBe('open');
+    expect(menu.getAttribute('aria-activedescendant')).toBe(submenuTrigger.id);
+    expect(submenuTrigger.getAttribute('aria-expanded')).toBe('true');
+    expect(submenu.getAttribute('data-state')).toBe('open');
+    expect(submenu.getAttribute('aria-activedescendant')).toBe(firstSubItem.id);
+    expect(document.activeElement).toBe(submenu);
+  });
+
+  it('closes an open sibling submenu when pointer hover moves to a normal item', () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [MenuSubmenuHostComponent],
+    }).createComponent(MenuSubmenuHostComponent);
+
+    fixture.detectChanges();
+
+    const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
+    const menu = fixture.nativeElement.querySelector('[data-testid="menu"]') as HTMLElement;
+    const submenu = fixture.nativeElement.querySelector('[data-testid="submenu"]') as HTMLElement;
+    const submenuTrigger = fixture.nativeElement.querySelector('[data-testid="item-more"]') as HTMLButtonElement;
+    const itemZ = fixture.nativeElement.querySelector('[data-testid="item-z"]') as HTMLButtonElement;
+
+    click(trigger);
+    fixture.detectChanges();
+
+    pointerenter(submenuTrigger);
+    fixture.detectChanges();
+    expect(submenu.getAttribute('data-state')).toBe('open');
+
+    pointerenter(itemZ);
+    fixture.detectChanges();
+
+    expect(menu.getAttribute('aria-activedescendant')).toBe(itemZ.id);
+    expect(submenu.getAttribute('data-state')).toBe('closed');
+    expect(submenuTrigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('does not open a submenu from a touch pointer hover event', () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [MenuSubmenuHostComponent],
+    }).createComponent(MenuSubmenuHostComponent);
+
+    fixture.detectChanges();
+
+    const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
+    const submenu = fixture.nativeElement.querySelector('[data-testid="submenu"]') as HTMLElement;
+    const submenuTrigger = fixture.nativeElement.querySelector('[data-testid="item-more"]') as HTMLButtonElement;
+
+    click(trigger);
+    fixture.detectChanges();
+
+    pointerenter(submenuTrigger, 'touch');
+    fixture.detectChanges();
+
+    expect(submenuTrigger.getAttribute('aria-expanded')).toBe('false');
+    expect(submenu.getAttribute('data-state')).toBe('closed');
   });
 
   it('closes a submenu on ArrowLeft and returns focus to the parent menu panel', () => {

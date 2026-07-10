@@ -1,0 +1,45 @@
+.icons-examples-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.icons-example-preview {
+  align-items: center;
+  border: 1px solid var(--tng-border-subtle, #d8e2ef);
+  border-radius: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.875rem;
+  min-height: 4rem;
+  padding: 1rem;
+}
+
+.icons-example-token {
+  align-items: center;
+  color: var(--tng-fg-primary);
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.icons-example-icon-button {
+  align-items: center;
+  background: var(--tng-semantic-background-surface, transparent);
+  border: 1px solid var(--tng-border-subtle, #d8e2ef);
+  border-radius: 0.375rem;
+  color: var(--tng-fg-primary);
+  display: inline-flex;
+  height: 2.25rem;
+  justify-content: center;
+  width: 2.25rem;
+}
+
+.icons-example-size-row span {
+  align-items: center;
+  color: var(--tng-fg-primary);
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.icons-example-css-var-icon {
+  --tng-icon-size: 1.5rem;
+}

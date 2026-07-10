@@ -21,6 +21,7 @@ type TngMenuItemRole = 'menuitem' | 'menuitemcheckbox' | 'menuitemradio';
 type TngMenuKeyboardEvent = Readonly<Pick<KeyboardEvent, 'key' | 'shiftKey' | 'target'>> &
   Readonly<{ preventDefault: () => void }>;
 type TngMenuPointerEvent = Readonly<Pick<PointerEvent, 'target'>>;
+type TngMenuPointerEnterEvent = Readonly<Pick<PointerEvent, 'pointerType'>>;
 type TngMenubarArrowHandler = (key: 'ArrowRight' | 'ArrowLeft') => void;
 type TngMenubarTabHandler = (shiftKey: boolean) => boolean;
 
@@ -225,6 +226,14 @@ export class TngMenu {
 
   getParentMenu(): TngMenu | null {
     return this.parentMenu;
+  }
+
+  getOpenSubmenu(): TngMenu | null {
+    return this.openSubmenu;
+  }
+
+  getHostElement(): HTMLElement {
+    return this.hostRef.nativeElement;
   }
 
   isOpen(): boolean {
@@ -861,6 +870,19 @@ export class TngMenuItem {
     }
 
     this.select('pointer');
+  }
+
+  @HostListener('pointerenter', ['$event'])
+  protected onPointerenter(event: TngMenuPointerEnterEvent): void {
+    if (event.pointerType === 'touch' || !this.isNavigable()) {
+      return;
+    }
+
+    this.menu?.setActiveItem(this);
+
+    if (this.submenu() !== null) {
+      this.openOwnedSubmenu('first');
+    }
   }
 
   ngOnDestroy(): void {

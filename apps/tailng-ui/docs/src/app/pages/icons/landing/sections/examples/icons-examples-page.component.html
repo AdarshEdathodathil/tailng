@@ -1,0 +1,146 @@
+<section class="grid gap-8">
+  <div class="grid gap-2">
+    <h2 class="m-0 text-2xl font-semibold">Examples</h2>
+    <p class="m-0 max-w-3xl text-sm text-tng-fg-secondary md:text-base">
+      These examples cover the main <code class="font-mono text-xs">TngIcon</code> inputs and the
+      icon-pack APIs used to bring additional SVG sources into an app.
+    </p>
+  </div>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>Accessibility Examples</tng-card-title>
+      <tng-card-description>
+        Omit <code class="font-mono text-xs">label</code> for decorative icons. Add it when the icon
+        is the only accessible name.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="icons-examples-section">
+        <div class="icons-example-preview">
+          <span class="icons-example-token">
+            <tng-icon icon="home" size="1.25rem" />
+            Dashboard
+          </span>
+          <button type="button" class="icons-example-icon-button" aria-label="Search">
+            <tng-icon icon="search" label="Search" size="1.25rem" />
+          </button>
+        </div>
+        <tng-code-block
+          [code]="accessibilityCode"
+          adapter="shiki"
+          language="html"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="accessibility"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>Size Input Examples</tng-card-title>
+      <tng-card-description>
+        Use the input for local, component-owned sizing. Number bindings are normalized to pixel
+        values.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="icons-examples-section">
+        <div class="icons-example-preview icons-example-size-row">
+          <span><tng-icon icon="bell" size="1rem" /> 1rem</span>
+          <span><tng-icon icon="bell" size="1.25rem" /> 1.25rem</span>
+          <span><tng-icon icon="bell" [size]="24" /> 24px</span>
+        </div>
+        <tng-code-block
+          [code]="sizeExamplesCode"
+          adapter="shiki"
+          language="html"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="size input"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>CSS Variable Sizing</tng-card-title>
+      <tng-card-description>
+        Use <code class="font-mono text-xs">--tng-icon-size</code> when size belongs to a CSS class,
+        theme, or parent component.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="icons-examples-section">
+        <div class="icons-example-preview">
+          <span class="icons-example-token">
+            <tng-icon icon="settings" class="icons-example-css-var-icon" />
+            Settings
+          </span>
+        </div>
+        <tng-code-block
+          [code]="cssVariableExampleCode"
+          adapter="shiki"
+          language="html"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="CSS variable sizing"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>Pack Reference Examples</tng-card-title>
+      <tng-card-description>
+        Use plain icon refs for the default pack and prefixed refs when a template must point at a
+        specific pack.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <div class="icons-examples-section">
+        <div class="icons-example-preview icons-example-size-row">
+          <span><tng-icon icon="home" size="1.25rem" /> default</span>
+          <span><tng-icon icon="lucide:home" size="1.25rem" /> lucide:home</span>
+        </div>
+        <tng-code-block
+          [code]="packReferenceCode"
+          adapter="shiki"
+          language="html"
+          [theme]="codeBlockTheme()"
+          [sanitizeHtml]="false"
+          [wrap]="true"
+          title="pack refs"
+        />
+      </div>
+    </tng-card-content>
+  </tng-card>
+
+  <tng-card variant="outline" padding="lg">
+    <tng-card-header>
+      <tng-card-title>Custom Pack API</tng-card-title>
+      <tng-card-description>
+        Create a pack from SVG loaders, provide it once, then reference icons with
+        <code class="font-mono text-xs">pack:name</code>.
+      </tng-card-description>
+    </tng-card-header>
+    <tng-card-content>
+      <tng-code-block
+        [code]="customPackCode"
+        adapter="shiki"
+        language="typescript"
+        [theme]="codeBlockTheme()"
+        [sanitizeHtml]="false"
+        [wrap]="true"
+        title="custom icon pack"
+      />
+    </tng-card-content>
+  </tng-card>
+</section>
