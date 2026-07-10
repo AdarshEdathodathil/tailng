@@ -33,7 +33,6 @@ export class TngMenuTriggerFor {
 
   private readonly hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly triggerTarget = inject(TNG_TRIGGER_TARGET, { optional: true, self: true });
-  private readonly dataSlot = 'menu-trigger' as const;
 
   public constructor() {
     effect((onCleanup): void => {
@@ -41,7 +40,6 @@ export class TngMenuTriggerFor {
       const trigger = this.triggerTarget?.getTngTriggerElement() ?? this.hostRef.nativeElement;
       const generatedTriggerId = this.ensureTriggerId(trigger);
       this.setTriggerAttributes(trigger, {
-        dataSlot: this.dataSlot,
         ariaHasPopup: 'menu',
       });
       menu.setTriggerElement(trigger, () => this.syncAriaState(trigger));
@@ -51,7 +49,6 @@ export class TngMenuTriggerFor {
       onCleanup((): void => {
         menu.clearTriggerLink(trigger);
         this.setTriggerAttributes(trigger, {
-          dataSlot: null,
           ariaHasPopup: null,
           ariaControls: null,
           ariaExpanded: null,
@@ -122,19 +119,9 @@ export class TngMenuTriggerFor {
       return;
     }
 
-    this.applyDataSlotAttribute(trigger, attributes);
     this.applyAriaHasPopupAttribute(trigger, attributes);
     this.applyAriaControlsAttribute(trigger, attributes);
     this.applyAriaExpandedAttribute(trigger, attributes);
-  }
-
-  private applyDataSlotAttribute(
-    trigger: Readonly<HTMLElement>,
-    attributes: TngTriggerTargetAttributes,
-  ): void {
-    if ('dataSlot' in attributes) {
-      this.setOrRemoveAttribute(trigger, 'data-slot', attributes.dataSlot);
-    }
   }
 
   private applyAriaHasPopupAttribute(

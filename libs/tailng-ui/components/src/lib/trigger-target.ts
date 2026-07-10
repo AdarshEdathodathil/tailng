@@ -4,7 +4,6 @@ export type TngTriggerTargetAttributes = Readonly<{
   ariaControls?: string | null;
   ariaExpanded?: boolean | null;
   ariaHasPopup?: string | null;
-  dataSlot?: string | null;
 }>;
 
 export type TngTriggerTarget = Readonly<{

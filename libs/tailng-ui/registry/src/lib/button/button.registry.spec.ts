@@ -19,12 +19,14 @@ describe('button registry item', () => {
     expect(tsFile?.content).toContain('TNG_TRIGGER_TARGET');
     expect(tsFile?.content).toContain('getTngTriggerElement');
     expect(tsFile?.content).toContain("selector: 'tng-button'");
+    expect(tsFile?.content).not.toContain('triggerDataSlot');
 
     const triggerTargetFile = buttonRegistryItem.files.find((file) =>
       file.path.endsWith('tailng-ui/tng-trigger-target.ts'),
     );
     expect(triggerTargetFile).toBeDefined();
     expect(triggerTargetFile?.content).toContain('export const TNG_TRIGGER_TARGET');
+    expect(triggerTargetFile?.content).not.toContain('dataSlot');
 
     const primitiveFile = buttonRegistryItem.files.find((file) =>
       file.path.endsWith('tailng-ui/button/tng-press-primitive.ts'),

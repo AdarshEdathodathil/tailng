@@ -257,7 +257,6 @@ export type TngTriggerTargetAttributes = Readonly<{
   ariaControls?: string | null;
   ariaExpanded?: boolean | null;
   ariaHasPopup?: string | null;
-  dataSlot?: string | null;
 }>;
 
 export interface TngTriggerTarget {
@@ -326,7 +325,6 @@ export class TngButton implements TngTriggerTarget {
   protected readonly triggerAriaControls = signal<string | null>(null);
   protected readonly triggerAriaExpanded = signal<boolean | null>(null);
   protected readonly triggerAriaHasPopup = signal<TngPressAriaHasPopup | null>(null);
-  protected readonly triggerDataSlot = signal<string | null>(null);
   protected readonly buttonRef = viewChild<ElementRef<HTMLButtonElement>>('buttonRef');
 
   public getTngTriggerElement(): HTMLButtonElement | null {
@@ -346,9 +344,6 @@ export class TngButton implements TngTriggerTarget {
       this.triggerAriaHasPopup.set(coerceTngPressAriaHasPopup(attributes.ariaHasPopup));
     }
 
-    if ('dataSlot' in attributes) {
-      this.triggerDataSlot.set(attributes.dataSlot ?? null);
-    }
   }
 }
 `;
@@ -363,7 +358,6 @@ const buttonTemplateHtml = `<button
   [ariaExpanded]="triggerAriaExpanded() ?? ariaExpanded()"
   [ariaHasPopup]="triggerAriaHasPopup() ?? ariaHasPopup()"
   [ariaPressed]="ariaPressed()"
-  [attr.data-slot]="triggerDataSlot()"
   [attr.data-appearance]="appearance()"
   [attr.data-size]="size()"
   [attr.data-tone]="tone()"

@@ -51,13 +51,15 @@
       >
         <div class="menu-stage">
           <div>
-            <button
+            <tng-button
               type="button"
               id="menu-overview-plain-trigger"
+              appearance="outline"
+              tone="neutral"
               [tngMenuTriggerFor]="plainMenu"
             >
               Options
-            </button>
+            </tng-button>
             <tng-menu #plainMenu="tngMenu" ariaLabel="Plain CSS options menu" (tngMenuSelect)="onPlainSelect($event)">
               <div tngMenuGroupLabel>Options</div>
               <button type="button" tngMenuItem tngMenuItemValue="Pin item">Pin</button>
@@ -81,13 +83,15 @@
         >
           <div class="menu-stage">
             <div>
-              <button
+              <tng-button
                 type="button"
                 id="menu-overview-tailwind-trigger"
+                appearance="outline"
+                tone="neutral"
                 [tngMenuTriggerFor]="tailwindMenu"
               >
                 Open menu
-              </button>
+              </tng-button>
               <tng-menu #tailwindMenu="tngMenu" ariaLabel="Tailwind menu" (tngMenuSelect)="onTailwindSelect($event)">
                 <div tngMenuGroupLabel>Actions</div>
                 <button type="button" tngMenuItem tngMenuItemValue="Export report">Export report</button>

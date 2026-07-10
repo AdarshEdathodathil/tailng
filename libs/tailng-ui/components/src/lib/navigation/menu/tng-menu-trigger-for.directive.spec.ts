@@ -18,6 +18,17 @@ import { TngButtonComponent } from '../../utility/button/tng-button.component';
 class HostComponent {}
 
 @Component({
+  imports: [TngMenuComponent, TngMenuItem, TngMenuTriggerFor],
+  template: `
+    <span tabindex="0" [tngMenuTriggerFor]="menu" data-testid="trigger">Open</span>
+    <tng-menu #menu="tngMenu" ariaLabel="Actions" data-testid="menu">
+      <button type="button" tngMenuItem data-testid="item">Item</button>
+    </tng-menu>
+  `,
+})
+class NonButtonTriggerHostComponent {}
+
+@Component({
   imports: [TngButtonComponent, TngMenuComponent, TngMenuItem, TngMenuTriggerFor],
   template: `
     <tng-button id="button-trigger-host" [tngMenuTriggerFor]="menu" data-testid="trigger">
@@ -31,7 +42,7 @@ class HostComponent {}
 class ButtonTriggerHostComponent {}
 
 describe('tng-menu-trigger-for directive', () => {
-  it('injects the trigger slot and aria attributes at runtime', () => {
+  it('injects trigger aria attributes at runtime without applying a menu trigger slot', () => {
     const fixture = TestBed.configureTestingModule({
       imports: [HostComponent],
     }).createComponent(HostComponent);
@@ -41,7 +52,23 @@ describe('tng-menu-trigger-for directive', () => {
     const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
     const menu = fixture.nativeElement.querySelector('[data-testid="menu"]') as HTMLElement;
 
-    expect(trigger.getAttribute('data-slot')).toBe('menu-trigger');
+    expect(trigger.getAttribute('data-slot')).toBeNull();
+    expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+    expect(trigger.getAttribute('aria-controls')).toBe(menu.id);
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('does not apply menu trigger styling hooks to non-button trigger hosts', () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [NonButtonTriggerHostComponent],
+    }).createComponent(NonButtonTriggerHostComponent);
+
+    fixture.detectChanges();
+
+    const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLElement;
+    const menu = fixture.nativeElement.querySelector('[data-testid="menu"]') as HTMLElement;
+
+    expect(trigger.getAttribute('data-slot')).toBeNull();
     expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
     expect(trigger.getAttribute('aria-controls')).toBe(menu.id);
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
@@ -57,7 +84,7 @@ describe('tng-menu-trigger-for directive', () => {
     const trigger = fixture.nativeElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
     const menu = fixture.nativeElement.querySelector('[data-testid="menu"]') as HTMLElement;
 
-    expect(trigger.getAttribute('data-slot')).toBe('menu-trigger');
+    expect(trigger.getAttribute('data-slot')).toBeNull();
 
     trigger.click();
     fixture.detectChanges();
@@ -88,7 +115,7 @@ describe('tng-menu-trigger-for directive', () => {
     expect(hostTrigger.getAttribute('aria-haspopup')).toBeNull();
     expect(hostTrigger.id).toBe('button-trigger-host');
     expect(innerTrigger.id).toMatch(/^tng-menu-trigger-/);
-    expect(innerTrigger.getAttribute('data-slot')).toBe('menu-trigger');
+    expect(innerTrigger.getAttribute('data-slot')).toBeNull();
     expect(innerTrigger.getAttribute('aria-haspopup')).toBe('menu');
     expect(innerTrigger.getAttribute('aria-controls')).toBe(menu.id);
     expect(innerTrigger.getAttribute('aria-expanded')).toBe('false');

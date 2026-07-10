@@ -22,9 +22,15 @@
       >
         <div class="docs-example-stage">
           <div>
-            <button type="button" id="menu-examples-plain-trigger" [tngMenuTriggerFor]="plainMenu">
+            <tng-button
+              type="button"
+              id="menu-examples-plain-trigger"
+              appearance="outline"
+              tone="neutral"
+              [tngMenuTriggerFor]="plainMenu"
+            >
               Options
-            </button>
+            </tng-button>
             <tng-menu #plainMenu="tngMenu" ariaLabel="Plain options menu" (tngMenuSelect)="onPlainSelect($event)">
               <div tngMenuGroupLabel>Options</div>
               <button type="button" tngMenuItem tngMenuItemValue="Pin item">Pin</button>
@@ -48,9 +54,15 @@
         >
           <div class="docs-example-stage">
             <div>
-              <button type="button" id="menu-examples-tailwind-trigger" [tngMenuTriggerFor]="tailwindMenu">
+              <tng-button
+                type="button"
+                id="menu-examples-tailwind-trigger"
+                appearance="outline"
+                tone="neutral"
+                [tngMenuTriggerFor]="tailwindMenu"
+              >
                 Open menu
-              </button>
+              </tng-button>
               <tng-menu #tailwindMenu="tngMenu" ariaLabel="Tailwind actions menu" (tngMenuSelect)="onTailwindSelect($event)">
                 <div tngMenuGroupLabel>Actions</div>
                 <button type="button" tngMenuItem tngMenuItemValue="Export report">Export report</button>
@@ -335,6 +347,84 @@
 
   <section class="docs-overview-block">
     <app-docs-example-tabs-section
+      heading="Icon trigger"
+      description="Use tng-icon as the menu trigger. [tngMenuTriggerFor] on the icon host opens and closes on click; add tabindex=&quot;0&quot; and aria-label for keyboard and screen reader support."
+      ariaLabel="Icon menu trigger examples"
+      tabListAriaLabel="Icon menu trigger tabs"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain-CSS"
+        panelTitle="tng-icon menu trigger (plain CSS)"
+        [codeTabs]="iconTriggerPlainCodeTabs"
+      >
+        <div class="docs-example-stage">
+          <div>
+            <tng-icon
+              id="menu-examples-icon-trigger"
+              icon="ellipsis-vertical"
+              tabindex="0"
+              aria-label="Options"
+              [tngMenuTriggerFor]="iconTriggerMenu"
+            />
+            <tng-menu
+              #iconTriggerMenu="tngMenu"
+              ariaLabel="Icon trigger options menu"
+              (tngMenuSelect)="onIconTriggerSelect($event)"
+            >
+              <div tngMenuGroupLabel>Options</div>
+              <button type="button" tngMenuItem tngMenuItemValue="Pin item">Pin</button>
+              <button type="button" tngMenuItem tngMenuItemValue="Mute notifications">Mute</button>
+              <button type="button" tngMenuItem tngMenuItemValue="Remove item">Remove</button>
+            </tng-menu>
+          </div>
+        </div>
+        <p class="docs-overview-state">last command: {{ iconTriggerCommand() }}</p>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="tng-icon menu trigger (tailwind shell)"
+        [codeTabs]="iconTriggerTailwindCodeTabs"
+      >
+        <div
+          class="rounded-xl border border-[var(--tng-semantic-border-subtle)] bg-[color-mix(in_srgb,var(--tng-semantic-background-surface)_88%,transparent)] p-4"
+        >
+          <div class="docs-example-stage">
+            <div>
+              <tng-icon
+                id="menu-examples-icon-trigger-tailwind"
+                icon="ellipsis-vertical"
+                tabindex="0"
+                aria-label="Options"
+                [tngMenuTriggerFor]="iconTriggerTailwindMenu"
+                class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-[color:var(--tng-semantic-foreground-secondary)] transition hover:bg-[color:color-mix(in_srgb,var(--tng-semantic-foreground-primary)_6%,transparent)] hover:text-[color:var(--tng-semantic-foreground-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:color-mix(in_srgb,var(--tng-semantic-accent-brand)_28%,transparent)] aria-expanded:bg-[color:color-mix(in_srgb,var(--tng-semantic-accent-brand)_10%,transparent)] aria-expanded:text-[color:var(--tng-semantic-foreground-primary)]"
+              />
+              <tng-menu
+                #iconTriggerTailwindMenu="tngMenu"
+                ariaLabel="Icon trigger actions menu"
+                (tngMenuSelect)="onIconTriggerSelect($event)"
+              >
+                <div tngMenuGroupLabel>Actions</div>
+                <button type="button" tngMenuItem tngMenuItemValue="Export report">Export report</button>
+                <button type="button" tngMenuItem tngMenuItemValue="Share link">Share link</button>
+                <button type="button" tngMenuItem tngMenuItemValue="Copy path">Copy path</button>
+              </tng-menu>
+            </div>
+          </div>
+        </div>
+        <p class="docs-overview-state">last command: {{ iconTriggerCommand() }}</p>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section class="docs-overview-block">
+    <app-docs-example-tabs-section
       heading="Cascaded submenu example"
       description="Nested submenu wiring with [tngMenuItemSubmenu]. Use ArrowRight on the active parent option to enter deeper levels."
       ariaLabel="Cascaded submenu variants"
@@ -351,9 +441,15 @@
       >
         <div class="docs-example-stage docs-example-stage--cascade">
           <div>
-            <button type="button" id="menu-examples-cascade-plain-root-trigger" [tngMenuTriggerFor]="cascadePlainRootMenu">
+            <tng-button
+              type="button"
+              id="menu-examples-cascade-plain-root-trigger"
+              appearance="outline"
+              tone="neutral"
+              [tngMenuTriggerFor]="cascadePlainRootMenu"
+            >
               Import
-            </button>
+            </tng-button>
             <tng-menu #cascadePlainRootMenu="tngMenu" ariaLabel="Import root menu" (tngMenuSelect)="onCascadePlainSelect($event)">
               <button type="button" tngMenuItem tngMenuItemValue="Import from CSV">CSV file</button>
               <button
@@ -387,9 +483,15 @@
         >
           <div class="docs-example-stage docs-example-stage--cascade">
             <div>
-              <button type="button" id="menu-examples-cascade-tailwind-root-trigger" [tngMenuTriggerFor]="cascadeTailwindRootMenu">
+              <tng-button
+                type="button"
+                id="menu-examples-cascade-tailwind-root-trigger"
+                appearance="outline"
+                tone="neutral"
+                [tngMenuTriggerFor]="cascadeTailwindRootMenu"
+              >
                 Import
-              </button>
+              </tng-button>
               <tng-menu #cascadeTailwindRootMenu="tngMenu" ariaLabel="Import root menu" (tngMenuSelect)="onCascadeTailwindSelect($event)">
                 <div tngMenuGroupLabel>Import</div>
                 <button type="button" tngMenuItem tngMenuItemValue="Import from CSV">CSV file</button>

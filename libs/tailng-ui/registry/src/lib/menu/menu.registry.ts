@@ -80,7 +80,6 @@ export type TngTriggerTargetAttributes = Readonly<{
   ariaControls?: string | null;
   ariaExpanded?: boolean | null;
   ariaHasPopup?: string | null;
-  dataSlot?: string | null;
 }>;
 
 export interface TngTriggerTarget {
@@ -284,7 +283,6 @@ export class TngMenuTriggerFor {
       const trigger = this.triggerTarget?.getTngTriggerElement() ?? this.hostRef.nativeElement;
       const generatedTriggerId = this.ensureTriggerId(trigger);
       this.setTriggerAttributes(trigger, {
-        dataSlot: 'menu-trigger',
         ariaHasPopup: 'menu',
       });
       menu.registerTrigger(trigger, () => this.syncAriaState(trigger));
@@ -293,7 +291,6 @@ export class TngMenuTriggerFor {
       onCleanup((): void => {
         menu.unregisterTrigger(trigger);
         this.setTriggerAttributes(trigger, {
-          dataSlot: null,
           ariaHasPopup: null,
           ariaControls: null,
           ariaExpanded: null,
@@ -348,10 +345,6 @@ export class TngMenuTriggerFor {
     if (this.triggerTarget !== null) {
       this.triggerTarget.setTngTriggerAttributes(attributes);
       return;
-    }
-
-    if ('dataSlot' in attributes) {
-      this.setOrRemoveAttribute(trigger, 'data-slot', attributes.dataSlot);
     }
 
     if ('ariaHasPopup' in attributes) {

@@ -1,6 +1,11 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, inject, signal, ViewEncapsulation, type OnDestroy } from '@angular/core';
-import { TngCodeBlockComponent, TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';
+import {
+  TngButtonComponent,
+  TngCodeBlockComponent,
+  TngMenuComponent,
+  TngMenuTriggerFor,
+} from '@tailng-ui/components';
 import { TngMenuGroupLabel, TngMenuItem, type TngMenuSelectEvent } from '@tailng-ui/primitives';
 import { type DocsExampleCodeTab } from '../../../../../../shared/example-panel/docs-example-panel.component';
 import {
@@ -14,6 +19,7 @@ import { observeDocsCodeThemeChanges, resolveDocsCodeBlockTheme } from '../../..
   encapsulation: ViewEncapsulation.None,
   imports: [
     TngCodeBlockComponent,
+    TngButtonComponent,
     TngMenuComponent,
     TngMenuGroupLabel,
     TngMenuItem,
@@ -34,18 +40,20 @@ export class MenuOverviewPageComponent implements OnDestroy {
   protected readonly tailwindCommand = signal('No command yet');
 
   protected readonly componentImportCode = [
-    "import { TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
+    "import { TngButtonComponent, TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
     "import { TngMenuGroupLabel, TngMenuItem, TngMenuSeparator } from '@tailng-ui/primitives';",
   ].join('\n');
 
   protected readonly componentUsageCode = [
-    '<button',
+    '<tng-button',
     '  type="button"',
     '  id="actions-menu-trigger"',
+    '  appearance="outline"',
+    '  tone="neutral"',
     '  [tngMenuTriggerFor]="actionsMenu"',
     '>',
     '  Open menu',
-    '</button>',
+    '</tng-button>',
     '<tng-menu #actionsMenu="tngMenu" ariaLabel="Actions menu">',
     '  <div tngMenuGroupLabel>Actions</div>',
     '  <button type="button" tngMenuItem tngMenuItemValue="Export report">Export report</button>',
@@ -62,14 +70,14 @@ export class MenuOverviewPageComponent implements OnDestroy {
       title: 'menu-overview-plain-css.component.ts',
       code: [
         "import { Component, signal } from '@angular/core';",
-        "import { TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
+        "import { TngButtonComponent, TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
         "import type { TngMenuSelectEvent } from '@tailng-ui/primitives';",
         "import { TngMenuGroupLabel, TngMenuItem } from '@tailng-ui/primitives';",
         '',
         '@Component({',
         "  selector: 'app-menu-overview-plain-example',",
         '  standalone: true,',
-        '  imports: [TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
+        '  imports: [TngButtonComponent, TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
         "  templateUrl: './menu-overview-plain-css.component.html',",
         "  styleUrl: './menu-overview-plain-css.component.css',",
         '})',
@@ -88,13 +96,15 @@ export class MenuOverviewPageComponent implements OnDestroy {
       language: 'html',
       title: 'menu-overview-plain-css.component.html',
       code: [
-        '<button',
+        '<tng-button',
         '  type="button"',
         '  id="menu-overview-plain-trigger"',
+        '  appearance="outline"',
+        '  tone="neutral"',
         '  [tngMenuTriggerFor]="menuOverviewPlainMenu"',
         '>',
         '  Options',
-        '</button>',
+        '</tng-button>',
         '<tng-menu',
         '  #menuOverviewPlainMenu="tngMenu"',
         '  ariaLabel="Options menu"',
@@ -115,8 +125,9 @@ export class MenuOverviewPageComponent implements OnDestroy {
       title: 'menu-overview-plain-css.component.css',
       code: [
         '/*',
-        ' * tng-menu, triggers, labels, and items need no local CSS — the component',
-        ' * implementation applies styles. Use this file only for non-menu chrome',
+        ' * tng-menu, labels, and items need no local CSS — the component',
+        ' * implementation applies menu styles. Use tng-button or your own',
+        ' * control styles for triggers, then this file for non-menu chrome',
         ' * (e.g. the "last command" line below).',
         ' */',
         '',
@@ -141,14 +152,14 @@ export class MenuOverviewPageComponent implements OnDestroy {
       title: 'menu-overview-tailwind.component.ts',
       code: [
         "import { Component, signal } from '@angular/core';",
-        "import { TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
+        "import { TngButtonComponent, TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
         "import type { TngMenuSelectEvent } from '@tailng-ui/primitives';",
         "import { TngMenuGroupLabel, TngMenuItem } from '@tailng-ui/primitives';",
         '',
         '@Component({',
         "  selector: 'app-menu-overview-tailwind-example',",
         '  standalone: true,',
-        '  imports: [TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
+        '  imports: [TngButtonComponent, TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
         "  templateUrl: './menu-overview-tailwind.component.html',",
         '})',
         'export class MenuOverviewTailwindExampleComponent {',
@@ -167,13 +178,15 @@ export class MenuOverviewPageComponent implements OnDestroy {
       title: 'menu-overview-tailwind.component.html',
       code: [
         '<div class="rounded-xl border border-[var(--tng-semantic-border-subtle)] bg-[color-mix(in_srgb,var(--tng-semantic-background-surface)_88%,transparent)] p-4">',
-        '  <button',
+        '  <tng-button',
         '    type="button"',
         '    id="menu-overview-tailwind-trigger"',
+        '    appearance="outline"',
+        '    tone="neutral"',
         '    [tngMenuTriggerFor]="menuOverviewTailwindMenu"',
         '  >',
         '    Open menu',
-        '  </button>',
+        '  </tng-button>',
         '  <tng-menu',
         '    #menuOverviewTailwindMenu="tngMenu"',
         '    ariaLabel="Tailwind menu"',
@@ -195,9 +208,8 @@ export class MenuOverviewPageComponent implements OnDestroy {
       title: 'menu-overview-tailwind.component.css',
       code: [
         '/*',
-        ' * No CSS is required for tng-menu and related primitives — the component',
-        ' * handles them. This file can be omitted or left empty; utilities on',
-        ' * wrappers (e.g. the card in the template) are optional page chrome.',
+        ' * No CSS is required for tng-menu internals. Use tng-button or your own',
+        ' * control styles for triggers; wrapper utilities are optional page chrome.',
         ' */',
       ].join('\n'),
     },

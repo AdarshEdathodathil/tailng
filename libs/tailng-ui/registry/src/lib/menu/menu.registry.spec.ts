@@ -27,7 +27,8 @@ describe('menu registry item', () => {
     expect(triggerFile).toBeDefined();
     expect(triggerFile?.content).toContain("selector: '[tngMenuTriggerFor]'");
     expect(triggerFile?.content).toContain('TNG_TRIGGER_TARGET');
-    expect(triggerFile?.content).toContain("dataSlot: 'menu-trigger'");
+    expect(triggerFile?.content).not.toContain("dataSlot: 'menu-trigger'");
+    expect(triggerFile?.content).not.toContain("setOrRemoveAttribute(trigger, 'data-slot'");
     expect(triggerFile?.content).toContain('setTngTriggerAttributes');
     expect(triggerFile?.content).toContain('ensureTriggerId');
     expect(triggerFile?.content).toContain('createMenuTriggerId');
@@ -37,5 +38,6 @@ describe('menu registry item', () => {
     );
     expect(triggerTargetFile).toBeDefined();
     expect(triggerTargetFile?.content).toContain('export const TNG_TRIGGER_TARGET');
+    expect(triggerTargetFile?.content).not.toContain('dataSlot');
   });
 });

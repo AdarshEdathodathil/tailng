@@ -3,6 +3,7 @@
   <p class="menu-styling-lead">
     Wrapper menu styling still relies on public state attributes, so you can theme
     <code>&lt;tng-menu&gt;</code> and projected items without reaching into private DOM structure.
+    Trigger controls keep their own component or application styling.
   </p>
 
   <section class="menu-styling-block">
@@ -23,9 +24,9 @@
             <td>Visible panel surface, border, spacing, and layout.</td>
           </tr>
           <tr>
-            <td><code>[tngMenuTriggerFor][aria-expanded='true']</code></td>
-            <td>Trigger element</td>
-            <td>Open trigger styling for active wrapper menus.</td>
+            <td><code>aria-expanded='true'</code></td>
+            <td>Resolved trigger control</td>
+            <td>Open state for the trigger control; style it through the trigger’s own class or component API.</td>
           </tr>
           <tr>
             <td><code>[tngMenuItem]</code></td>

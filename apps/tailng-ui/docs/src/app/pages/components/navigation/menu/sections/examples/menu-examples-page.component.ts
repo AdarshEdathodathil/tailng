@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, inject, signal, type OnDestroy } from '@angular/core';
 import { TngButtonComponent, TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';
+import { TngIcon } from '@tailng-ui/icons';
 import { TngMenuGroupLabel, TngMenuItem, type TngMenuSelectEvent } from '@tailng-ui/primitives';
 import { type DocsExampleCodeTab } from '../../../../../../shared/example-panel/docs-example-panel.component';
 import {
@@ -13,6 +14,7 @@ import { observeDocsCodeThemeChanges, resolveDocsCodeBlockTheme } from '../../..
   selector: 'app-menu-examples-page',
   imports: [
     TngButtonComponent,
+    TngIcon,
     TngMenuComponent,
     TngMenuGroupLabel,
     TngMenuItem,
@@ -33,6 +35,7 @@ export class MenuExamplesPageComponent implements OnDestroy {
   protected readonly plainCommand = signal('No command yet');
   protected readonly tailwindCommand = signal('No command yet');
   protected readonly buttonTriggerCommand = signal('No command yet');
+  protected readonly iconTriggerCommand = signal('No command yet');
   protected readonly styledPlainCommand = signal('No command yet');
   protected readonly styledTailwindCommand = signal('No command yet');
   protected readonly cascadePlainCommand = signal('No command yet');
@@ -46,13 +49,13 @@ export class MenuExamplesPageComponent implements OnDestroy {
       title: 'menu-examples-plain-css.component.ts',
       code: [
         "import { Component, signal } from '@angular/core';",
-        "import { TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
+        "import { TngButtonComponent, TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
         "import { TngMenuGroupLabel, TngMenuItem, type TngMenuSelectEvent } from '@tailng-ui/primitives';",
         '',
         '@Component({',
         "  selector: 'app-menu-examples-plain-css-example',",
         '  standalone: true,',
-        '  imports: [TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
+        '  imports: [TngButtonComponent, TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
         "  templateUrl: './menu-examples-plain-css.component.html',",
         "  styleUrl: './menu-examples-plain-css.component.css',",
         '})',
@@ -72,13 +75,15 @@ export class MenuExamplesPageComponent implements OnDestroy {
       title: 'menu-examples-plain-css.component.html',
       code: [
         '<div>',
-        '  <button',
+        '  <tng-button',
         '    type="button"',
         '    id="menu-examples-plain-trigger"',
+        '    appearance="outline"',
+        '    tone="neutral"',
         '    [tngMenuTriggerFor]="menuExamplesPlainMenu"',
         '  >',
         '    Options',
-        '  </button>',
+        '  </tng-button>',
         '  <tng-menu',
         '    #menuExamplesPlainMenu="tngMenu"',
         '    ariaLabel="Options menu"',
@@ -99,7 +104,7 @@ export class MenuExamplesPageComponent implements OnDestroy {
       language: 'css',
       title: 'menu-examples-plain-css.component.css',
       code: [
-        '/* Layout only: trigger, panel, label, and items use the shared theme contract. */',
+        '/* Layout only: tng-button handles the trigger, and tng-menu handles panel, label, and items. */',
       ].join('\n'),
     },
   ]);
@@ -112,13 +117,13 @@ export class MenuExamplesPageComponent implements OnDestroy {
       title: 'menu-examples-tailwind.component.ts',
       code: [
         "import { Component, signal } from '@angular/core';",
-        "import { TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
+        "import { TngButtonComponent, TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
         "import { TngMenuGroupLabel, TngMenuItem, type TngMenuSelectEvent } from '@tailng-ui/primitives';",
         '',
         '@Component({',
         "  selector: 'app-menu-examples-tailwind-example',",
         '  standalone: true,',
-        '  imports: [TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
+        '  imports: [TngButtonComponent, TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
         "  templateUrl: './menu-examples-tailwind.component.html',",
         '})',
         'export class MenuExamplesTailwindExampleComponent {',
@@ -138,13 +143,15 @@ export class MenuExamplesPageComponent implements OnDestroy {
       code: [
         '<div class="rounded-xl border border-[var(--tng-semantic-border-subtle)] bg-[color-mix(in_srgb,var(--tng-semantic-background-surface)_88%,transparent)] p-4">',
         '  <div>',
-        '    <button',
+        '    <tng-button',
         '      type="button"',
         '      id="menu-examples-tailwind-trigger"',
+        '      appearance="outline"',
+        '      tone="neutral"',
         '      [tngMenuTriggerFor]="menuExamplesTailwindMenu"',
         '    >',
         '      Open menu',
-        '    </button>',
+        '    </tng-button>',
         '    <tng-menu',
         '      #menuExamplesTailwindMenu="tngMenu"',
         '      ariaLabel="Tailwind actions menu"',
@@ -301,6 +308,139 @@ export class MenuExamplesPageComponent implements OnDestroy {
       label: 'CSS',
       language: 'css',
       title: 'menu-examples-button-trigger-tailwind.component.css',
+      code: '/* Tailwind utilities are applied directly in the template. */',
+    },
+  ]);
+
+  protected readonly iconTriggerPlainCodeTabs: readonly DocsExampleCodeTab[] = Object.freeze([
+    {
+      value: 'ts',
+      label: 'TS',
+      language: 'ts',
+      title: 'menu-examples-icon-trigger-plain-css.component.ts',
+      code: [
+        "import { Component, signal } from '@angular/core';",
+        "import { TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
+        "import { TngIcon } from '@tailng-ui/icons';",
+        "import { TngMenuGroupLabel, TngMenuItem, type TngMenuSelectEvent } from '@tailng-ui/primitives';",
+        '',
+        '@Component({',
+        "  selector: 'app-menu-examples-icon-trigger-plain-css-example',",
+        '  standalone: true,',
+        '  imports: [TngIcon, TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
+        "  templateUrl: './menu-examples-icon-trigger-plain-css.component.html',",
+        '})',
+        'export class MenuExamplesIconTriggerPlainCssExampleComponent {',
+        "  protected readonly menuExamplesIconTriggerLastCommand = signal('No command yet');",
+        '',
+        '  protected onMenuExamplesIconTriggerSelect(event: TngMenuSelectEvent): void {',
+        '    this.menuExamplesIconTriggerLastCommand.set(String(event.value));',
+        '  }',
+        '}',
+      ].join('\n'),
+    },
+    {
+      value: 'html',
+      label: 'HTML',
+      language: 'html',
+      title: 'menu-examples-icon-trigger-plain-css.component.html',
+      code: [
+        '<div>',
+        '  <tng-icon',
+        '    id="menu-examples-icon-trigger"',
+        '    icon="ellipsis-vertical"',
+        '    tabindex="0"',
+        '    aria-label="Options"',
+        '    [tngMenuTriggerFor]="menuExamplesIconTriggerMenu"',
+        '  />',
+        '  <tng-menu',
+        '    #menuExamplesIconTriggerMenu="tngMenu"',
+        '    ariaLabel="Icon trigger options menu"',
+        '    (tngMenuSelect)="onMenuExamplesIconTriggerSelect($event)"',
+        '  >',
+        '    <div tngMenuGroupLabel>Options</div>',
+        '    <button type="button" tngMenuItem tngMenuItemValue="Pin item">Pin</button>',
+        '    <button type="button" tngMenuItem tngMenuItemValue="Mute notifications">Mute</button>',
+        '    <button type="button" tngMenuItem tngMenuItemValue="Remove item">Remove</button>',
+        '  </tng-menu>',
+        '</div>',
+        '<p>last command: {{ menuExamplesIconTriggerLastCommand() }}</p>',
+      ].join('\n'),
+    },
+    {
+      value: 'css',
+      label: 'CSS',
+      language: 'css',
+      title: 'menu-examples-icon-trigger-plain-css.component.css',
+      code: [
+        '/* Layout only: tng-icon handles the trigger, and tng-menu handles panel, label, and items. */',
+      ].join('\n'),
+    },
+  ]);
+
+  protected readonly iconTriggerTailwindCodeTabs: readonly DocsExampleCodeTab[] = Object.freeze([
+    {
+      value: 'ts',
+      label: 'TS',
+      language: 'ts',
+      title: 'menu-examples-icon-trigger-tailwind.component.ts',
+      code: [
+        "import { Component, signal } from '@angular/core';",
+        "import { TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
+        "import { TngIcon } from '@tailng-ui/icons';",
+        "import { TngMenuGroupLabel, TngMenuItem, type TngMenuSelectEvent } from '@tailng-ui/primitives';",
+        '',
+        '@Component({',
+        "  selector: 'app-menu-examples-icon-trigger-tailwind-example',",
+        '  standalone: true,',
+        '  imports: [TngIcon, TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
+        "  templateUrl: './menu-examples-icon-trigger-tailwind.component.html',",
+        '})',
+        'export class MenuExamplesIconTriggerTailwindExampleComponent {',
+        "  protected readonly menuExamplesIconTriggerTailwindLastCommand = signal('No command yet');",
+        '',
+        '  protected onMenuExamplesIconTriggerTailwindSelect(event: TngMenuSelectEvent): void {',
+        '    this.menuExamplesIconTriggerTailwindLastCommand.set(String(event.value));',
+        '  }',
+        '}',
+      ].join('\n'),
+    },
+    {
+      value: 'html',
+      label: 'HTML',
+      language: 'html',
+      title: 'menu-examples-icon-trigger-tailwind.component.html',
+      code: [
+        '<div class="rounded-xl border border-[var(--tng-semantic-border-subtle)] bg-[color-mix(in_srgb,var(--tng-semantic-background-surface)_88%,transparent)] p-4">',
+        '  <div>',
+        '    <tng-icon',
+        '      id="menu-examples-icon-trigger-tailwind"',
+        '      icon="ellipsis-vertical"',
+        '      tabindex="0"',
+        '      aria-label="Options"',
+        '      [tngMenuTriggerFor]="menuExamplesIconTriggerTailwindMenu"',
+        '      class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-[color:var(--tng-semantic-foreground-secondary)] transition hover:bg-[color:color-mix(in_srgb,var(--tng-semantic-foreground-primary)_6%,transparent)] hover:text-[color:var(--tng-semantic-foreground-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:color-mix(in_srgb,var(--tng-semantic-accent-brand)_28%,transparent)] aria-expanded:bg-[color:color-mix(in_srgb,var(--tng-semantic-accent-brand)_10%,transparent)] aria-expanded:text-[color:var(--tng-semantic-foreground-primary)]"',
+        '    />',
+        '    <tng-menu',
+        '      #menuExamplesIconTriggerTailwindMenu="tngMenu"',
+        '      ariaLabel="Icon trigger actions menu"',
+        '      (tngMenuSelect)="onMenuExamplesIconTriggerTailwindSelect($event)"',
+        '    >',
+        '      <div tngMenuGroupLabel>Actions</div>',
+        '      <button type="button" tngMenuItem tngMenuItemValue="Export report">Export report</button>',
+        '      <button type="button" tngMenuItem tngMenuItemValue="Share link">Share link</button>',
+        '      <button type="button" tngMenuItem tngMenuItemValue="Copy path">Copy path</button>',
+        '    </tng-menu>',
+        '  </div>',
+        '</div>',
+        '<p>last command: {{ menuExamplesIconTriggerTailwindLastCommand() }}</p>',
+      ].join('\n'),
+    },
+    {
+      value: 'css',
+      label: 'CSS',
+      language: 'css',
+      title: 'menu-examples-icon-trigger-tailwind.component.css',
       code: '/* Tailwind utilities are applied directly in the template. */',
     },
   ]);
@@ -626,13 +766,13 @@ export class MenuExamplesPageComponent implements OnDestroy {
       title: 'menu-examples-cascade-plain-css.component.ts',
       code: [
         "import { Component, signal } from '@angular/core';",
-        "import { TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
+        "import { TngButtonComponent, TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
         "import { TngMenuItem, type TngMenuSelectEvent } from '@tailng-ui/primitives';",
         '',
         '@Component({',
         "  selector: 'app-menu-examples-cascade-plain-css-example',",
         '  standalone: true,',
-        '  imports: [TngMenuComponent, TngMenuTriggerFor, TngMenuItem],',
+        '  imports: [TngButtonComponent, TngMenuComponent, TngMenuTriggerFor, TngMenuItem],',
         "  templateUrl: './menu-examples-cascade-plain-css.component.html',",
         "  styleUrl: './menu-examples-cascade-plain-css.component.css',",
         '})',
@@ -652,13 +792,15 @@ export class MenuExamplesPageComponent implements OnDestroy {
       title: 'menu-examples-cascade-plain-css.component.html',
       code: [
         '<div>',
-        '  <button',
+        '  <tng-button',
         '    type="button"',
         '    id="menu-examples-cascade-plain-root-trigger"',
+        '    appearance="outline"',
+        '    tone="neutral"',
         '    [tngMenuTriggerFor]="menuExamplesCascadePlainRootMenu"',
         '  >',
         '    Import',
-        '  </button>',
+        '  </tng-button>',
         '  <tng-menu',
         '    #menuExamplesCascadePlainRootMenu="tngMenu"',
         '    ariaLabel="Import root menu"',
@@ -693,7 +835,7 @@ export class MenuExamplesPageComponent implements OnDestroy {
       language: 'css',
       title: 'menu-examples-cascade-plain-css.component.css',
       code: [
-        '/* Layout only: trigger, panel, and submenu flyouts use the shared theme contract. */',
+        '/* Layout only: tng-button handles the trigger, and tng-menu handles panel and submenu flyouts. */',
       ].join('\n'),
     },
   ]);
@@ -706,13 +848,13 @@ export class MenuExamplesPageComponent implements OnDestroy {
       title: 'menu-examples-cascade-tailwind.component.ts',
       code: [
         "import { Component, signal } from '@angular/core';",
-        "import { TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
+        "import { TngButtonComponent, TngMenuComponent, TngMenuTriggerFor } from '@tailng-ui/components';",
         "import { TngMenuGroupLabel, TngMenuItem, type TngMenuSelectEvent } from '@tailng-ui/primitives';",
         '',
         '@Component({',
         "  selector: 'app-menu-examples-cascade-tailwind-example',",
         '  standalone: true,',
-        '  imports: [TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
+        '  imports: [TngButtonComponent, TngMenuComponent, TngMenuTriggerFor, TngMenuGroupLabel, TngMenuItem],',
         "  templateUrl: './menu-examples-cascade-tailwind.component.html',",
         '})',
         'export class MenuExamplesCascadeTailwindExampleComponent {',
@@ -732,13 +874,15 @@ export class MenuExamplesPageComponent implements OnDestroy {
       code: [
         '<div class="rounded-xl border border-[var(--tng-semantic-border-subtle)] bg-[color-mix(in_srgb,var(--tng-semantic-background-surface)_88%,transparent)] p-4">',
         '  <div class="menu-example-trigger-shell">',
-        '    <button',
+        '    <tng-button',
         '      type="button"',
         '      id="menu-examples-cascade-tailwind-root-trigger"',
+        '      appearance="outline"',
+        '      tone="neutral"',
         '      [tngMenuTriggerFor]="menuExamplesCascadeTailwindRootMenu"',
         '    >',
         '      Import',
-        '    </button>',
+        '    </tng-button>',
         '    <tng-menu',
         '      #menuExamplesCascadeTailwindRootMenu="tngMenu"',
         '      ariaLabel="Import root menu"',
@@ -784,6 +928,10 @@ export class MenuExamplesPageComponent implements OnDestroy {
 
   protected onButtonTriggerSelect(event: TngMenuSelectEvent): void {
     this.buttonTriggerCommand.set(String(event.value));
+  }
+
+  protected onIconTriggerSelect(event: TngMenuSelectEvent): void {
+    this.iconTriggerCommand.set(String(event.value));
   }
 
   protected onStyledPlainSelect(event: TngMenuSelectEvent): void {

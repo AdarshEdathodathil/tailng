@@ -56,7 +56,6 @@ export class TngButtonComponent implements TngTriggerTarget {
   protected readonly triggerAriaControls = signal<string | null>(null);
   protected readonly triggerAriaExpanded = signal<boolean | null>(null);
   protected readonly triggerAriaHasPopup = signal<TngPressAriaHasPopup | null>(null);
-  protected readonly triggerDataSlot = signal<string | null>(null);
   protected readonly buttonRef = viewChild<ElementRef<HTMLButtonElement>>('buttonRef');
 
   public getTngTriggerElement(): HTMLButtonElement | null {
@@ -76,9 +75,6 @@ export class TngButtonComponent implements TngTriggerTarget {
       this.triggerAriaHasPopup.set(coerceTngPressAriaHasPopup(attributes.ariaHasPopup));
     }
 
-    if ('dataSlot' in attributes) {
-      this.triggerDataSlot.set(attributes.dataSlot ?? null);
-    }
   }
 }
 export { TngButtonComponent as TngButton };
