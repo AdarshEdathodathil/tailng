@@ -58,10 +58,10 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       # IMPORTANT: upgrade npm for Trusted Publishing + provenance
-      - name: Upgrade npm
-        run: |
-          npm i -g npm@latest
-          npm --version
+      # - name: Upgrade npm
+      #   run: |
+      #     npm i -g npm@latest
+      #     npm --version
 
       - name: Enable Corepack and pnpm
         run: |
