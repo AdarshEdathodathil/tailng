@@ -1,18 +1,23 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- Validation accumulates issues in private mutable maps and arrays. */
+import { createTngFlowConnectorId } from '../model/tng-flow-connector-id';
+import { getTngFlowNodePorts, tngFlowConnectionPairKey } from '../model/tng-flow-graph';
 import type { TngFlowConnection, TngFlowNode, TngFlowPort } from '../types/tng-flow.types';
 
 export type TngFlowValidationIssueCode =
   | 'duplicate-connection-id'
+  | 'duplicate-connection'
   | 'duplicate-node-id'
   | 'duplicate-port-id'
   | 'empty-connection-id'
   | 'empty-node-id'
   | 'empty-port-id'
   | 'incompatible-ports'
+  | 'incompatible-port-kind'
   | 'invalid-source-port'
   | 'invalid-target-port'
   | 'missing-source-port'
   | 'missing-target-port'
+  | 'mixed-port-model'
   | 'port-connection-limit'
   | 'self-connection-disabled';
 
@@ -33,6 +38,7 @@ type PortRecord = Readonly<{
 type ValidationState = {
   connectionCounts: Map<string, number>;
   connectionIds: Set<string>;
+  connectionPairs: Set<string>;
   issues: TngFlowValidationIssue[];
   nodeIds: Set<string>;
   ports: Map<string, PortRecord>;
@@ -48,6 +54,7 @@ function createValidationState(): ValidationState {
   return {
     connectionCounts: new Map(),
     connectionIds: new Set(),
+    connectionPairs: new Set(),
     issues: [],
     nodeIds: new Set(),
     ports: new Map(),
@@ -87,26 +94,31 @@ function registerPort(record: PortRecord, state: ValidationState): void {
     return;
   }
 
-  if (state.ports.has(port.id)) {
+  const id = createTngFlowConnectorId(nodeId, port.id);
+  if (state.ports.has(id)) {
     state.issues.push({
       code: 'duplicate-port-id',
-      message: `Port id "${port.id}" is used more than once. Port ids must be globally unique.`,
+      message: `Port id "${port.id}" is used more than once on node "${nodeId}".`,
       nodeId,
       portId: port.id,
     });
     return;
   }
 
-  state.ports.set(port.id, record);
+  state.ports.set(id, record);
 }
 
 function registerNode(node: TngFlowNode, state: ValidationState): void {
   validateNodeId(node, state);
-  for (const port of node.inputs ?? []) {
-    registerPort({ direction: 'input', nodeId: node.id, port }, state);
+  if (node.ports !== undefined && (node.inputs !== undefined || node.outputs !== undefined)) {
+    state.issues.push({
+      code: 'mixed-port-model',
+      message: `Node "${node.id}" mixes canonical ports with legacy inputs or outputs.`,
+      nodeId: node.id,
+    });
   }
-  for (const port of node.outputs ?? []) {
-    registerPort({ direction: 'output', nodeId: node.id, port }, state);
+  for (const port of getTngFlowNodePorts(node)) {
+    registerPort({ direction: port.direction, nodeId: node.id, port }, state);
   }
 }
 
@@ -136,16 +148,18 @@ function validateSource(
   if (source === undefined) {
     issues.push({
       code: 'missing-source-port',
-      message: `Connection "${connection.id}" references missing source port "${connection.sourcePortId}".`,
+      message: `Connection "${connection.id}" references missing source port "${connection.source.portId}" on node "${connection.source.nodeId}".`,
       connectionId: connection.id,
-      portId: connection.sourcePortId,
+      nodeId: connection.source.nodeId,
+      portId: connection.source.portId,
     });
   } else if (source.direction !== 'output') {
     issues.push({
       code: 'invalid-source-port',
-      message: `Connection "${connection.id}" uses input port "${connection.sourcePortId}" as its source.`,
+      message: `Connection "${connection.id}" uses input port "${connection.source.portId}" as its source.`,
       connectionId: connection.id,
-      portId: connection.sourcePortId,
+      nodeId: connection.source.nodeId,
+      portId: connection.source.portId,
     });
   }
 }
@@ -158,16 +172,18 @@ function validateTarget(
   if (target === undefined) {
     issues.push({
       code: 'missing-target-port',
-      message: `Connection "${connection.id}" references missing target port "${connection.targetPortId}".`,
+      message: `Connection "${connection.id}" references missing target port "${connection.target.portId}" on node "${connection.target.nodeId}".`,
       connectionId: connection.id,
-      portId: connection.targetPortId,
+      nodeId: connection.target.nodeId,
+      portId: connection.target.portId,
     });
   } else if (target.direction !== 'input') {
     issues.push({
       code: 'invalid-target-port',
-      message: `Connection "${connection.id}" uses output port "${connection.targetPortId}" as its target.`,
+      message: `Connection "${connection.id}" uses output port "${connection.target.portId}" as its target.`,
       connectionId: connection.id,
-      portId: connection.targetPortId,
+      nodeId: connection.target.nodeId,
+      portId: connection.target.portId,
     });
   }
 }
@@ -194,7 +210,15 @@ function validateResolvedConnection(
     });
   }
 
-  if (source.nodeId === target.nodeId && source.port.allowSelfConnection === false) {
+  if (source.port.kind !== target.port.kind) {
+    issues.push({
+      code: 'incompatible-port-kind',
+      message: `Source port "${source.port.id}" and target port "${target.port.id}" have different kinds.`,
+      connectionId: connection.id,
+    });
+  }
+
+  if (source.nodeId === target.nodeId && source.port.allowSelfConnection !== true) {
     issues.push({
       code: 'self-connection-disabled',
       message: `Source port "${source.port.id}" does not allow connections to its own node.`,
@@ -205,14 +229,29 @@ function validateResolvedConnection(
   }
 }
 
+function validateConnectionPair(connection: TngFlowConnection, state: ValidationState): void {
+  const pair = tngFlowConnectionPairKey(connection.source, connection.target);
+  if (state.connectionPairs.has(pair)) {
+    state.issues.push({
+      code: 'duplicate-connection',
+      message: `Connection "${connection.id}" duplicates an existing endpoint pair.`,
+      connectionId: connection.id,
+    });
+  }
+  state.connectionPairs.add(pair);
+}
+
 function countConnection(portId: string, state: ValidationState): void {
   state.connectionCounts.set(portId, (state.connectionCounts.get(portId) ?? 0) + 1);
 }
 
 function validateConnection(connection: TngFlowConnection, state: ValidationState): void {
   validateConnectionId(connection, state);
-  const source = state.ports.get(connection.sourcePortId);
-  const target = state.ports.get(connection.targetPortId);
+  validateConnectionPair(connection, state);
+  const sourceId = createTngFlowConnectorId(connection.source.nodeId, connection.source.portId);
+  const targetId = createTngFlowConnectorId(connection.target.nodeId, connection.target.portId);
+  const source = state.ports.get(sourceId);
+  const target = state.ports.get(targetId);
   validateSource(connection, source, state.issues);
   validateTarget(connection, target, state.issues);
 
@@ -220,22 +259,22 @@ function validateConnection(connection: TngFlowConnection, state: ValidationStat
     validateResolvedConnection({ connection, source, target }, state.issues);
   }
 
-  countConnection(connection.sourcePortId, state);
-  countConnection(connection.targetPortId, state);
+  countConnection(sourceId, state);
+  countConnection(targetId, state);
 }
 
 function validateConnectionLimits(state: ValidationState): void {
-  for (const [portId, count] of state.connectionCounts) {
-    const record = state.ports.get(portId);
+  for (const [connectorId, count] of state.connectionCounts) {
+    const record = state.ports.get(connectorId);
     if (count <= 1 || record === undefined || record.port.multiple === true) {
       continue;
     }
 
     state.issues.push({
       code: 'port-connection-limit',
-      message: `Port "${portId}" has ${count} connections but is not marked as multiple.`,
+      message: `Port "${record.port.id}" has ${count} connections but is not marked as multiple.`,
       nodeId: record.nodeId,
-      portId,
+      portId: record.port.id,
     });
   }
 }

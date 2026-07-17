@@ -3,6 +3,8 @@
   [tone]="cardTone()"
   variant="solid"
   [attr.data-status]="status()"
+  [attr.data-selected]="selected() ? '' : null"
+  [attr.data-disabled]="disabled() ? '' : null"
   [attr.data-invalid]="invalid() ? '' : null"
 >
   <header class="tng-flow-node__header" [attr.data-has-icon]="icon() ? '' : null">

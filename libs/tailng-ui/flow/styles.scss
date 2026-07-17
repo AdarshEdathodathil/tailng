@@ -106,3 +106,26 @@
   --ff-shadow-surface: 0 1px 2px rgb(0 0 0 / 12%), 0 8px 20px rgb(0 0 0 / 10%);
   --ff-shadow-floating: 0 14px 36px rgb(0 0 0 / 22%), 0 4px 12px rgb(0 0 0 / 14%);
 }
+
+/*
+ * Foblex positions reassignment handles just inside connection endpoints. Keep
+ * those handles available without making them look like misplaced ports while
+ * the connection is idle.
+ */
+f-flow,
+.f-flow {
+  .f-connection .f-connection-drag-handle {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .f-connection:not(.f-connection-reassign-disabled):is(:hover, .f-selected, .f-dragging)
+    .f-connection-drag-handle {
+    visibility: visible;
+    pointer-events: all;
+  }
+
+  .f-connection.f-connection-reassign-disabled .f-connection-drag-handle {
+    display: none;
+  }
+}

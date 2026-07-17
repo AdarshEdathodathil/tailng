@@ -357,6 +357,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'flow-editor',
+        loadComponent: () =>
+          import('./pages/components/flow-editor-demo/flow-editor-playground-page.component').then(
+            (module) => module.FlowEditorPlaygroundPageComponent,
+          ),
+      },
+      {
         path: 'tree',
         loadComponent: () =>
           import('./pages/components/tree-demo/tree-playground-page.component').then(

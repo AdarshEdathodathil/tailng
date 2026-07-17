@@ -2,9 +2,410 @@
   <section class="docs-overview-block">
     <h2 class="docs-overview-title">Flow Editor examples</h2>
     <p class="docs-overview-lead">
-      Use consumer templates for domain-specific authoring and read-only mode for live execution
-      monitoring. Give each editor a unique <code>flowId</code> when multiple canvases share a page.
+      Explore connection editing and validation, controlled selection and deletion, editor modes,
+      node movement, custom node composition, and read-only monitoring. Give each editor a unique
+      <code>flowId</code> when multiple canvases share a page.
     </p>
+  </section>
+
+  <section id="branch-and-merge-workflow" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Branch and merge workflow"
+      description="Pass one TngFlowDefinition that fans a request into automated and review branches, then merges both results before publishing a response."
+      ariaLabel="Branch and merge workflow styling variants"
+      tabListAriaLabel="Branch and merge workflow styles"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain CSS"
+        panelTitle="Branch and merge workflow with Plain CSS"
+        [codeTabs]="jsonDefinitionPlainCssCodeTabs"
+      >
+        <tng-flow-editor
+          flowId="docs-json-workflow-plain-css"
+          class="flow-editor-examples__canvas"
+          ariaLabel="Branch and merge agent workflow styled with Plain CSS"
+          [definition]="branchWorkflowDefinition"
+        />
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Branch and merge workflow with Tailwind CSS"
+        [codeTabs]="jsonDefinitionTailwindCodeTabs"
+      >
+        <tng-flow-editor
+          flowId="docs-json-workflow-tailwind-css"
+          class="block h-[29rem] min-h-[24rem] max-[720px]:h-[26rem]"
+          ariaLabel="Branch and merge agent workflow styled with Tailwind CSS"
+          [definition]="branchWorkflowDefinition"
+        />
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="connection-editing" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Create, validate, and reconnect"
+      description="Create consumer-owned connections, reject duplicates, multiplicity conflicts, and incompatible data types, then reconnect an existing endpoint."
+      ariaLabel="Connection editing styling variants"
+      tabListAriaLabel="Connection editing styles"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain CSS"
+        panelTitle="Connection editing with Plain CSS"
+        [codeTabs]="connectionEditingPlainCssCodeTabs"
+      >
+        <div class="flow-editor-examples__feature-shell">
+          <header class="flow-editor-examples__feature-toolbar">
+            <p>
+              <strong>Try:</strong> Request → Parse, repeat it, connect Fallback → Parse, connect
+              Request → Archive, or drag the existing edge from Publish to Archive.
+            </p>
+            <tng-button
+              type="button"
+              appearance="outline"
+              size="sm"
+              (click)="resetConnectionEditing(connectionPlainCss)"
+            >
+              Reset example
+            </tng-button>
+          </header>
+
+          <tng-flow-editor
+            flowId="docs-connection-editing-plain-css"
+            class="flow-editor-examples__canvas"
+            ariaLabel="Connection creation and reconnection example styled with Plain CSS"
+            [definition]="connectionPlainCss.definition()"
+            [selection]="connectionPlainCss.selection()"
+            [connectionValidator]="validateConnection"
+            (nodePositionChange)="updateConnectionNodePosition($event, connectionPlainCss)"
+            (connectionCreateRequested)="createConnection($event, connectionPlainCss)"
+            (connectionReconnectRequested)="reconnectConnection($event, connectionPlainCss)"
+            (connectionsDeleteRequested)="deleteEditingConnections($event, connectionPlainCss)"
+            (nodesDeleteRequested)="deleteEditingNodes($event, connectionPlainCss)"
+            (selectionChange)="updateConnectionSelection($event, connectionPlainCss)"
+            (connectionRejected)="rejectConnection($event, connectionPlainCss)"
+          />
+
+          @if (connectionPlainCss.rejection(); as reason) {
+            <p class="flow-editor-examples__feedback" data-tone="danger" role="alert">
+              <strong>Rejected:</strong> {{ reason }}
+            </p>
+          }
+          <p class="flow-editor-examples__feedback" aria-live="polite">
+            {{ connectionPlainCss.message() }}
+          </p>
+        </div>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Connection editing with Tailwind CSS"
+        [codeTabs]="connectionEditingTailwindCodeTabs"
+      >
+        <div class="grid gap-3">
+          <header
+            class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
+          >
+            <p class="m-0 max-w-4xl">
+              <strong class="text-slate-950 dark:text-white">Try:</strong> Request → Parse, repeat
+              it, connect Fallback → Parse, connect Request → Archive, or drag the existing edge
+              from Publish to Archive.
+            </p>
+            <tng-button
+              type="button"
+              appearance="outline"
+              size="sm"
+              (click)="resetConnectionEditing(connectionTailwind)"
+            >
+              Reset example
+            </tng-button>
+          </header>
+
+          <tng-flow-editor
+            flowId="docs-connection-editing-tailwind-css"
+            class="block h-[29rem] min-h-[24rem] max-[720px]:h-[26rem]"
+            ariaLabel="Connection creation and reconnection example styled with Tailwind CSS"
+            [definition]="connectionTailwind.definition()"
+            [selection]="connectionTailwind.selection()"
+            [connectionValidator]="validateConnection"
+            (nodePositionChange)="updateConnectionNodePosition($event, connectionTailwind)"
+            (connectionCreateRequested)="createConnection($event, connectionTailwind)"
+            (connectionReconnectRequested)="reconnectConnection($event, connectionTailwind)"
+            (connectionsDeleteRequested)="deleteEditingConnections($event, connectionTailwind)"
+            (nodesDeleteRequested)="deleteEditingNodes($event, connectionTailwind)"
+            (selectionChange)="updateConnectionSelection($event, connectionTailwind)"
+            (connectionRejected)="rejectConnection($event, connectionTailwind)"
+          />
+
+          @if (connectionTailwind.rejection(); as reason) {
+            <p
+              class="m-0 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300"
+              role="alert"
+            >
+              <strong>Rejected:</strong> {{ reason }}
+            </p>
+          }
+          <p
+            class="m-0 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
+            aria-live="polite"
+          >
+            {{ connectionTailwind.message() }}
+          </p>
+        </div>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="selection-deletion-and-modes" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Selection, deletion, modes, and locked nodes"
+      description="Keep selection in a signal, multi-select graph elements, delete editable items, protect locked nodes, and compare edit, inspect, and readonly permissions."
+      ariaLabel="Selection and editor modes styling variants"
+      tabListAriaLabel="Selection and editor modes styles"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain CSS"
+        panelTitle="Selection and modes with Plain CSS"
+        [codeTabs]="selectionModesPlainCssCodeTabs"
+      >
+        <div class="flow-editor-examples__feature-shell">
+          <header class="flow-editor-examples__mode-toolbar">
+            <div class="flow-editor-examples__mode-group" aria-label="Editor mode">
+              @for (editorMode of editorModes; track editorMode) {
+                <button
+                  type="button"
+                  class="flow-editor-examples__mode-button"
+                  [attr.data-active]="selectionModesPlainCss.mode() === editorMode ? '' : null"
+                  [attr.aria-pressed]="selectionModesPlainCss.mode() === editorMode"
+                  (click)="setSelectionMode(editorMode, selectionModesPlainCss)"
+                >
+                  {{ editorMode }}
+                </button>
+              }
+            </div>
+            <tng-button
+              type="button"
+              appearance="outline"
+              size="sm"
+              (click)="resetSelectionModes(selectionModesPlainCss)"
+            >
+              Reset example
+            </tng-button>
+          </header>
+
+          <div class="flow-editor-examples__selection-summary">
+            <span
+              >Mode: <strong>{{ selectionModesPlainCss.mode() }}</strong></span
+            >
+            <span>
+              Selected:
+              <strong>{{ selectionLabel(selectionModesPlainCss.selection()) }}</strong>
+            </span>
+          </div>
+
+          <tng-flow-editor
+            flowId="docs-selection-modes-plain-css"
+            class="flow-editor-examples__canvas"
+            ariaLabel="Selection deletion and modes example styled with Plain CSS"
+            [definition]="selectionModesPlainCss.definition()"
+            [selection]="selectionModesPlainCss.selection()"
+            [mode]="selectionModesPlainCss.mode()"
+            (nodePositionChange)="updateSelectionNodePosition($event, selectionModesPlainCss)"
+            (selectionChange)="updateSelection($event, selectionModesPlainCss)"
+            (connectionsDeleteRequested)="deleteSelectedConnections($event, selectionModesPlainCss)"
+            (nodesDeleteRequested)="deleteSelectedNodes($event, selectionModesPlainCss)"
+          />
+
+          <p class="flow-editor-examples__feedback" aria-live="polite">
+            {{ selectionModesPlainCss.message() }}
+          </p>
+          <p class="flow-editor-examples__hint">
+            Use Shift/Cmd/Ctrl for multi-selection, Cmd/Ctrl+A to select all in edit mode, and
+            Delete/Backspace to request deletion. The locked review remains protected.
+          </p>
+        </div>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Selection and modes with Tailwind CSS"
+        [codeTabs]="selectionModesTailwindCodeTabs"
+      >
+        <div class="grid gap-3">
+          <header class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap gap-2" aria-label="Editor mode">
+              @for (editorMode of editorModes; track editorMode) {
+                <button
+                  type="button"
+                  class="rounded-lg border px-3 py-2 text-sm font-semibold capitalize"
+                  [class.border-blue-500]="selectionModesTailwind.mode() === editorMode"
+                  [class.bg-blue-50]="selectionModesTailwind.mode() === editorMode"
+                  [class.text-blue-700]="selectionModesTailwind.mode() === editorMode"
+                  [class.border-slate-300]="selectionModesTailwind.mode() !== editorMode"
+                  [attr.aria-pressed]="selectionModesTailwind.mode() === editorMode"
+                  (click)="setSelectionMode(editorMode, selectionModesTailwind)"
+                >
+                  {{ editorMode }}
+                </button>
+              }
+            </div>
+            <tng-button
+              type="button"
+              appearance="outline"
+              size="sm"
+              (click)="resetSelectionModes(selectionModesTailwind)"
+            >
+              Reset example
+            </tng-button>
+          </header>
+
+          <div
+            class="flex flex-wrap gap-x-6 gap-y-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
+          >
+            <span>
+              Mode:
+              <strong class="text-slate-950 dark:text-white">
+                {{ selectionModesTailwind.mode() }}
+              </strong>
+            </span>
+            <span>
+              Selected:
+              <strong class="text-slate-950 dark:text-white">
+                {{ selectionLabel(selectionModesTailwind.selection()) }}
+              </strong>
+            </span>
+          </div>
+
+          <tng-flow-editor
+            flowId="docs-selection-modes-tailwind-css"
+            class="block h-[29rem] min-h-[24rem] max-[720px]:h-[26rem]"
+            ariaLabel="Selection deletion and modes example styled with Tailwind CSS"
+            [definition]="selectionModesTailwind.definition()"
+            [selection]="selectionModesTailwind.selection()"
+            [mode]="selectionModesTailwind.mode()"
+            (nodePositionChange)="updateSelectionNodePosition($event, selectionModesTailwind)"
+            (selectionChange)="updateSelection($event, selectionModesTailwind)"
+            (connectionsDeleteRequested)="deleteSelectedConnections($event, selectionModesTailwind)"
+            (nodesDeleteRequested)="deleteSelectedNodes($event, selectionModesTailwind)"
+          />
+
+          <p
+            class="m-0 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
+            aria-live="polite"
+          >
+            {{ selectionModesTailwind.message() }}
+          </p>
+          <p class="m-0 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Use Shift/Cmd/Ctrl for multi-selection, Cmd/Ctrl+A to select all in edit mode, and
+            Delete/Backspace to request deletion. The locked review remains protected.
+          </p>
+        </div>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="controlled-node-positions" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Controlled node positions"
+      description="Handle nodePositionChange, replace the moved node in the definition signal, and keep the editor free of application-owned mutations."
+      ariaLabel="Controlled node position styling variants"
+      tabListAriaLabel="Controlled node position styles"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain CSS"
+        panelTitle="Controlled node positions with Plain CSS"
+        [codeTabs]="controlledPositionPlainCssCodeTabs"
+      >
+        <div class="flow-editor-examples__controlled-shell">
+          <tng-flow-editor
+            flowId="docs-controlled-positions-plain-css"
+            class="flow-editor-examples__canvas"
+            ariaLabel="Controlled agent workflow positions styled with Plain CSS"
+            [definition]="controlledPlainCssDefinition()"
+            (nodePositionChange)="onNodePositionChange($event, 'plain-css')"
+          />
+          <footer class="flow-editor-examples__position-bar">
+            <p aria-live="polite">
+              @if (controlledPlainCssChange(); as change) {
+                <strong>{{ change.nodeId }}</strong>
+                moved to ({{ change.position.x }}, {{ change.position.y }})
+              } @else {
+                Drag a node to update the external definition signal.
+              }
+            </p>
+            <tng-button
+              type="button"
+              appearance="outline"
+              size="sm"
+              (click)="resetControlledPositions('plain-css')"
+            >
+              Reset positions
+            </tng-button>
+          </footer>
+        </div>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Controlled node positions with Tailwind CSS"
+        [codeTabs]="controlledPositionTailwindCodeTabs"
+      >
+        <div class="grid gap-3">
+          <tng-flow-editor
+            flowId="docs-controlled-positions-tailwind-css"
+            class="block h-[29rem] min-h-[24rem] max-[720px]:h-[26rem]"
+            ariaLabel="Controlled agent workflow positions styled with Tailwind CSS"
+            [definition]="controlledTailwindDefinition()"
+            (nodePositionChange)="onNodePositionChange($event, 'tailwind-css')"
+          />
+          <footer
+            class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
+          >
+            <p class="m-0" aria-live="polite">
+              @if (controlledTailwindChange(); as change) {
+                <strong class="text-slate-950 dark:text-white">{{ change.nodeId }}</strong>
+                moved to ({{ change.position.x }}, {{ change.position.y }})
+              } @else {
+                Drag a node to update the external definition signal.
+              }
+            </p>
+            <tng-button
+              type="button"
+              appearance="outline"
+              size="sm"
+              (click)="resetControlledPositions('tailwind-css')"
+            >
+              Reset positions
+            </tng-button>
+          </footer>
+        </div>
+      </ng-template>
+    </app-docs-example-tabs-section>
   </section>
 
   <section id="custom-model-node" class="docs-overview-block">
@@ -103,7 +504,7 @@
   <section id="execution-monitor" class="docs-overview-block">
     <app-docs-example-tabs-section
       heading="Read-only execution monitor"
-      description="Read-only mode disables moving, connecting, reassigning, and deletion while operators can still pan, zoom, select, and inspect the workflow."
+      description="Read-only mode disables selection and all graph mutations while operators retain pan and zoom for passive workflow monitoring."
       ariaLabel="Read-only execution monitor styling variants"
       tabListAriaLabel="Read-only execution monitor styles"
       defaultValue="plain-css"
@@ -123,7 +524,7 @@
           [nodes]="monitorNodes"
           [connections]="connections"
           [nodeViews]="monitorViews"
-          [readonly]="true"
+          mode="readonly"
           [showSelectionArea]="false"
         />
       </ng-template>
@@ -142,7 +543,7 @@
           [nodes]="monitorNodes"
           [connections]="connections"
           [nodeViews]="monitorViews"
-          [readonly]="true"
+          mode="readonly"
           [showSelectionArea]="false"
         />
       </ng-template>

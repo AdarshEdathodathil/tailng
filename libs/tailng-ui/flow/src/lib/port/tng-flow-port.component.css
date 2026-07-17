@@ -1,0 +1,77 @@
+:host {
+  position: relative;
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  box-sizing: border-box;
+  pointer-events: all;
+}
+
+.tng-flow-port__socket {
+  display: block;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px solid var(--tng-flow-port-border, var(--tng-semantic-border-strong, #64748b));
+  border-radius: 50%;
+  background: var(--tng-flow-port-background, var(--tng-semantic-background-surface, #fff));
+}
+
+:host([data-kind='control']) .tng-flow-port__socket {
+  border-radius: 0.2rem;
+}
+
+:host([data-kind='error']) .tng-flow-port__socket {
+  border-color: var(--tng-flow-danger-color, var(--tng-semantic-accent-danger, #dc2626));
+}
+
+:host-context(.f-connector-connectable) .tng-flow-port__socket,
+:host-context(.tng-flow-editor__port-socket:hover) .tng-flow-port__socket {
+  border-color: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
+  box-shadow: 0 0 0 4px
+    color-mix(
+      in srgb,
+      var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb)) 15%,
+      transparent
+    );
+}
+
+:host-context(.f-connector-connected) .tng-flow-port__socket {
+  border-color: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
+  background: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
+}
+
+:host([data-disabled]) .tng-flow-port__socket,
+:host-context(.f-connector-disabled) .tng-flow-port__socket {
+  border-color: var(--tng-flow-disabled-color, var(--tng-semantic-foreground-muted, #cbd5e1));
+  background: var(--tng-flow-disabled-background, var(--tng-semantic-background-muted, #e2e8f0));
+  box-shadow: none;
+}
+
+.tng-flow-port__label {
+  position: absolute;
+  top: 50%;
+  max-width: 6.5rem;
+  overflow: hidden;
+  color: var(--tng-flow-port-label-color, var(--tng-semantic-foreground-secondary, #475569));
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+:host([data-direction='input']) .tng-flow-port__label {
+  left: 1.125rem;
+}
+
+:host([data-direction='output']) .tng-flow-port__label {
+  right: 1.125rem;
+  text-align: right;
+}
+
+.tng-flow-port__required {
+  color: var(--tng-flow-danger-color, var(--tng-semantic-accent-danger, #dc2626));
+}

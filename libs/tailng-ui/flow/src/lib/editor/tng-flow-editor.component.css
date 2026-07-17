@@ -96,6 +96,7 @@
   gap: 0.375rem;
   height: 1.5rem;
   pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .tng-flow-editor__port--input {
@@ -110,50 +111,13 @@
 .tng-flow-editor .tng-flow-editor__port-socket {
   position: relative;
   inset: auto;
-  display: inline-block;
+  display: block;
   flex: 0 0 auto;
   width: 0.75rem;
   height: 0.75rem;
   box-sizing: border-box;
-  border: 2px solid var(--tng-flow-port-border, var(--tng-semantic-border-strong, #64748b));
-  border-radius: 50%;
-  background: var(--tng-flow-port-background, var(--tng-semantic-background-surface, #fff));
   transform: none;
   pointer-events: all;
-}
-
-.tng-flow-editor .tng-flow-editor__port-socket:hover,
-.tng-flow-editor .tng-flow-editor__port-socket.f-connector-connectable {
-  border-color: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
-  box-shadow: 0 0 0 4px
-    color-mix(
-      in srgb,
-      var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb)) 15%,
-      transparent
-    );
-}
-
-.tng-flow-editor .tng-flow-editor__port-socket.f-connector-connected {
-  border-color: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
-  background: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
-}
-
-.tng-flow-editor .tng-flow-editor__port-socket.f-connector-disabled {
-  border-color: var(--tng-flow-disabled-color, var(--tng-semantic-foreground-muted, #cbd5e1));
-  background: var(--tng-flow-disabled-background, var(--tng-semantic-background-muted, #e2e8f0));
-  box-shadow: none;
-}
-
-.tng-flow-editor__port-label {
-  max-width: 6.5rem;
-  overflow: hidden;
-  color: var(--tng-flow-port-label-color, var(--tng-semantic-foreground-secondary, #475569));
-  font-size: 0.6875rem;
-  font-weight: 500;
-  line-height: 1rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  pointer-events: none;
 }
 
 .tng-flow-editor__controls {

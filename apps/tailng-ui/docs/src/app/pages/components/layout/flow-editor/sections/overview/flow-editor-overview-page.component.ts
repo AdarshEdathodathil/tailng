@@ -1,11 +1,13 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, inject, signal, type OnDestroy } from '@angular/core';
+import { Component, inject, signal, type OnDestroy, type WritableSignal } from '@angular/core';
 import { TngButtonComponent, TngCodeBlockComponent } from '@tailng-ui/components';
 import {
   TngFlowEditorComponent,
-  type TngFlowConnectionCreatedEvent,
-  type TngFlowDeleteRequestedEvent,
+  type TngFlowConnectionCreateRequest,
+  type TngFlowConnectionsDeleteRequest,
+  type TngFlowNodesDeleteRequest,
   type TngFlowNodesMovedEvent,
+  type TngFlowSelection,
 } from '@tailng-ui/flow';
 import {
   flowEditorOverviewPlainCssCodeTabs,
@@ -28,6 +30,11 @@ import {
 } from '../../flow-editor-demo.data';
 
 type FlowEditorOverviewVariant = 'plain-css' | 'tailwind-css';
+
+const emptySelection = (): TngFlowSelection => ({
+  nodeIds: new Set<string>(),
+  connectionIds: new Set<string>(),
+});
 
 @Component({
   selector: 'app-flow-editor-overview-page',
@@ -57,6 +64,8 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
   protected readonly plainCssConnections = signal(flowEditorDemoConnections);
   protected readonly tailwindNodes = signal(flowEditorDemoNodes);
   protected readonly tailwindConnections = signal(flowEditorDemoConnections);
+  protected readonly plainCssSelection = signal<TngFlowSelection>(emptySelection());
+  protected readonly tailwindSelection = signal<TngFlowSelection>(emptySelection());
   protected readonly nodeViews = flowEditorDemoViews;
   protected readonly plainCssCodeTabs = flowEditorOverviewPlainCssCodeTabs;
   protected readonly tailwindCodeTabs = flowEditorOverviewTailwindCodeTabs;
@@ -71,7 +80,7 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
     'import {',
     '  TngFlowEditorComponent,',
     '  type TngFlowConnection,',
-    '  type TngFlowConnectionCreatedEvent,',
+    '  type TngFlowConnectionCreateRequest,',
     '  type TngFlowNode,',
     '  type TngFlowNodesMovedEvent,',
     "} from '@tailng-ui/flow';",
@@ -84,7 +93,7 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
     '      [connections]="connections()"',
     '      [nodeViews]="nodeViews"',
     '      (nodesMoved)="moveNodes($event)"',
-    '      (connectionCreated)="createConnection($event)"',
+    '      (connectionCreateRequested)="createConnection($event)"',
     '    />',
     '  `,',
     '})',
@@ -100,13 +109,13 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
     '    );',
     '  }',
     '',
-    '  createConnection(event: TngFlowConnectionCreatedEvent): void {',
+    '  createConnection(event: TngFlowConnectionCreateRequest): void {',
     '    this.connections.update((connections) => [',
     '      ...connections,',
     '      {',
     '        id: crypto.randomUUID(),',
-    '        sourcePortId: event.sourcePortId,',
-    '        targetPortId: event.targetPortId,',
+    '        source: event.source,',
+    '        target: event.target,',
     "        type: 'bezier',",
     '      },',
     '    ]);',
@@ -119,8 +128,8 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
     nodes.update((currentNodes) => applyFlowNodeMoves(currentNodes, event));
   }
 
-  protected onConnectionCreated(
-    event: TngFlowConnectionCreatedEvent,
+  protected onConnectionCreateRequested(
+    event: TngFlowConnectionCreateRequest,
     variant: FlowEditorOverviewVariant,
   ): void {
     const connections =
@@ -131,23 +140,48 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
       ...currentConnections,
       {
         id,
-        sourcePortId: event.sourcePortId,
-        targetPortId: event.targetPortId,
+        source: event.source,
+        target: event.target,
         type: 'bezier',
       },
     ]);
   }
 
-  protected onDeleteRequested(
-    event: TngFlowDeleteRequestedEvent,
+  protected onConnectionsDeleteRequested(
+    event: TngFlowConnectionsDeleteRequest,
+    variant: FlowEditorOverviewVariant,
+  ): void {
+    const connections =
+      variant === 'plain-css' ? this.plainCssConnections : this.tailwindConnections;
+    const deletedIds = new Set(event.connectionIds);
+    connections.update((current) => current.filter((item) => !deletedIds.has(item.id)));
+    this.selectionFor(variant).update((selection) => ({
+      nodeIds: selection.nodeIds,
+      connectionIds: new Set([...selection.connectionIds].filter((id) => !deletedIds.has(id))),
+    }));
+  }
+
+  protected onNodesDeleteRequested(
+    event: TngFlowNodesDeleteRequest,
     variant: FlowEditorOverviewVariant,
   ): void {
     const nodes = variant === 'plain-css' ? this.plainCssNodes : this.tailwindNodes;
     const connections =
       variant === 'plain-css' ? this.plainCssConnections : this.tailwindConnections;
-    const next = removeFlowItems(nodes(), connections(), event);
+    const next = removeFlowItems(nodes(), connections(), {
+      nodeIds: event.nodeIds,
+      connectionIds: [],
+    });
     nodes.set(next.nodes);
     connections.set(next.connections);
+    const remainingConnectionIds = new Set(next.connections.map((connection) => connection.id));
+    const deletedNodeIds = new Set(event.nodeIds);
+    this.selectionFor(variant).update((selection) => ({
+      nodeIds: new Set([...selection.nodeIds].filter((id) => !deletedNodeIds.has(id))),
+      connectionIds: new Set(
+        [...selection.connectionIds].filter((id) => remainingConnectionIds.has(id)),
+      ),
+    }));
   }
 
   protected resetDemo(variant: FlowEditorOverviewVariant): void {
@@ -156,6 +190,11 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
       variant === 'plain-css' ? this.plainCssConnections : this.tailwindConnections;
     nodes.set(flowEditorDemoNodes);
     connections.set(flowEditorDemoConnections);
+    this.selectionFor(variant).set(emptySelection());
+  }
+
+  private selectionFor(variant: FlowEditorOverviewVariant): WritableSignal<TngFlowSelection> {
+    return variant === 'plain-css' ? this.plainCssSelection : this.tailwindSelection;
   }
 
   public ngOnDestroy(): void {

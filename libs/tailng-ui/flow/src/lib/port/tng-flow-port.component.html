@@ -1,0 +1,9 @@
+<span class="tng-flow-port__socket" aria-hidden="true"></span>
+@if (label(); as labelText) {
+  <span class="tng-flow-port__label">
+    {{ labelText }}
+    @if (required()) {
+      <span class="tng-flow-port__required" aria-hidden="true">*</span>
+    }
+  </span>
+}

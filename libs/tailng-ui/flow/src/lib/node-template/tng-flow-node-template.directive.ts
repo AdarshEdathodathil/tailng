@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- Angular template guards receive directive instances. */
 import { Directive, TemplateRef, inject, input } from '@angular/core';
-import type { TngFlowNode, TngFlowNodeStatus, TngFlowNodeView } from '../types/tng-flow.types';
+import type {
+  TngFlowEditorMode,
+  TngFlowNode,
+  TngFlowNodeStatus,
+  TngFlowNodeView,
+} from '../types/tng-flow.types';
 
 export type TngFlowNodeTemplateContext<
   TData = unknown,
@@ -9,6 +14,8 @@ export type TngFlowNodeTemplateContext<
   $implicit: TngFlowNode<TData>;
   node: TngFlowNode<TData>;
   view: TngFlowNodeView<TStatus>;
+  mode: TngFlowEditorMode;
+  /** @deprecated Use `mode`. */
   readonly: boolean;
   selected: boolean;
 }>;

@@ -3,6 +3,127 @@
   min-height: 24rem;
 }
 
+.flow-editor-examples__controlled-shell {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.flow-editor-examples__feature-shell {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.flow-editor-examples__feature-toolbar,
+.flow-editor-examples__mode-toolbar,
+.flow-editor-examples__selection-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flow-editor-examples__feature-toolbar,
+.flow-editor-examples__selection-summary {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--tng-semantic-border-subtle, #e2e8f0);
+  border-radius: 0.75rem;
+  color: var(--tng-semantic-foreground-secondary, #475569);
+  background: var(--tng-semantic-background-muted, #f8fafc);
+  font-size: 0.875rem;
+}
+
+.flow-editor-examples__feature-toolbar p,
+.flow-editor-examples__feedback,
+.flow-editor-examples__hint {
+  margin: 0;
+}
+
+.flow-editor-examples__feature-toolbar p {
+  max-width: 64rem;
+}
+
+.flow-editor-examples__feature-toolbar strong,
+.flow-editor-examples__selection-summary strong {
+  color: var(--tng-semantic-foreground-primary, #0f172a);
+}
+
+.flow-editor-examples__mode-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.flow-editor-examples__mode-button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--tng-semantic-border-strong, #cbd5e1);
+  border-radius: 0.5rem;
+  color: var(--tng-semantic-foreground-primary, #0f172a);
+  background: var(--tng-semantic-background-surface, #fff);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.flow-editor-examples__mode-button[data-active] {
+  border-color: var(--tng-semantic-accent-brand, #2563eb);
+  color: var(--tng-semantic-accent-brand, #2563eb);
+  background: color-mix(in srgb, var(--tng-semantic-accent-brand, #2563eb) 10%, transparent);
+}
+
+.flow-editor-examples__mode-button:focus-visible {
+  outline: 2px solid var(--tng-semantic-accent-brand, #2563eb);
+  outline-offset: 2px;
+}
+
+.flow-editor-examples__feedback {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--tng-semantic-border-subtle, #e2e8f0);
+  border-radius: 0.75rem;
+  color: var(--tng-semantic-foreground-secondary, #475569);
+  background: var(--tng-semantic-background-muted, #f8fafc);
+  font-family: var(--tng-font-family-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+}
+
+.flow-editor-examples__feedback[data-tone='danger'] {
+  border-color: color-mix(in srgb, var(--tng-semantic-accent-danger, #dc2626) 45%, transparent);
+  color: var(--tng-semantic-accent-danger, #dc2626);
+  background: color-mix(in srgb, var(--tng-semantic-accent-danger, #dc2626) 8%, transparent);
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.flow-editor-examples__hint {
+  color: var(--tng-semantic-foreground-secondary, #475569);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.flow-editor-examples__position-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--tng-semantic-border-subtle, #e2e8f0);
+  border-radius: 0.75rem;
+  color: var(--tng-semantic-foreground-secondary, #475569);
+  background: var(--tng-semantic-background-muted, #f8fafc);
+  font-size: 0.875rem;
+}
+
+.flow-editor-examples__position-bar p {
+  margin: 0;
+}
+
+.flow-editor-examples__position-bar strong {
+  color: var(--tng-semantic-foreground-primary, #0f172a);
+}
+
 .flow-editor-examples__model {
   display: block;
   width: 17.5rem;

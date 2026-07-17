@@ -3,13 +3,15 @@
 <section
   class="tng-flow-editor"
   [attr.aria-label]="ariaLabel()"
-  [attr.data-readonly]="readonly() ? '' : null"
+  [attr.data-mode]="effectiveMode()"
+  [attr.data-readonly]="effectiveMode() === 'readonly' ? '' : null"
   [attr.data-invalid]="validationIssues().length > 0 ? '' : null"
 >
   <f-flow
     fDraggable
     [fFlowId]="flowId()"
     [fDropToGroup]="false"
+    [fMultiSelectTrigger]="multiSelectTrigger"
     [vCellSize]="gridSize()"
     [hCellSize]="gridSize()"
     [fCellSizeWhileDragging]="snapToGrid()"
@@ -37,37 +39,38 @@
       [fZoomStep]="zoomStep()"
       (fCanvasChange)="onViewportChange($event)"
     >
-      @if (!readonly()) {
+      @if (canEdit()) {
         <f-connection-for-create />
       }
 
       @for (connection of renderableConnections(); track connection.id) {
         <f-connection
           [fConnectionId]="connection.id"
-          [fSourceId]="connection.sourcePortId"
-          [fTargetId]="connection.targetPortId"
+          [fSourceId]="connectorId(connection.source.nodeId, connection.source.portId)"
+          [fTargetId]="connectorId(connection.target.nodeId, connection.target.portId)"
           [fType]="connection.type ?? 'bezier'"
-          [fSelectionDisabled]="connection.selectable === false"
+          [fSelectionDisabled]="!canSelect() || connection.selectable === false"
           [fReassignDisabled]="
-            readonly() || connection.disabled === true || connection.reassignable === false
+            !canEdit() || connection.disabled === true || connection.reassignable === false
           "
         />
       }
 
-      @for (node of nodes(); track node.id) {
+      @for (node of graphNodes(); track node.id) {
         <div
           fNode
           class="tng-flow-editor__node"
           [class.tng-flow-editor__node--selected]="isNodeSelected(node.id)"
           [fNodeId]="node.id"
           [fNodePosition]="node.position"
-          [fNodeDraggingDisabled]="readonly() || node.disabled === true"
-          [style.min-height.px]="nodeMinHeight(node)"
+          [fNodeSelectionDisabled]="!canSelect()"
+          [fNodeDraggingDisabled]="!canEdit() || node.disabled === true || node.locked === true"
+          [style.min-height.px]="nodeMinHeight(node.id)"
           [attr.data-node-id]="node.id"
           [attr.data-node-type]="node.type"
           [attr.data-invalid]="viewFor(node.id).invalid === true ? '' : null"
         >
-          @if (!readonly() && node.disabled !== true) {
+          @if (canEdit() && node.disabled !== true && node.locked !== true) {
             <button
               fDragHandle
               type="button"
@@ -92,62 +95,80 @@
                 [icon]="node.icon ?? null"
                 [status]="viewFor(node.id).status ?? 'idle'"
                 [progress]="viewFor(node.id).progress ?? null"
+                [selected]="isNodeSelected(node.id)"
+                [disabled]="node.disabled === true"
                 [invalid]="viewFor(node.id).invalid === true"
                 [message]="viewFor(node.id).message ?? null"
               />
             }
           </div>
 
-          @for (port of node.inputs ?? []; track port.id; let portIndex = $index) {
+          @for (port of inputPortsFor(node.id); track port.id; let portIndex = $index) {
             <span
               class="tng-flow-editor__port tng-flow-editor__port--input"
-              [style.top.px]="portTop(portIndex)"
+              [style.top.%]="portPositionPercent(portIndex, inputPortsFor(node.id).length)"
             >
               <span
                 fConnector
-                fConnectorType="target"
+                fConnectorType="source-target"
                 fConnectorConnectableSide="left"
                 class="tng-flow-editor__port-socket"
-                [fConnectorId]="port.id"
+                [fConnectorId]="connectorId(node.id, port.id)"
                 [fConnectorCategory]="port.category"
                 [fConnectorMultiple]="port.multiple === true"
+                [fConnectorSelfConnectable]="port.allowSelfConnection === true"
+                [fCanBeConnectedTo]="acceptedTargets(node.id, port.id)"
                 [fConnectorDisabled]="
-                  readonly() || node.disabled === true || port.disabled === true
+                  !canEdit() || node.disabled === true || port.disabled === true
                 "
-                [attr.aria-label]="portAriaLabel(node, port, 'input')"
-              ></span>
-              <span class="tng-flow-editor__port-label">{{ portLabel(port) }}</span>
+                [attr.aria-label]="portAriaLabel(node, port)"
+              >
+                <tng-flow-port
+                  direction="input"
+                  [kind]="port.kind"
+                  [label]="portLabel(port)"
+                  [required]="port.required === true"
+                  [disabled]="!canEdit() || node.disabled === true || port.disabled === true"
+                />
+              </span>
             </span>
           }
 
-          @for (port of node.outputs ?? []; track port.id; let portIndex = $index) {
+          @for (port of outputPortsFor(node.id); track port.id; let portIndex = $index) {
             <span
               class="tng-flow-editor__port tng-flow-editor__port--output"
-              [style.top.px]="portTop(portIndex)"
+              [style.top.%]="portPositionPercent(portIndex, outputPortsFor(node.id).length)"
             >
               <span
                 fConnector
-                fConnectorType="source"
+                fConnectorType="source-target"
                 fConnectorConnectableSide="right"
                 class="tng-flow-editor__port-socket"
-                [fConnectorId]="port.id"
+                [fConnectorId]="connectorId(node.id, port.id)"
                 [fConnectorCategory]="port.category"
                 [fConnectorMultiple]="port.multiple === true"
+                [fConnectorSelfConnectable]="port.allowSelfConnection === true"
+                [fCanBeConnectedTo]="acceptedTargets(node.id, port.id)"
                 [fConnectorDisabled]="
-                  readonly() || node.disabled === true || port.disabled === true
+                  !canEdit() || node.disabled === true || port.disabled === true
                 "
-                [fConnectorSelfConnectable]="port.allowSelfConnection !== false"
-                [fCanBeConnectedTo]="acceptedTargets(port)"
-                [attr.aria-label]="portAriaLabel(node, port, 'output')"
-              ></span>
-              <span class="tng-flow-editor__port-label">{{ portLabel(port) }}</span>
+                [attr.aria-label]="portAriaLabel(node, port)"
+              >
+                <tng-flow-port
+                  direction="output"
+                  [kind]="port.kind"
+                  [label]="portLabel(port)"
+                  [required]="port.required === true"
+                  [disabled]="!canEdit() || node.disabled === true || port.disabled === true"
+                />
+              </span>
             </span>
           }
         </div>
       }
     </f-canvas>
 
-    @if (showSelectionArea()) {
+    @if (showSelectionArea() && canSelect()) {
       <f-selection-area />
     }
   </f-flow>

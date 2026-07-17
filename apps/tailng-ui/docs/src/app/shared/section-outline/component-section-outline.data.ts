@@ -216,6 +216,10 @@ export const docsComponentOutlineItemsBySlug: Readonly<
       { id: 'custom-node-content', label: 'Custom node content' },
     ],
     examples: [
+      { id: 'branch-and-merge-workflow', label: 'Branch and merge workflow' },
+      { id: 'connection-editing', label: 'Create, validate, and reconnect' },
+      { id: 'selection-deletion-and-modes', label: 'Selection, deletion, and modes' },
+      { id: 'controlled-node-positions', label: 'Controlled node positions' },
       { id: 'custom-model-node', label: 'Custom model node' },
       { id: 'execution-monitor', label: 'Execution monitor' },
     ],

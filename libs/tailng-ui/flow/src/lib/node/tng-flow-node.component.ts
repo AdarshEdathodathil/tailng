@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { TngProgressBarComponent, TngCardComponent } from '@tailng-ui/components';
 import { TngIcon } from '@tailng-ui/icons';
 
@@ -24,6 +24,7 @@ export function resolveTngFlowStatusTone(status: string): TngFlowStatusTone {
   imports: [TngCardComponent, TngIcon, TngProgressBarComponent],
   templateUrl: './tng-flow-node.component.html',
   styleUrl: './tng-flow-node.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TngFlowNodeComponent {
   public readonly name = input.required<string>();
@@ -31,6 +32,8 @@ export class TngFlowNodeComponent {
   public readonly icon = input<string | null>(null);
   public readonly status = input<string>('idle');
   public readonly progress = input<number | null>(null);
+  public readonly selected = input(false);
+  public readonly disabled = input(false);
   public readonly invalid = input(false);
   public readonly message = input<string | null>(null);
 

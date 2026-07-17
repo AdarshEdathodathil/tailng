@@ -1,125 +1,172 @@
 # @tailng-ui/flow
 
-An Angular workflow editor for AI agents and automation applications. It wraps Foblex Flow with a controlled TailNG API: the application owns graph state and persistence, while the editor emits typed user intents.
+An Angular workflow editor for AI agents and automation applications. It wraps Foblex Flow with a controlled TailNG API: the application owns graph state, selection, identity, and persistence, while the editor emits typed user requests.
 
 ## Install
 
 ```bash
-pnpm add @tailng-ui/flow @tailng-ui/components @tailng-ui/icons @foblex/flow @foblex/platform @foblex/mediator @foblex/2d @foblex/utils
+pnpm add @tailng-ui/flow @tailng-ui/components @tailng-ui/icons \
+  @foblex/flow @foblex/platform @foblex/mediator @foblex/2d @foblex/utils
 ```
 
-Add the global flow styles once in your application styles:
+Add the global flow styles once:
 
 ```css
 @import '@tailng-ui/flow/styles.css';
 ```
 
-The stylesheet maps Foblex surfaces, text, borders, connections, and interaction colors to TailNG
-semantic tokens. Runtime TailNG preset and light/dark mode changes therefore update the editor
-without an additional theme class.
-
-## Basic editor
+## Controlled editor
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { TngFlowEditorComponent, type TngFlowConnection, type TngFlowNode } from '@tailng-ui/flow';
+import {
+  TngFlowEditorComponent,
+  type TngFlowConnectionCreateRequest,
+  type TngFlowConnectionValidator,
+  type TngFlowConnectionsDeleteRequest,
+  type TngFlowDefinition,
+  type TngFlowNodesDeleteRequest,
+  type TngFlowSelection,
+} from '@tailng-ui/flow';
 
-@Component({
-  selector: 'app-agent-workflow',
-  imports: [TngFlowEditorComponent],
-  template: `
-    <tng-flow-editor
-      [nodes]="nodes()"
-      [connections]="connections()"
-      [nodeViews]="nodeViews()"
-      (nodesMoved)="moveNodes($event.nodes)"
-      (connectionCreated)="createConnection($event)"
-      (deleteRequested)="deleteItems($event)"
-    />
-  `,
-})
-export class AgentWorkflowComponent {
-  readonly nodes = signal<readonly TngFlowNode[]>([
+const initialWorkflow: TngFlowDefinition = {
+  id: 'agent-workflow',
+  nodes: [
     {
       id: 'prompt',
       type: 'prompt',
       name: 'Prompt',
-      description: 'Prepare the model input.',
-      icon: 'message-square',
       position: { x: 80, y: 120 },
-      outputs: [{ id: 'prompt-output', label: 'Prompt' }],
+      ports: [
+        {
+          id: 'result',
+          direction: 'output',
+          kind: 'data',
+          dataType: 'text',
+          multiple: true,
+        },
+      ],
     },
     {
       id: 'model',
       type: 'model',
       name: 'Model',
-      description: 'Run the selected model.',
-      icon: 'sparkles',
       position: { x: 440, y: 120 },
-      inputs: [{ id: 'model-input', label: 'Prompt' }],
+      ports: [
+        {
+          id: 'prompt',
+          direction: 'input',
+          kind: 'data',
+          dataType: 'text',
+        },
+      ],
     },
-  ]);
+  ],
+  connections: [],
+};
 
-  readonly connections = signal<readonly TngFlowConnection[]>([
-    {
-      id: 'prompt-to-model',
-      sourcePortId: 'prompt-output',
-      targetPortId: 'model-input',
-      type: 'bezier',
-    },
-  ]);
+const emptySelection = (): TngFlowSelection => ({
+  nodeIds: new Set(),
+  connectionIds: new Set(),
+});
 
-  readonly nodeViews = signal({
-    model: { status: 'running' as const, progress: 42 },
-  });
+@Component({
+  imports: [TngFlowEditorComponent],
+  template: `
+    <tng-flow-editor
+      [definition]="workflow()"
+      [selection]="selection()"
+      (connectionCreateRequested)="createConnection($event)"
+      (connectionsDeleteRequested)="deleteConnections($event)"
+      (nodesDeleteRequested)="deleteNodes($event)"
+      (selectionChange)="selection.set($event)"
+    />
+  `,
+})
+export class AgentWorkflowComponent {
+  readonly workflow = signal(initialWorkflow);
+  readonly selection = signal(emptySelection());
 
-  moveNodes(moves: readonly { id: string; position: { x: number; y: number } }[]): void {
-    const positions = new Map(moves.map((move) => [move.id, move.position]));
-    this.nodes.update((nodes) =>
-      nodes.map((node) => ({ ...node, position: positions.get(node.id) ?? node.position })),
-    );
+  createConnection(request: TngFlowConnectionCreateRequest): void {
+    this.workflow.update((workflow) => ({
+      ...workflow,
+      connections: [
+        ...workflow.connections,
+        { id: crypto.randomUUID(), ...request, type: 'bezier' },
+      ],
+    }));
   }
 
-  createConnection(event: { sourcePortId: string; targetPortId: string }): void {
-    this.connections.update((connections) => [
-      ...connections,
-      {
-        id: crypto.randomUUID(),
-        sourcePortId: event.sourcePortId,
-        targetPortId: event.targetPortId,
-      },
-    ]);
+  deleteConnections(request: TngFlowConnectionsDeleteRequest): void {
+    const ids = new Set(request.connectionIds);
+    this.workflow.update((workflow) => ({
+      ...workflow,
+      connections: workflow.connections.filter((connection) => !ids.has(connection.id)),
+    }));
   }
 
-  deleteItems(event: { nodeIds: readonly string[]; connectionIds: readonly string[] }): void {
-    const nodeIds = new Set(event.nodeIds);
-    const connectionIds = new Set(event.connectionIds);
-    this.nodes.update((nodes) => nodes.filter((node) => !nodeIds.has(node.id)));
-    this.connections.update((connections) =>
-      connections.filter((connection) => !connectionIds.has(connection.id)),
-    );
+  deleteNodes(request: TngFlowNodesDeleteRequest): void {
+    const ids = new Set(request.nodeIds);
+    this.workflow.update((workflow) => ({
+      ...workflow,
+      nodes: workflow.nodes.filter((node) => !ids.has(node.id)),
+      connections: workflow.connections.filter(
+        (connection) => !ids.has(connection.source.nodeId) && !ids.has(connection.target.nodeId),
+      ),
+    }));
   }
 }
 ```
 
-The editor host has a default height of `36rem`. Override the host height from the consuming component when necessary.
+The editor never mutates `definition` or creates connection IDs. Event handlers update the application signal or store and pass a new snapshot back.
+
+## Modes
+
+| Mode       | Select | Move | Connect | Delete | Pan/zoom |
+| ---------- | -----: | ---: | ------: | -----: | -------: |
+| `edit`     |    Yes |  Yes |     Yes |    Yes |      Yes |
+| `inspect`  |    Yes |   No |      No |     No |      Yes |
+| `readonly` |     No |   No |      No |     No |      Yes |
+
+Use `[mode]="'inspect'"` for an interactive execution view and `[mode]="'readonly'"` for a non-selectable viewer.
+
+## Connection validation
+
+The editor validates direction, disabled state, self-connections, port kind, duplicates, and port multiplicity before calling the optional consumer validator.
+
+```ts
+readonly validateConnection: TngFlowConnectionValidator = (candidate) => {
+  return candidate.sourcePort.dataType === candidate.targetPort.dataType
+    ? { valid: true }
+    : { valid: false, reason: 'Port data types are incompatible.' };
+};
+```
+
+Invalid port drops emit `connectionRejected`; dropping on empty canvas is treated as cancellation.
 
 ## Custom node content
 
-Custom templates replace only the node content. TailNG Flow retains the Foblex node host, drag handle, connector DOM, selection, and accessibility behavior.
+Custom templates replace only the node body. TailNG retains geometry, connectors, controlled selection, and accessibility behavior.
 
 ```html
-<tng-flow-editor [nodes]="nodes()" [connections]="connections()">
-  <ng-template tngFlowNode="tool" let-node let-view="view" let-selected="selected">
-    <app-tool-node [tool]="node.data" [status]="view.status" [selected]="selected" />
+<tng-flow-editor [definition]="workflow()" [selection]="selection()">
+  <ng-template tngFlowNode="tool" let-node let-view="view" let-mode="mode" let-selected="selected">
+    <app-tool-node [tool]="node.data" [status]="view.status" [mode]="mode" [selected]="selected" />
   </ng-template>
 </tng-flow-editor>
 ```
 
-Import `TngFlowNodeTemplateDirective` in the consuming component alongside `TngFlowEditorComponent`.
+The editor host has a default height of `36rem`; override the host height in the consuming component when needed.
 
-## State ownership
+## Keyboard interaction
 
-TailNG Flow does not mutate `nodes` or `connections`. Handle `nodesMoved`, `connectionCreated`, `connectionReassigned`, `selectionChanged`, and `deleteRequested`, update application state with new array/object references, and persist that state where appropriate.
+- `Delete` / `Backspace`: request deletion of editable selected elements.
+- `Escape`: clear selection or cancel connection creation.
+- `Command/Ctrl + A`: select all in edit mode.
+- Shift, Command, or Ctrl while clicking: toggle multi-selection.
 
-Set `[readonly]="true"` for execution monitoring. Pan, zoom, selection, and viewport controls remain available while graph mutations are disabled.
+Keyboard commands only act while the flow has focus and never intercept text editing inside custom nodes.
+
+## Compatibility
+
+The Milestone 1 `inputs`/`outputs`, `readonly`, `connectionCreated`, `connectionReassigned`, `selectionChanged`, and combined `deleteRequested` APIs remain available as deprecated aliases for one compatibility cycle. New code should use `ports`, `mode`, controlled `selection`, and the request outputs documented above.

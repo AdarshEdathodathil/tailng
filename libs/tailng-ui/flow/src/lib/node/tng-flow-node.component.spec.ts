@@ -17,6 +17,8 @@ describe('TngFlowNodeComponent', () => {
     fixture.componentRef.setInput('description', 'Collect relevant sources.');
     fixture.componentRef.setInput('status', 'failed');
     fixture.componentRef.setInput('progress', 140);
+    fixture.componentRef.setInput('selected', true);
+    fixture.componentRef.setInput('disabled', true);
     fixture.componentRef.setInput('invalid', true);
     fixture.componentRef.setInput('message', 'Missing credentials');
     fixture.detectChanges();
@@ -28,6 +30,8 @@ describe('TngFlowNodeComponent', () => {
     const progress = host.querySelector('tng-progress-bar');
 
     expect(card?.hasAttribute('data-invalid')).toBe(true);
+    expect(card?.hasAttribute('data-selected')).toBe(true);
+    expect(card?.hasAttribute('data-disabled')).toBe(true);
     expect(header?.hasAttribute('data-has-icon')).toBe(false);
     expect(status?.textContent?.trim()).toBe('failed');
     expect(status?.getAttribute('data-tone')).toBe('danger');

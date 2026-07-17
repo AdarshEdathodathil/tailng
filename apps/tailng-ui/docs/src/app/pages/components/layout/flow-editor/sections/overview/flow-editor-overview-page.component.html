@@ -63,9 +63,12 @@
           [nodes]="plainCssNodes()"
           [connections]="plainCssConnections()"
           [nodeViews]="nodeViews"
+          [selection]="plainCssSelection()"
           (nodesMoved)="onNodesMoved($event, 'plain-css')"
-          (connectionCreated)="onConnectionCreated($event, 'plain-css')"
-          (deleteRequested)="onDeleteRequested($event, 'plain-css')"
+          (connectionCreateRequested)="onConnectionCreateRequested($event, 'plain-css')"
+          (connectionsDeleteRequested)="onConnectionsDeleteRequested($event, 'plain-css')"
+          (nodesDeleteRequested)="onNodesDeleteRequested($event, 'plain-css')"
+          (selectionChange)="plainCssSelection.set($event)"
         />
         @if (plainCssEditor.validationIssues().length > 0) {
           <div class="flow-editor-overview__validation" role="status">
@@ -94,9 +97,12 @@
           [nodes]="tailwindNodes()"
           [connections]="tailwindConnections()"
           [nodeViews]="nodeViews"
+          [selection]="tailwindSelection()"
           (nodesMoved)="onNodesMoved($event, 'tailwind-css')"
-          (connectionCreated)="onConnectionCreated($event, 'tailwind-css')"
-          (deleteRequested)="onDeleteRequested($event, 'tailwind-css')"
+          (connectionCreateRequested)="onConnectionCreateRequested($event, 'tailwind-css')"
+          (connectionsDeleteRequested)="onConnectionsDeleteRequested($event, 'tailwind-css')"
+          (nodesDeleteRequested)="onNodesDeleteRequested($event, 'tailwind-css')"
+          (selectionChange)="tailwindSelection.set($event)"
         />
         @if (tailwindEditor.validationIssues().length > 0) {
           <div

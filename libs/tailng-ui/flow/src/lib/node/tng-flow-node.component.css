@@ -7,6 +7,15 @@
   display: block;
 }
 
+.tng-flow-node[data-selected] {
+  outline: 2px solid var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
+  outline-offset: 2px;
+}
+
+.tng-flow-node[data-disabled] {
+  opacity: var(--tng-disabled-opacity, 0.55);
+}
+
 .tng-flow-node__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

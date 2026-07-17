@@ -21,10 +21,19 @@
         </thead>
         <tbody>
           <tr>
+            <td><code>definition</code></td>
+            <td><code>TngFlowDefinition&lt;TData, TConnectionData&gt;</code></td>
+            <td><code>null</code></td>
+            <td>
+              Controlled JSON workflow snapshot. Takes precedence over separate node and connection
+              inputs.
+            </td>
+          </tr>
+          <tr>
             <td><code>nodes</code></td>
             <td><code>readonly TngFlowNode&lt;TData&gt;[]</code></td>
-            <td>required</td>
-            <td>Controlled node records, including positions and port definitions.</td>
+            <td><code>null</code></td>
+            <td>Controlled node records for the separate-input form.</td>
           </tr>
           <tr>
             <td><code>connections</code></td>
@@ -41,10 +50,28 @@
             <td>Status, progress, message, and invalid state keyed by node id.</td>
           </tr>
           <tr>
-            <td><code>readonly</code></td>
+            <td><code>mode</code></td>
+            <td><code>'edit' | 'inspect' | 'readonly'</code></td>
+            <td><code>'edit'</code></td>
+            <td>Controls selection and graph editing permissions while preserving pan and zoom.</td>
+          </tr>
+          <tr>
+            <td><code>selection</code></td>
+            <td><code>TngFlowSelection</code></td>
+            <td>empty sets</td>
+            <td>Controlled node and connection selection owned by the consuming application.</td>
+          </tr>
+          <tr>
+            <td><code>connectionValidator</code></td>
+            <td><code>TngFlowConnectionValidator | null</code></td>
+            <td><code>null</code></td>
+            <td>Runs after built-in connection validation for application-specific rules.</td>
+          </tr>
+          <tr>
+            <td><code>readonly</code> <small>(deprecated)</small></td>
             <td><code>boolean</code></td>
             <td><code>false</code></td>
-            <td>Disables graph mutation while preserving pan, zoom, selection, and controls.</td>
+            <td>Compatibility alias that forces readonly mode when true.</td>
           </tr>
           <tr>
             <td><code>ariaLabel</code></td>
@@ -113,24 +140,39 @@
             <td>After one or more selected nodes finish moving.</td>
           </tr>
           <tr>
-            <td><code>connectionCreated</code></td>
-            <td><code>TngFlowConnectionCreatedEvent</code></td>
-            <td>After a source connector is dropped onto a valid target connector.</td>
+            <td><code>nodePositionChange</code></td>
+            <td><code>TngFlowNodePositionChange</code></td>
+            <td>Once per moved node, with its previous and new positions.</td>
           </tr>
           <tr>
-            <td><code>connectionReassigned</code></td>
-            <td><code>TngFlowConnectionReassignedEvent</code></td>
-            <td>After a reassignable connection endpoint moves.</td>
+            <td><code>connectionCreateRequested</code></td>
+            <td><code>TngFlowConnectionCreateRequest</code></td>
+            <td>After a connection candidate passes built-in and consumer validation.</td>
           </tr>
           <tr>
-            <td><code>selectionChanged</code></td>
-            <td><code>TngFlowSelectionChangedEvent</code></td>
-            <td>When node or connection selection changes.</td>
+            <td><code>connectionReconnectRequested</code></td>
+            <td><code>TngFlowConnectionReconnectRequest</code></td>
+            <td>After a reassigned endpoint produces a valid complete connection.</td>
           </tr>
           <tr>
-            <td><code>deleteRequested</code></td>
-            <td><code>TngFlowDeleteRequestedEvent</code></td>
-            <td>When the user requests deletion of selected graph items.</td>
+            <td><code>connectionsDeleteRequested</code></td>
+            <td><code>TngFlowConnectionsDeleteRequest</code></td>
+            <td>When editable selected connections are requested for deletion.</td>
+          </tr>
+          <tr>
+            <td><code>nodesDeleteRequested</code></td>
+            <td><code>TngFlowNodesDeleteRequest</code></td>
+            <td>When unlocked selected nodes are requested for deletion.</td>
+          </tr>
+          <tr>
+            <td><code>selectionChange</code></td>
+            <td><code>TngFlowSelection</code></td>
+            <td>When the user requests a different controlled selection.</td>
+          </tr>
+          <tr>
+            <td><code>connectionRejected</code></td>
+            <td><code>TngFlowConnectionRejectedEvent</code></td>
+            <td>When a drop targets a known port but connection validation fails.</td>
           </tr>
           <tr>
             <td><code>viewportChanged</code></td>
@@ -164,22 +206,33 @@
         </thead>
         <tbody>
           <tr>
+            <td><code>TngFlowDefinition&lt;TNodeData, TConnectionData&gt;</code></td>
+            <td><code>id</code>, <code>nodes</code>, <code>connections</code></td>
+            <td>Optional workflow name and typed node/connection data.</td>
+          </tr>
+          <tr>
             <td><code>TngFlowNode&lt;TData&gt;</code></td>
             <td><code>id</code>, <code>type</code>, <code>name</code>, <code>position</code></td>
-            <td><code>data</code>, description, icon, disabled state, inputs, and outputs.</td>
+            <td>
+              <code>data</code>, description, icon, disabled or locked state, and directed ports.
+            </td>
           </tr>
           <tr>
             <td><code>TngFlowPort</code></td>
-            <td><code>id</code></td>
+            <td><code>id</code>, <code>direction</code>, <code>kind</code></td>
             <td>
-              Label, category, disabled state, multiplicity, target allow-list, and self-connection
-              policy. Port ids must be globally unique.
+              Name/label, data type, required state, disabled state, multiplicity, and explicit
+              self-connection policy. Port ids are scoped to their owning node.
             </td>
           </tr>
           <tr>
             <td><code>TngFlowConnection</code></td>
-            <td><code>id</code>, <code>sourcePortId</code>, <code>targetPortId</code></td>
-            <td>Disabled, reassignable, selectable, and line type.</td>
+            <td><code>id</code>, <code>source</code>, <code>target</code></td>
+            <td>
+              Source and target are <code>TngFlowEndpoint</code> values containing
+              <code>nodeId</code> and <code>portId</code>. Connections also support typed data,
+              disabled, reassignable, selectable, and line type.
+            </td>
           </tr>
           <tr>
             <td><code>TngFlowNodeView&lt;TStatus&gt;</code></td>
@@ -193,6 +246,10 @@
       Built-in statuses include idle, queued, running, waiting, completed, failed, paused, retrying,
       skipped, cancelled, and awaiting-input. Supply a custom string union through the editor's
       <code>TStatus</code> generic when your runtime needs additional states.
+    </p>
+    <p>
+      <code>TngFlowPortComponent</code> is the reusable visual port shell used by the editor. Foblex
+      connector directives remain private to <code>TngFlowEditorComponent</code>.
     </p>
   </section>
 
@@ -224,9 +281,14 @@
             <td>Current execution presentation.</td>
           </tr>
           <tr>
+            <td><code>mode</code></td>
+            <td><code>TngFlowEditorMode</code></td>
+            <td>The current edit, inspect, or readonly mode.</td>
+          </tr>
+          <tr>
             <td><code>readonly</code></td>
             <td><code>boolean</code></td>
-            <td>Whether graph mutation is disabled.</td>
+            <td>Deprecated convenience value equivalent to <code>mode !== 'edit'</code>.</td>
           </tr>
           <tr>
             <td><code>selected</code></td>

@@ -1,6 +1,5 @@
 import type {
   TngFlowConnection,
-  TngFlowDeleteRequestedEvent,
   TngFlowNode,
   TngFlowNodesMovedEvent,
   TngFlowNodeViews,
@@ -15,6 +14,11 @@ export type FlowEditorDemoState = Readonly<{
   nodes: readonly TngFlowNode<FlowEditorDemoData>[];
 }>;
 
+type FlowEditorDeleteSelection = Readonly<{
+  nodeIds: readonly string[];
+  connectionIds: readonly string[];
+}>;
+
 export const flowEditorDemoNodes: readonly TngFlowNode<FlowEditorDemoData>[] = Object.freeze([
   {
     id: 'prompt',
@@ -23,7 +27,16 @@ export const flowEditorDemoNodes: readonly TngFlowNode<FlowEditorDemoData>[] = O
     description: 'Assemble the system and user instructions.',
     position: { x: 80, y: 140 },
     data: { detail: 'Customer support policy' },
-    outputs: [{ id: 'prompt-output', label: 'Prompt', category: 'text', multiple: true }],
+    ports: [
+      {
+        id: 'prompt-output',
+        label: 'Prompt',
+        direction: 'output',
+        kind: 'data',
+        dataType: 'text',
+        multiple: true,
+      },
+    ],
   },
   {
     id: 'model',
@@ -32,8 +45,24 @@ export const flowEditorDemoNodes: readonly TngFlowNode<FlowEditorDemoData>[] = O
     description: 'Generate a grounded response.',
     position: { x: 430, y: 80 },
     data: { detail: 'GPT reasoning pass' },
-    inputs: [{ id: 'model-input', label: 'Prompt', category: 'text', multiple: true }],
-    outputs: [{ id: 'model-output', label: 'Answer', category: 'text', multiple: true }],
+    ports: [
+      {
+        id: 'model-input',
+        label: 'Prompt',
+        direction: 'input',
+        kind: 'data',
+        dataType: 'text',
+        multiple: true,
+      },
+      {
+        id: 'model-output',
+        label: 'Answer',
+        direction: 'output',
+        kind: 'data',
+        dataType: 'text',
+        multiple: true,
+      },
+    ],
   },
   {
     id: 'response',
@@ -42,21 +71,30 @@ export const flowEditorDemoNodes: readonly TngFlowNode<FlowEditorDemoData>[] = O
     description: 'Return the final answer to the agent runtime.',
     position: { x: 780, y: 140 },
     data: { detail: 'Streaming response' },
-    inputs: [{ id: 'response-input', label: 'Answer', category: 'text', multiple: true }],
+    ports: [
+      {
+        id: 'response-input',
+        label: 'Answer',
+        direction: 'input',
+        kind: 'data',
+        dataType: 'text',
+        multiple: true,
+      },
+    ],
   },
 ]);
 
 export const flowEditorDemoConnections: readonly TngFlowConnection[] = Object.freeze([
   {
     id: 'prompt-to-model',
-    sourcePortId: 'prompt-output',
-    targetPortId: 'model-input',
+    source: { nodeId: 'prompt', portId: 'prompt-output' },
+    target: { nodeId: 'model', portId: 'model-input' },
     type: 'bezier',
   },
   {
     id: 'model-to-response',
-    sourcePortId: 'model-output',
-    targetPortId: 'response-input',
+    source: { nodeId: 'model', portId: 'model-output' },
+    target: { nodeId: 'response', portId: 'response-input' },
     type: 'bezier',
   },
 ]);
@@ -78,22 +116,17 @@ export function applyFlowNodeMoves(
 export function removeFlowItems(
   nodes: readonly TngFlowNode<FlowEditorDemoData>[],
   connections: readonly TngFlowConnection[],
-  event: TngFlowDeleteRequestedEvent,
+  event: FlowEditorDeleteSelection,
 ): FlowEditorDemoState {
   const nodeIds = new Set(event.nodeIds);
   const connectionIds = new Set(event.connectionIds);
-  const removedPortIds = new Set(
-    nodes
-      .filter((node) => nodeIds.has(node.id))
-      .flatMap((node) => [...(node.inputs ?? []), ...(node.outputs ?? [])].map((port) => port.id)),
-  );
   return {
     nodes: nodes.filter((node) => !nodeIds.has(node.id)),
     connections: connections.filter(
       (connection) =>
         !connectionIds.has(connection.id) &&
-        !removedPortIds.has(connection.sourcePortId) &&
-        !removedPortIds.has(connection.targetPortId),
+        !nodeIds.has(connection.source.nodeId) &&
+        !nodeIds.has(connection.target.nodeId),
     ),
   };
 }

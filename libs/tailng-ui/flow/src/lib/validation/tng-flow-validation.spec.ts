@@ -22,8 +22,8 @@ const validNodes: readonly TngFlowNode[] = [
 const validConnections: readonly TngFlowConnection[] = [
   {
     id: 'source-to-target',
-    sourcePortId: 'source-output',
-    targetPortId: 'target-input',
+    source: { nodeId: 'source', portId: 'source-output' },
+    target: { nodeId: 'target', portId: 'target-input' },
   },
 ];
 
@@ -32,20 +32,36 @@ describe('validateTngFlow', () => {
     expect(validateTngFlow(validNodes, validConnections)).toEqual([]);
   });
 
+  it('scopes reusable port ids to their owning nodes', () => {
+    const nodes: readonly TngFlowNode[] = [
+      { ...validNodes[0], outputs: [{ id: 'result' }] },
+      { ...validNodes[1], inputs: [{ id: 'result' }] },
+    ];
+    const connections: readonly TngFlowConnection[] = [
+      {
+        id: 'shared-local-port-id',
+        source: { nodeId: 'source', portId: 'result' },
+        target: { nodeId: 'target', portId: 'result' },
+      },
+    ];
+
+    expect(validateTngFlow(nodes, connections)).toEqual([]);
+  });
+
   it('reports duplicate ids and missing endpoints', () => {
     const nodes: readonly TngFlowNode[] = [
       ...validNodes,
       {
         ...validNodes[1],
-        inputs: [{ id: 'source-output' }],
+        inputs: [{ id: 'target-input' }],
       },
     ];
     const connections: readonly TngFlowConnection[] = [
       ...validConnections,
       {
         id: 'source-to-target',
-        sourcePortId: 'missing-source',
-        targetPortId: 'missing-target',
+        source: { nodeId: 'source', portId: 'missing-source' },
+        target: { nodeId: 'target', portId: 'missing-target' },
       },
     ];
 
@@ -88,9 +104,21 @@ describe('validateTngFlow', () => {
       },
     ];
     const connections: readonly TngFlowConnection[] = [
-      { id: 'wrong-direction', sourcePortId: 'one-in', targetPortId: 'two-out' },
-      { id: 'incompatible', sourcePortId: 'one-out', targetPortId: 'two-in' },
-      { id: 'self', sourcePortId: 'one-out', targetPortId: 'one-in' },
+      {
+        id: 'wrong-direction',
+        source: { nodeId: 'one', portId: 'one-in' },
+        target: { nodeId: 'two', portId: 'two-out' },
+      },
+      {
+        id: 'incompatible',
+        source: { nodeId: 'one', portId: 'one-out' },
+        target: { nodeId: 'two', portId: 'two-in' },
+      },
+      {
+        id: 'self',
+        source: { nodeId: 'one', portId: 'one-out' },
+        target: { nodeId: 'one', portId: 'one-in' },
+      },
     ];
 
     const codes = validateTngFlow(nodes, connections).map((issue) => issue.code);
@@ -102,6 +130,45 @@ describe('validateTngFlow', () => {
         'incompatible-ports',
         'self-connection-disabled',
         'port-connection-limit',
+      ]),
+    );
+  });
+
+  it('validates the canonical port model and explicit self-connection policy', () => {
+    const nodes: readonly TngFlowNode[] = [
+      {
+        id: 'canonical',
+        type: 'agent',
+        name: 'Canonical',
+        position: { x: 0, y: 0 },
+        ports: [
+          { id: 'in', direction: 'input', kind: 'data', multiple: true },
+          { id: 'out', direction: 'output', kind: 'control', multiple: true },
+        ],
+        inputs: [{ id: 'legacy' }],
+      },
+    ];
+    const connections: readonly TngFlowConnection[] = [
+      {
+        id: 'self-one',
+        source: { nodeId: 'canonical', portId: 'out' },
+        target: { nodeId: 'canonical', portId: 'in' },
+      },
+      {
+        id: 'self-two',
+        source: { nodeId: 'canonical', portId: 'out' },
+        target: { nodeId: 'canonical', portId: 'in' },
+      },
+    ];
+
+    const codes = validateTngFlow(nodes, connections).map((issue) => issue.code);
+
+    expect(codes).toEqual(
+      expect.arrayContaining([
+        'mixed-port-model',
+        'incompatible-port-kind',
+        'self-connection-disabled',
+        'duplicate-connection',
       ]),
     );
   });

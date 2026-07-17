@@ -1,0 +1,115 @@
+<main class="min-h-screen bg-tng-bg-canvas px-4 py-8 text-tng-fg-primary md:px-8">
+  <section class="mx-auto grid max-w-[90rem] gap-6">
+    <header class="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-end">
+      <div class="grid gap-3">
+        <h1 class="text-4xl font-black tracking-tight md:text-5xl">Flow Editor</h1>
+        <p class="max-w-4xl text-lg text-tng-fg-secondary">
+          Milestone 2: create, validate, reconnect, select, and delete graph elements while the
+          consuming application remains the only workflow state owner.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2" aria-label="Editor mode">
+        @for (editorMode of editorModes; track editorMode) {
+          <button
+            type="button"
+            class="rounded-lg border px-4 py-2 text-sm font-semibold capitalize shadow-sm"
+            [class.border-tng-accent-brand]="mode() === editorMode"
+            [class.bg-tng-bg-canvas]="mode() === editorMode"
+            [class.border-tng-border-strong]="mode() !== editorMode"
+            [class.bg-tng-bg-surface]="mode() !== editorMode"
+            [attr.aria-pressed]="mode() === editorMode"
+            (click)="setMode(editorMode)"
+          >
+            {{ editorMode }}
+          </button>
+        }
+        <button
+          type="button"
+          class="rounded-lg border border-tng-border-strong bg-tng-bg-surface px-4 py-2 text-sm font-semibold shadow-sm hover:border-tng-accent-brand"
+          (click)="resetWorkflow()"
+        >
+          Reset workflow
+        </button>
+      </div>
+    </header>
+
+    <section
+      class="grid gap-4 rounded-[1.5rem] border border-tng-border-subtle bg-tng-bg-surface p-5 shadow-[0_18px_40px_color-mix(in_srgb,var(--tng-semantic-foreground-primary)_6%,transparent)]"
+    >
+      <div class="grid gap-2 text-sm text-tng-fg-secondary md:grid-cols-3">
+        <div class="rounded-lg border border-tng-border-subtle px-3 py-2">
+          Mode: <strong class="text-tng-fg-primary">{{ mode() }}</strong>
+        </div>
+        <div class="rounded-lg border border-tng-border-subtle px-3 py-2">
+          Selected nodes:
+          <strong class="text-tng-fg-primary">{{ selection().nodeIds.size }}</strong>
+        </div>
+        <div class="rounded-lg border border-tng-border-subtle px-3 py-2">
+          Selected connections:
+          <strong class="text-tng-fg-primary">{{ selection().connectionIds.size }}</strong>
+        </div>
+      </div>
+
+      <tng-flow-editor
+        class="block h-[38rem] min-h-[30rem]"
+        flowId="tailwind-milestone-two"
+        ariaLabel="Interactive milestone two controlled workflow"
+        [definition]="workflow()"
+        [mode]="mode()"
+        [selection]="selection()"
+        [connectionValidator]="validateConnection"
+        (nodePositionChange)="updateNodePosition($event)"
+        (connectionCreateRequested)="createConnection($event)"
+        (connectionReconnectRequested)="reconnectConnection($event)"
+        (connectionsDeleteRequested)="deleteConnections($event)"
+        (nodesDeleteRequested)="deleteNodes($event)"
+        (selectionChange)="selection.set($event)"
+        (connectionRejected)="showConnectionError($event)"
+      >
+        <ng-template tngFlowNode="ai_parser" let-node let-mode="mode" let-selected="selected">
+          <tng-flow-node
+            [name]="node.name"
+            [description]="node.description ?? null"
+            [icon]="node.icon ?? null"
+            [selected]="selected"
+          >
+            <div class="grid gap-3 text-sm text-tng-fg-secondary">
+              <span
+                [tngBadge]="'AI'"
+                tngBadgeTone="info"
+                class="inline-flex w-fit rounded-md border border-tng-border-subtle px-3 py-2 font-medium"
+              >
+                Parser · {{ mode }}
+              </span>
+              <span data-testid="ai-parser-summary">{{ nodeSummary(node.data) }}</span>
+            </div>
+          </tng-flow-node>
+        </ng-template>
+      </tng-flow-editor>
+
+      @if (rejection(); as reason) {
+        <div
+          class="rounded-xl border border-tng-accent-danger bg-tng-accent-danger/10 px-4 py-3 text-sm text-tng-accent-danger"
+          role="alert"
+        >
+          <strong>Connection not allowed:</strong> {{ reason }}
+        </div>
+      }
+
+      <div
+        data-testid="flow-event"
+        class="rounded-xl border border-tng-border-subtle bg-tng-bg-canvas/70 px-4 py-3 font-mono text-xs text-tng-fg-secondary"
+        aria-live="polite"
+      >
+        {{ lastEvent() }}
+      </div>
+
+      <p class="text-sm leading-6 text-tng-fg-secondary">
+        Try a duplicate edge, connect text payload directly to a JSON input, reconnect an endpoint,
+        multi-select with Shift/Cmd/Ctrl, or select elements and press Delete. The locked validator
+        remains selectable but cannot move or be deleted.
+      </p>
+    </section>
+  </section>
+</main>
