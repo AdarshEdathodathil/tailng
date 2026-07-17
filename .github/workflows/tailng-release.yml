@@ -44,7 +44,7 @@ jobs:
 
       - name: Upgrade npm
         run: |
-          npm install --global npm@latest
+          npm install --global npm@11
           npm --version
 
       - name: Enable Corepack and pnpm
