@@ -1,0 +1,41 @@
+.flow-editor-examples__canvas {
+  height: 29rem;
+  min-height: 24rem;
+}
+
+.flow-editor-examples__model {
+  display: block;
+  width: 17.5rem;
+}
+
+.flow-editor-examples__eyebrow {
+  color: var(--tng-semantic-accent-brand);
+  font-size: 0.675rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.flow-editor-examples__model p {
+  color: var(--tng-semantic-foreground-secondary);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.flow-editor-examples__status {
+  background: color-mix(in srgb, var(--tng-semantic-accent-brand) 12%, transparent);
+  border-radius: 999px;
+  color: var(--tng-semantic-accent-brand);
+  display: inline-flex;
+  font-size: 0.7rem;
+  font-weight: 650;
+  margin-top: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  text-transform: capitalize;
+}
+
+@media (max-width: 720px) {
+  .flow-editor-examples__canvas {
+    height: 26rem;
+  }
+}

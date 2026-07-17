@@ -1,0 +1,175 @@
+<ng-content select="ng-template[tngFlowNode]" />
+
+<section
+  class="tng-flow-editor"
+  [attr.aria-label]="ariaLabel()"
+  [attr.data-readonly]="readonly() ? '' : null"
+  [attr.data-invalid]="validationIssues().length > 0 ? '' : null"
+>
+  <f-flow
+    fDraggable
+    [fFlowId]="flowId()"
+    [fDropToGroup]="false"
+    [vCellSize]="gridSize()"
+    [hCellSize]="gridSize()"
+    [fCellSizeWhileDragging]="snapToGrid()"
+    (fNodesRendered)="onNodesRendered()"
+    (fFullRendered)="onReady()"
+    (fMoveNodes)="onMoveNodes($event)"
+    (fCreateConnection)="onCreateConnection($event)"
+    (fReassignConnection)="onReassignConnection($event)"
+    (fSelectionChange)="onSelectionChange($event)"
+    (fDeleteSelected)="onDeleteSelected($event)"
+  >
+    @if (showBackground()) {
+      <f-background>
+        <f-circle-pattern
+          color="var(--tng-flow-grid-color, var(--tng-semantic-border-strong, #d1d5db))"
+          [radius]="1"
+        />
+      </f-background>
+    }
+
+    <f-canvas
+      fZoom
+      [fZoomMinimum]="zoomMinimum()"
+      [fZoomMaximum]="zoomMaximum()"
+      [fZoomStep]="zoomStep()"
+      (fCanvasChange)="onViewportChange($event)"
+    >
+      @if (!readonly()) {
+        <f-connection-for-create />
+      }
+
+      @for (connection of renderableConnections(); track connection.id) {
+        <f-connection
+          [fConnectionId]="connection.id"
+          [fSourceId]="connection.sourcePortId"
+          [fTargetId]="connection.targetPortId"
+          [fType]="connection.type ?? 'bezier'"
+          [fSelectionDisabled]="connection.selectable === false"
+          [fReassignDisabled]="
+            readonly() || connection.disabled === true || connection.reassignable === false
+          "
+        />
+      }
+
+      @for (node of nodes(); track node.id) {
+        <div
+          fNode
+          class="tng-flow-editor__node"
+          [class.tng-flow-editor__node--selected]="isNodeSelected(node.id)"
+          [fNodeId]="node.id"
+          [fNodePosition]="node.position"
+          [fNodeDraggingDisabled]="readonly() || node.disabled === true"
+          [style.min-height.px]="nodeMinHeight(node)"
+          [attr.data-node-id]="node.id"
+          [attr.data-node-type]="node.type"
+          [attr.data-invalid]="viewFor(node.id).invalid === true ? '' : null"
+        >
+          @if (!readonly() && node.disabled !== true) {
+            <button
+              fDragHandle
+              type="button"
+              class="tng-flow-editor__drag-handle"
+              [attr.aria-label]="'Move ' + node.name"
+              [attr.title]="'Move ' + node.name"
+            >
+              <span aria-hidden="true">•••</span>
+            </button>
+          }
+
+          <div class="tng-flow-editor__node-content">
+            @if (templateFor(node.type); as nodeTemplate) {
+              <ng-container
+                [ngTemplateOutlet]="nodeTemplate"
+                [ngTemplateOutletContext]="templateContext(node)"
+              />
+            } @else {
+              <tng-flow-node
+                [name]="node.name"
+                [description]="node.description ?? null"
+                [icon]="node.icon ?? null"
+                [status]="viewFor(node.id).status ?? 'idle'"
+                [progress]="viewFor(node.id).progress ?? null"
+                [invalid]="viewFor(node.id).invalid === true"
+                [message]="viewFor(node.id).message ?? null"
+              />
+            }
+          </div>
+
+          @for (port of node.inputs ?? []; track port.id; let portIndex = $index) {
+            <span
+              class="tng-flow-editor__port tng-flow-editor__port--input"
+              [style.top.px]="portTop(portIndex)"
+            >
+              <span
+                fConnector
+                fConnectorType="target"
+                fConnectorConnectableSide="left"
+                class="tng-flow-editor__port-socket"
+                [fConnectorId]="port.id"
+                [fConnectorCategory]="port.category"
+                [fConnectorMultiple]="port.multiple === true"
+                [fConnectorDisabled]="
+                  readonly() || node.disabled === true || port.disabled === true
+                "
+                [attr.aria-label]="portAriaLabel(node, port, 'input')"
+              ></span>
+              <span class="tng-flow-editor__port-label">{{ portLabel(port) }}</span>
+            </span>
+          }
+
+          @for (port of node.outputs ?? []; track port.id; let portIndex = $index) {
+            <span
+              class="tng-flow-editor__port tng-flow-editor__port--output"
+              [style.top.px]="portTop(portIndex)"
+            >
+              <span
+                fConnector
+                fConnectorType="source"
+                fConnectorConnectableSide="right"
+                class="tng-flow-editor__port-socket"
+                [fConnectorId]="port.id"
+                [fConnectorCategory]="port.category"
+                [fConnectorMultiple]="port.multiple === true"
+                [fConnectorDisabled]="
+                  readonly() || node.disabled === true || port.disabled === true
+                "
+                [fConnectorSelfConnectable]="port.allowSelfConnection !== false"
+                [fCanBeConnectedTo]="acceptedTargets(port)"
+                [attr.aria-label]="portAriaLabel(node, port, 'output')"
+              ></span>
+              <span class="tng-flow-editor__port-label">{{ portLabel(port) }}</span>
+            </span>
+          }
+        </div>
+      }
+    </f-canvas>
+
+    @if (showSelectionArea()) {
+      <f-selection-area />
+    }
+  </f-flow>
+
+  @if (showControls()) {
+    <nav class="tng-flow-editor__controls" aria-label="Flow viewport controls">
+      <tng-button appearance="outline" size="sm" title="Zoom out" (click)="zoomBy(-zoomStep())">
+        <span aria-hidden="true">−</span>
+        <span class="tng-flow-editor__visually-hidden">Zoom out</span>
+      </tng-button>
+      <tng-button appearance="outline" size="sm" title="Zoom in" (click)="zoomBy(zoomStep())">
+        <span aria-hidden="true">+</span>
+        <span class="tng-flow-editor__visually-hidden">Zoom in</span>
+      </tng-button>
+      <tng-button appearance="outline" size="sm" title="Fit workflow" (click)="fitToScreen()">
+        <span aria-hidden="true">Fit</span>
+        <span class="tng-flow-editor__visually-hidden">Fit workflow</span>
+      </tng-button>
+      <tng-button appearance="outline" size="sm" title="Reset viewport" (click)="resetViewport()">
+        <span aria-hidden="true">1:1</span>
+        <span class="tng-flow-editor__visually-hidden">Reset viewport</span>
+      </tng-button>
+    </nav>
+  }
+</section>

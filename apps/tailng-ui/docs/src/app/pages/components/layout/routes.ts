@@ -22,6 +22,11 @@ if (stepperItem === undefined) {
   throw new Error('Missing "stepper" in components layout docs group.');
 }
 
+const flowEditorItem = group.items.find((item) => item.slug === 'flow-editor');
+if (flowEditorItem === undefined) {
+  throw new Error('Missing "flow-editor" in components layout docs group.');
+}
+
 const cardItem = group.items.find((item) => item.slug === 'card');
 if (cardItem === undefined) {
   throw new Error('Missing "card" in components layout docs group.');
@@ -70,6 +75,12 @@ export const COMPONENTS_LAYOUT_ROUTES: Routes = [
     data: toComponentsDocsRouteData(group, stepperItem),
     loadChildren: () =>
       import('./stepper/routes').then((module) => module.COMPONENTS_LAYOUT_STEPPER_ROUTES),
+  },
+  {
+    path: flowEditorItem.slug,
+    data: toComponentsDocsRouteData(group, flowEditorItem),
+    loadChildren: () =>
+      import('./flow-editor/routes').then((module) => module.COMPONENTS_LAYOUT_FLOW_EDITOR_ROUTES),
   },
   {
     path: cardItem.slug,

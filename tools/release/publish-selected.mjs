@@ -51,6 +51,7 @@ function resolvePackageVersions() {
     "libs/tailng-ui/theme/package.json",
     "libs/tailng-ui/registry/package.json",
     "libs/tailng-ui/charts/package.json",
+    "libs/tailng-ui/flow/package.json",
     "libs/tailng/cli/package.json",
   ]);
 }
@@ -116,6 +117,7 @@ const DIST_DIR = {
   theme: "dist/libs/tailng-ui/theme",
   registry: "dist/libs/tailng-ui/registry",
   charts: "dist/libs/tailng-ui/charts",
+  flow: "dist/libs/tailng-ui/flow",
   cli: "dist/libs/tailng/cli",
 };
 
@@ -134,6 +136,7 @@ const ORDER = [
   "theme",
   "registry",
   "charts",
+  "flow",
   "cli",
 ];
 

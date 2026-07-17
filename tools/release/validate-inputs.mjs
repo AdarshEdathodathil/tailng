@@ -9,6 +9,7 @@ const VALID = new Set([
   "theme",
   "icons",
   "charts",
+  "flow",
   "cli",
   "docs",
 ]);
@@ -21,7 +22,7 @@ if (!targets) {
 // Check for spaces in the targets string (after trimming)
 if (targets.includes(" ")) {
   console.error(
-    "ERROR: targets must not contain spaces. Example: cdk,primitives,components,theme,icons,docs",
+    "ERROR: targets must not contain spaces. Example: cdk,primitives,components,theme,icons,charts,flow",
   );
   console.error(`Received: "${targets}"`);
   process.exit(1);

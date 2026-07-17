@@ -22,6 +22,7 @@
       "@tailng-ui/cdk/overlay": ["libs/tailng-ui/cdk/src/overlay/index.ts"],
       "@tailng-ui/charts": ["libs/tailng-ui/charts/src/index.ts"],
       "@tailng-ui/components": ["libs/tailng-ui/components/src/index.ts"],
+      "@tailng-ui/flow": ["libs/tailng-ui/flow/src/index.ts"],
       "@tailng-ui/icons": ["libs/tailng-ui/icons/src/index.ts"],
       "@tailng-ui/primitives": ["libs/tailng-ui/primitives/src/index.ts"],
       "@tailng-ui/registry": ["libs/tailng-ui/registry/src/index.ts"],

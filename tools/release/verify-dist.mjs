@@ -11,6 +11,7 @@ const required = [
   ["icons", "dist/libs/tailng-ui/icons"],
   ["registry", "dist/libs/tailng-ui/registry"],
   ["charts", "dist/libs/tailng-ui/charts"],
+  ["flow", "dist/libs/tailng-ui/flow"],
   ["cli", "dist/libs/tailng/cli"],
 ];
 

@@ -1,0 +1,147 @@
+<article class="docs-overview flow-editor-overview">
+  <section id="imports" class="docs-overview-block">
+    <h2 class="docs-overview-title">Flow Editor</h2>
+    <p class="docs-overview-lead">
+      Flow Editor is a controlled Angular canvas for AI agents and automation workflows. Your
+      application owns graph state and persistence; the editor renders that state and emits typed
+      user intents.
+    </p>
+
+    <h3>Install</h3>
+    <p>Install the optional flow package together with its TailNG and Foblex peer dependencies.</p>
+    <tng-code-block
+      [code]="installCode"
+      adapter="shiki"
+      language="bash"
+      title="Install Flow Editor"
+      [theme]="codeBlockTheme()"
+      [lineNumbers]="false"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+
+    <h3>Global styles</h3>
+    <p>Import the flow theme once in the consuming application's global stylesheet.</p>
+    <tng-code-block
+      [code]="stylesCode"
+      adapter="shiki"
+      language="css"
+      title="styles.css"
+      [theme]="codeBlockTheme()"
+      [lineNumbers]="false"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+  </section>
+
+  <section id="controlled-workflow" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Controlled agent workflow"
+      description="Drag a node, select an item, or use the viewport controls. Press Delete to remove a selection."
+      ariaLabel="Controlled agent workflow styling variants"
+      tabListAriaLabel="Controlled agent workflow styles"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain CSS"
+        panelTitle="Controlled workflow with Plain CSS"
+        [codeTabs]="plainCssCodeTabs"
+      >
+        <div class="flow-editor-overview__toolbar">
+          <tng-button appearance="outline" size="sm" (click)="resetDemo('plain-css')">
+            Reset graph
+          </tng-button>
+        </div>
+        <tng-flow-editor
+          #plainCssEditor="tngFlowEditor"
+          flowId="docs-agent-workflow-plain-css"
+          class="flow-editor-overview__canvas"
+          ariaLabel="Interactive customer support agent workflow styled with Plain CSS"
+          [nodes]="plainCssNodes()"
+          [connections]="plainCssConnections()"
+          [nodeViews]="nodeViews"
+          (nodesMoved)="onNodesMoved($event, 'plain-css')"
+          (connectionCreated)="onConnectionCreated($event, 'plain-css')"
+          (deleteRequested)="onDeleteRequested($event, 'plain-css')"
+        />
+        @if (plainCssEditor.validationIssues().length > 0) {
+          <div class="flow-editor-overview__validation" role="status">
+            {{ plainCssEditor.validationIssues().length }} graph validation issue(s)
+          </div>
+        }
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Controlled workflow with Tailwind CSS"
+        [codeTabs]="tailwindCodeTabs"
+      >
+        <div class="flex justify-end">
+          <tng-button appearance="outline" size="sm" (click)="resetDemo('tailwind-css')">
+            Reset graph
+          </tng-button>
+        </div>
+        <tng-flow-editor
+          #tailwindEditor="tngFlowEditor"
+          flowId="docs-agent-workflow-tailwind-css"
+          class="block h-[31rem] min-h-[25rem] max-[720px]:h-[27rem]"
+          ariaLabel="Interactive customer support agent workflow styled with Tailwind CSS"
+          [nodes]="tailwindNodes()"
+          [connections]="tailwindConnections()"
+          [nodeViews]="nodeViews"
+          (nodesMoved)="onNodesMoved($event, 'tailwind-css')"
+          (connectionCreated)="onConnectionCreated($event, 'tailwind-css')"
+          (deleteRequested)="onDeleteRequested($event, 'tailwind-css')"
+        />
+        @if (tailwindEditor.validationIssues().length > 0) {
+          <div
+            class="rounded-lg border border-[var(--tng-semantic-accent-danger)] px-3 py-2 text-sm text-[var(--tng-semantic-accent-danger)]"
+            role="status"
+          >
+            {{ tailwindEditor.validationIssues().length }} graph validation issue(s)
+          </div>
+        }
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="state-ownership" class="docs-overview-block">
+    <h3>State ownership</h3>
+    <p>
+      Inputs are immutable graph snapshots. Handle outputs, produce new arrays or objects, and then
+      persist those values in your application or agent backend.
+    </p>
+    <tng-code-block
+      [code]="controlledCode"
+      adapter="shiki"
+      language="ts"
+      title="agent-flow.component.ts"
+      [theme]="codeBlockTheme()"
+      [lineNumbers]="true"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+    <ul class="docs-overview-list">
+      <li>Node, port, and connection ids must be stable.</li>
+      <li>Port ids are globally unique and connection endpoints reference those port ids.</li>
+      <li>
+        <code>nodeViews</code> keeps execution status separate from persisted graph structure.
+      </li>
+    </ul>
+  </section>
+
+  <section id="accessibility-baseline" class="docs-overview-block">
+    <h3>Accessibility baseline</h3>
+    <ul class="docs-overview-list">
+      <li>The editor installs Foblex keyboard accessibility with <code>withA11y()</code>.</li>
+      <li>Every connector receives a node-, direction-, and port-aware accessible label.</li>
+      <li>Viewport controls have text alternatives and visible keyboard focus.</li>
+      <li>Reduced-motion preferences suppress nonessential animation.</li>
+    </ul>
+  </section>
+</article>

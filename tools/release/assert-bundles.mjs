@@ -21,6 +21,7 @@ const TAILNG_UI_LIBS = new Set([
   "icons",
   "registry",
   "charts",
+  "flow",
 ]);
 
 const libDist = (name) => {
@@ -149,6 +150,7 @@ const THRESHOLDS = {
   icons: { minMjs: 900, minDts: 150 },
   primitives: { minMjs: 1200, minDts: 150 },
   components: { minMjs: 1800, minDts: 200, componentsFormControlsMin: 20_000 },
+  flow: { minMjs: 5000, minDts: 150 },
   // theme is asset-only checks
 };
 
@@ -310,6 +312,44 @@ function assertThemePackage() {
   }
 }
 
+function assertFlowPackage() {
+  assertAngularPackage("flow", THRESHOLDS.flow);
+
+  const root = libDist("flow");
+  const pkg = readJsonSafe(path.join(root, "package.json"));
+  const editorEntry = path.join(root, "src", "lib", "editor", "tng-flow-editor.component.js");
+  const editorSource = readFileSafe(editorEntry);
+
+  if (editorSource === null) {
+    fail(`flow: missing Angular component entry: ${path.relative(root, editorEntry)}`);
+  }
+
+  if (
+    !editorSource.includes("ɵɵngDeclareComponent") ||
+    !editorSource.includes("isStandalone: true")
+  ) {
+    fail(
+      `flow: expected Angular partial-compiled standalone metadata in ${path.relative(root, editorEntry)}`,
+    );
+  }
+
+  const styleExports = ["./styles.css", "./styles.scss"];
+  for (const styleExport of styleExports) {
+    const stylePath = path.join(root, styleExport.slice(2));
+    if (!exists(stylePath) || stat(stylePath).size === 0) {
+      fail(`flow: missing or empty published style asset '${styleExport}'`);
+    }
+
+    if (pkg.exports?.[styleExport] !== styleExport) {
+      fail(`flow: package.json must export '${styleExport}'`);
+    }
+
+    if (!Array.isArray(pkg.sideEffects) || !pkg.sideEffects.includes(styleExport)) {
+      fail(`flow: package.json sideEffects must retain '${styleExport}'`);
+    }
+  }
+}
+
 function assertComponentsSpecific() {
   const root = libDist("components");
 
@@ -401,6 +441,7 @@ if (wants("components")) {
   assertComponentsSpecific();
 }
 if (wants("theme")) assertThemePackage();
+if (wants("flow")) assertFlowPackage();
 
 // docs is not an npm package check here
 

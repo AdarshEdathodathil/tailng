@@ -274,6 +274,13 @@ export const COMPONENTS_LAYOUT_GROUP: ComponentsDocsGroup = {
       description: 'Styled stepper shell powered by headless value, focus, and state management.',
     },
     {
+      id: 'flow-editor',
+      slug: 'flow-editor',
+      title: 'Flow Editor',
+      description:
+        'Embeddable, controlled node editor for AI agents, automations, and executable workflows.',
+    },
+    {
       id: 'drawer',
       slug: 'drawer',
       title: 'Drawer',

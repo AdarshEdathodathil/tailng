@@ -1,0 +1,1184 @@
+@charset "UTF-8";
+:root {
+  --ff-white: #ffffff;
+  --ff-black: #000000;
+  --ff-gray-0: #ffffff;
+  --ff-gray-25: #fcfcfc;
+  --ff-gray-50: #f8f8f7;
+  --ff-gray-75: #f2f2f0;
+  --ff-gray-100: #e9e9e6;
+  --ff-gray-150: #dcdcd7;
+  --ff-gray-200: #c9c9c1;
+  --ff-gray-300: #afafa5;
+  --ff-gray-400: #8d8d81;
+  --ff-gray-500: #69695f;
+  --ff-gray-600: #505048;
+  --ff-gray-700: #3c3c36;
+  --ff-gray-800: #272722;
+  --ff-gray-900: #1b1b18;
+  --ff-gray-950: #141412;
+  --ff-gray-1000: #0f0f0d;
+  --ff-alpha-black-04: rgba(15, 15, 13, 0.04);
+  --ff-alpha-black-06: rgba(15, 15, 13, 0.06);
+  --ff-alpha-black-08: rgba(15, 15, 13, 0.08);
+  --ff-alpha-black-10: rgba(15, 15, 13, 0.1);
+  --ff-alpha-black-12: rgba(15, 15, 13, 0.12);
+  --ff-alpha-black-15: rgba(15, 15, 13, 0.15);
+  --ff-alpha-black-20: rgba(15, 15, 13, 0.2);
+  --ff-alpha-black-30: rgba(15, 15, 13, 0.3);
+  --ff-alpha-black-40: rgba(15, 15, 13, 0.4);
+  --ff-alpha-black-60: rgba(15, 15, 13, 0.6);
+  --ff-alpha-white-04: rgba(255, 255, 255, 0.04);
+  --ff-alpha-white-06: rgba(255, 255, 255, 0.06);
+  --ff-alpha-white-08: rgba(255, 255, 255, 0.08);
+  --ff-alpha-white-10: rgba(255, 255, 255, 0.1);
+  --ff-alpha-white-12: rgba(255, 255, 255, 0.12);
+  --ff-alpha-white-15: rgba(255, 255, 255, 0.15);
+  --ff-alpha-white-20: rgba(255, 255, 255, 0.2);
+  --ff-alpha-white-30: rgba(255, 255, 255, 0.3);
+  --ff-alpha-white-40: rgba(255, 255, 255, 0.4);
+  --ff-alpha-white-60: rgba(255, 255, 255, 0.6);
+  --ff-blue-100: #e8f2ff;
+  --ff-blue-200: #bad8ff;
+  --ff-blue-300: #7db7ff;
+  --ff-blue-400: #4176ff;
+  --ff-blue-500: #2759db;
+  --ff-blue-600: #1b3f9e;
+  --ff-green-100: #e7f7ef;
+  --ff-green-300: #71c795;
+  --ff-green-400: #2b9b5f;
+  --ff-green-500: #1e7748;
+  --ff-yellow-100: #fff5de;
+  --ff-yellow-300: #e1b354;
+  --ff-yellow-400: #bb8121;
+  --ff-yellow-500: #916112;
+  --ff-red-100: #feeceb;
+  --ff-red-300: #e48d85;
+  --ff-red-400: #c55245;
+  --ff-red-500: #9e3a2f;
+  --ff-radius-4: 4px;
+  --ff-radius-6: 6px;
+  --ff-radius-pill: 999px;
+  --ff-font-family-sans:
+    'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+  --ff-font-family-mono:
+    ui-monospace, 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New',
+    monospace;
+  --ff-font-size-xs: 12px;
+  --ff-font-size-sm: 14px;
+  --ff-font-size-md: 16px;
+  --ff-font-size-lg: 18px;
+  --ff-shadow-1: 0 1px 2px rgba(15, 15, 13, 0.05), 0 8px 20px rgba(15, 15, 13, 0.04);
+  --ff-shadow-2: 0 10px 28px rgba(15, 15, 13, 0.08), 0 3px 10px rgba(15, 15, 13, 0.05);
+  --ff-shadow-3: 0 18px 48px rgba(15, 15, 13, 0.12), 0 6px 16px rgba(15, 15, 13, 0.08);
+}
+
+:root {
+  --ff-color-surface-page: var(--ff-gray-25);
+  --ff-color-surface-canvas: var(--ff-gray-25);
+  --ff-color-surface-card: var(--ff-white);
+  --ff-color-surface-group: rgba(65, 118, 255, 0.14);
+  --ff-color-surface-group-active: rgba(65, 118, 255, 0.2);
+  --ff-color-surface-muted: var(--ff-gray-50);
+  --ff-color-surface-soft: var(--ff-gray-75);
+  --ff-color-surface-accent-soft: rgba(65, 118, 255, 0.1);
+  --ff-color-border-default: var(--ff-alpha-black-12);
+  --ff-color-border-subtle: var(--ff-alpha-black-08);
+  --ff-color-border-strong: var(--ff-alpha-black-20);
+  --ff-color-border-accent: var(--ff-blue-500);
+  --ff-color-text-primary: var(--ff-gray-800);
+  --ff-color-text-secondary: var(--ff-gray-500);
+  --ff-color-text-tertiary: var(--ff-gray-400);
+  --ff-color-text-inverse: var(--ff-white);
+  --ff-color-accent: var(--ff-blue-500);
+  --ff-color-accent-strong: var(--ff-blue-600);
+  --ff-color-success: var(--ff-green-400);
+  --ff-color-warning: var(--ff-yellow-400);
+  --ff-color-danger: var(--ff-red-400);
+  --ff-color-disabled-surface: var(--ff-gray-100);
+  --ff-color-disabled-border: var(--ff-alpha-black-10);
+  --ff-color-disabled-text: var(--ff-gray-300);
+  --ff-color-selection-fill: rgba(65, 118, 255, 0.12);
+  --ff-color-selection-stroke: rgba(65, 118, 255, 0.28);
+  --ff-color-grid: var(--ff-alpha-black-08);
+  --ff-color-grid-strong: var(--ff-alpha-black-15);
+  --ff-color-connector-connected: var(--ff-blue-500);
+  --ff-color-connection: var(--ff-gray-600);
+  --ff-color-connection-muted: var(--ff-gray-300);
+  --ff-color-connection-hover: var(--ff-alpha-black-12);
+  --ff-color-grouping-drop-target-border: var(--ff-gray-800);
+  --ff-color-grouping-drop-target-border-active: var(--ff-gray-800);
+  --ff-color-waypoint-fill: var(--ff-white);
+  --ff-color-waypoint-stroke: var(--ff-blue-500);
+  --ff-color-waypoint-candidate-fill: var(--ff-white);
+  --ff-color-waypoint-candidate-stroke: var(--ff-green-400);
+  --ff-color-minimap-surface: var(--ff-white);
+  --ff-color-minimap-node: var(--ff-gray-700);
+  --ff-color-minimap-view: rgba(65, 118, 255, 0.14);
+  --ff-color-magnetic-line: var(--ff-blue-500);
+  --ff-color-magnetic-rect-fill: rgba(65, 118, 255, 0.08);
+  --ff-color-magnetic-rect-border: rgba(65, 118, 255, 0.24);
+  --ff-radius-node: var(--ff-radius-4);
+  --ff-radius-group: var(--ff-radius-4);
+  --ff-radius-control: var(--ff-radius-4);
+  --ff-radius-socket-square: var(--ff-radius-6);
+  --ff-radius-pill: var(--ff-radius-pill);
+  --ff-font-sans: var(--ff-font-family-sans);
+  --ff-font-mono: var(--ff-font-family-mono);
+  --ff-font-size-body: var(--ff-font-size-sm);
+  --ff-font-size-label: var(--ff-font-size-xs);
+  --ff-shadow-surface: var(--ff-shadow-1);
+  --ff-shadow-floating: var(--ff-shadow-2);
+}
+
+.dark,
+[data-theme='dark'] {
+  --ff-color-surface-page: var(--ff-gray-1000);
+  --ff-color-surface-canvas: var(--ff-gray-1000);
+  --ff-color-surface-card: var(--ff-gray-950);
+  --ff-color-surface-group: rgba(125, 183, 255, 0.18);
+  --ff-color-surface-group-active: rgba(125, 183, 255, 0.24);
+  --ff-color-surface-muted: var(--ff-gray-900);
+  --ff-color-surface-soft: var(--ff-gray-900);
+  --ff-color-surface-accent-soft: rgba(125, 183, 255, 0.14);
+  --ff-color-border-default: var(--ff-alpha-white-12);
+  --ff-color-border-subtle: var(--ff-alpha-white-08);
+  --ff-color-border-strong: var(--ff-alpha-white-20);
+  --ff-color-border-accent: var(--ff-blue-300);
+  --ff-color-text-primary: var(--ff-gray-100);
+  --ff-color-text-secondary: var(--ff-gray-300);
+  --ff-color-text-tertiary: var(--ff-gray-400);
+  --ff-color-text-inverse: var(--ff-gray-1000);
+  --ff-color-accent: var(--ff-blue-300);
+  --ff-color-accent-strong: var(--ff-blue-200);
+  --ff-color-success: var(--ff-green-300);
+  --ff-color-warning: var(--ff-yellow-300);
+  --ff-color-danger: var(--ff-red-300);
+  --ff-color-disabled-surface: var(--ff-gray-800);
+  --ff-color-disabled-border: var(--ff-alpha-white-10);
+  --ff-color-disabled-text: var(--ff-gray-500);
+  --ff-color-selection-fill: rgba(125, 183, 255, 0.16);
+  --ff-color-selection-stroke: rgba(125, 183, 255, 0.34);
+  --ff-color-grid: var(--ff-alpha-white-08);
+  --ff-color-grid-strong: var(--ff-alpha-white-15);
+  --ff-color-connector-connected: var(--ff-blue-300);
+  --ff-color-connection: var(--ff-gray-200);
+  --ff-color-connection-muted: var(--ff-gray-500);
+  --ff-color-connection-hover: var(--ff-alpha-white-12);
+  --ff-color-grouping-drop-target-border: var(--ff-gray-100);
+  --ff-color-grouping-drop-target-border-active: var(--ff-gray-100);
+  --ff-color-waypoint-fill: var(--ff-gray-950);
+  --ff-color-waypoint-stroke: var(--ff-blue-300);
+  --ff-color-waypoint-candidate-fill: var(--ff-white);
+  --ff-color-waypoint-candidate-stroke: var(--ff-green-300);
+  --ff-color-minimap-surface: var(--ff-gray-950);
+  --ff-color-minimap-node: var(--ff-gray-200);
+  --ff-color-minimap-view: rgba(125, 183, 255, 0.18);
+  --ff-color-magnetic-line: var(--ff-blue-300);
+  --ff-color-magnetic-rect-fill: rgba(125, 183, 255, 0.1);
+  --ff-color-magnetic-rect-border: rgba(125, 183, 255, 0.24);
+  --ff-shadow-surface: 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 20px rgba(0, 0, 0, 0.14);
+  --ff-shadow-floating: 0 14px 36px rgba(0, 0, 0, 0.26), 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+:root {
+  --ff-flow-background-color: var(--ff-color-surface-page);
+  --ff-flow-text-color: var(--ff-color-text-primary);
+  --ff-flow-font-family: var(--ff-font-sans);
+  --ff-flow-font-size: var(--ff-font-size-body);
+  --ff-canvas-background-color: var(--ff-color-surface-canvas);
+  --ff-node-background-color: var(--ff-color-surface-card);
+  --ff-node-background-color-inverse: var(--ff-color-text-primary);
+  --ff-node-border-color: var(--ff-color-border-default);
+  --ff-node-border-color-selected: var(--ff-color-border-accent);
+  --ff-node-color: var(--ff-color-text-primary);
+  --ff-node-border-radius: var(--ff-radius-node);
+  --ff-node-shadow: var(--ff-shadow-surface);
+  --ff-node-shadow-selected: var(--ff-shadow-floating);
+  --ff-node-width: 120px;
+  --ff-node-min-height: 56px;
+  --ff-node-padding: 24px;
+  --ff-group-background-color: var(--ff-color-surface-group);
+  --ff-group-background-color-active: var(--ff-color-surface-group-active);
+  --ff-group-border-color: var(--ff-color-border-subtle);
+  --ff-group-border-color-selected: var(--ff-color-border-accent);
+  --ff-group-border-color-active: var(--ff-color-border-accent);
+  --ff-group-color: var(--ff-color-text-secondary);
+  --ff-group-border-radius: var(--ff-radius-group);
+  --ff-group-min-width: 180px;
+  --ff-group-min-height: 120px;
+  --ff-group-padding: 24px;
+  --ff-grouping-drop-target-border-color: var(--ff-color-grouping-drop-target-border);
+  --ff-grouping-drop-target-border-style: dashed;
+  --ff-grouping-drop-target-border-width: 1px;
+  --ff-grouping-drop-target-border-color-active: var(--ff-color-grouping-drop-target-border-active);
+  --ff-grouping-drop-target-border-style-active: dashed;
+  --ff-grouping-drop-target-border-width-active: 2px;
+  /* Resize handle — UI chrome, accent-blue fill so it cannot be confused
+     with a connector socket. White stroke separates it from the node
+     edge; the 1px outer ring pins the silhouette against any background. */
+  --ff-resize-handle-size: 8px;
+  --ff-resize-handle-fill: var(--ff-color-accent);
+  --ff-resize-handle-stroke: var(--ff-color-surface-card);
+  --ff-resize-handle-ring: var(--ff-color-accent);
+  --ff-resize-handle-radius: 1px;
+  --ff-resize-handle-fill-active: var(--ff-color-surface-card);
+  /* Rotate handle — quiet white circle, lives above the node connected
+     by a thin guide line. Becomes accent on hover/active. */
+  --ff-rotate-handle-size: 16px;
+  --ff-rotate-handle-offset: 40px;
+  --ff-rotate-handle-background-color: var(--ff-color-surface-card);
+  --ff-rotate-handle-border-color: var(--ff-color-border-strong);
+  --ff-rotate-handle-guide-color: var(--ff-color-border-strong);
+  --ff-connector-background-color: var(--ff-color-surface-card);
+  --ff-connector-border-color: var(--ff-color-text-secondary);
+  --ff-connector-connected-color: var(--ff-color-connector-connected);
+  --ff-connector-accent-color: var(--ff-color-accent);
+  --ff-connector-disabled-color: var(--ff-color-disabled-surface);
+  --ff-connector-disabled-border-color: var(--ff-color-disabled-border);
+  --ff-connector-size: 14px;
+  --ff-connector-border-width: 2px;
+  --ff-connector-input-radius: var(--ff-radius-4);
+  --ff-connector-node-ring-color: var(--ff-canvas-background-color);
+  --ff-outlet-background-color: var(--ff-color-surface-muted);
+  --ff-outlet-border-color: var(--ff-color-border-default);
+  --ff-outlet-color: var(--ff-color-accent);
+  --ff-outlet-disabled-background-color: var(--ff-color-disabled-surface);
+  --ff-outlet-disabled-border-color: var(--ff-color-disabled-border);
+  --ff-outlet-disabled-color: var(--ff-color-disabled-text);
+  --ff-outlet-border-radius: var(--ff-radius-pill);
+  --ff-outlet-padding-y: 6px;
+  --ff-outlet-padding-x: 12px;
+  --ff-connection-color: var(--ff-color-connection);
+  --ff-snap-connection-color: var(--ff-color-connection-muted);
+  --ff-connection-hover-color: var(--ff-color-connection-hover);
+  --ff-connection-selected-color: var(--ff-color-accent);
+  --ff-connection-label-color: var(--ff-color-text-secondary);
+  --ff-connection-content-color: var(--ff-node-color);
+  --ff-connection-content-background-color: var(--ff-node-background-color);
+  --ff-connection-content-border-color: var(--ff-node-border-color);
+  --ff-connection-content-border-color-selected: var(--ff-connection-selected-color);
+  --ff-connection-content-border-radius: var(--ff-node-border-radius);
+  --ff-connection-content-font-size: 13px;
+  --ff-connection-content-padding-y: 2px;
+  --ff-connection-content-padding-x: 8px;
+  --ff-connection-width: 2px;
+  --ff-connection-hit-width: 14px;
+  --ff-connection-drag-handle-fill: var(--ff-color-surface-card);
+  --ff-connection-drag-handle-stroke: var(--ff-color-accent);
+  --ff-marker-color: var(--ff-connection-color);
+  --ff-waypoint-fill: var(--ff-color-waypoint-fill);
+  --ff-waypoint-stroke: var(--ff-color-waypoint-stroke);
+  --ff-waypoint-candidate-fill: var(--ff-color-waypoint-candidate-fill);
+  --ff-waypoint-candidate-stroke: var(--ff-color-waypoint-candidate-stroke);
+  --ff-background-line-color: var(--ff-color-grid);
+  --ff-background-dot-color: var(--ff-color-grid-strong);
+  --ff-selection-area-color: var(--ff-color-selection-fill);
+  --ff-selection-area-border-color: var(--ff-color-selection-stroke);
+  --ff-minimap-background-color: var(--ff-color-minimap-surface);
+  --ff-minimap-border-color: var(--ff-color-border-default);
+  --ff-minimap-node-color: var(--ff-color-minimap-node);
+  --ff-minimap-node-selected-color: var(--ff-color-accent);
+  --ff-minimap-view-color: var(--ff-color-minimap-view);
+  --ff-minimap-view-border-color: var(--ff-color-selection-stroke);
+  --ff-minimap-border-radius: var(--ff-radius-node);
+  --ff-minimap-shadow: var(--ff-shadow-floating);
+  --ff-magnetic-line-color: var(--ff-color-magnetic-line);
+  --ff-magnetic-rect-fill: var(--ff-color-magnetic-rect-fill);
+  --ff-magnetic-rect-border-color: var(--ff-color-magnetic-rect-border);
+  --ff-external-item-background-color: var(--ff-color-surface-card);
+  --ff-external-item-border-color: var(--ff-color-border-default);
+  --ff-external-item-color: var(--ff-color-text-primary);
+  --ff-external-item-disabled-color: var(--ff-color-disabled-text);
+  --ff-external-item-disabled-background-color: var(--ff-color-disabled-surface);
+  --ff-external-item-border-radius: var(--ff-radius-node);
+  --ff-external-item-shadow: var(--ff-shadow-surface);
+  --ff-external-item-preview-shadow: var(--ff-shadow-floating);
+  --ff-external-item-placeholder-background-color: var(--ff-color-surface-soft);
+  --ff-external-item-placeholder-border-color: var(--ff-color-border-subtle);
+}
+
+f-flow,
+.f-flow {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: all;
+  user-select: none;
+  touch-action: none;
+  color: var(--ff-flow-text-color);
+  background: var(--ff-flow-background-color);
+  font-family: var(--ff-flow-font-family);
+  font-size: var(--ff-flow-font-size);
+  line-height: 1.4;
+}
+
+f-flow .f-canvas,
+.f-flow .f-canvas {
+  background: var(--ff-canvas-background-color);
+}
+
+f-flow .f-node,
+.f-flow .f-node {
+  width: var(--ff-node-width);
+  min-height: var(--ff-node-min-height);
+  padding: var(--ff-node-padding);
+  box-sizing: border-box;
+  color: var(--ff-node-color);
+  text-align: center;
+  background: var(--ff-node-background-color);
+  border: 1px solid var(--ff-node-border-color);
+  border-radius: var(--ff-node-border-radius);
+  box-shadow: var(--ff-node-shadow);
+}
+f-flow .f-node .node-content,
+.f-flow .f-node .node-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+f-flow .f-node.f-selected,
+.f-flow .f-node.f-selected {
+  border-color: var(--ff-node-border-color-selected);
+  box-shadow: var(--ff-node-shadow-selected);
+}
+f-flow .f-node.f-dragging,
+.f-flow .f-node.f-dragging {
+  box-shadow: var(--ff-node-shadow-selected);
+}
+
+f-flow .f-group,
+.f-flow .f-group {
+  min-width: var(--ff-group-min-width);
+  min-height: var(--ff-group-min-height);
+  padding: var(--ff-group-padding);
+  box-sizing: border-box;
+  color: var(--ff-group-color);
+  background: var(--ff-group-background-color);
+  border: 1px solid var(--ff-group-border-color);
+  border-radius: var(--ff-group-border-radius);
+}
+f-flow .f-group.f-selected,
+.f-flow .f-group.f-selected {
+  border-color: var(--ff-group-border-color-selected);
+}
+
+f-flow .f-drag-handle,
+.f-flow .f-drag-handle {
+  cursor: move;
+}
+f-flow .f-drag-handle img,
+.f-flow .f-drag-handle img {
+  pointer-events: none;
+}
+
+f-flow .f-resize-handle,
+.f-flow .f-resize-handle {
+  /* Tiny accent-blue grip with white stroke and a 1px outer ring —
+     deliberately loud so it can never be confused with a connector
+     socket. The double box-shadow is the silhouette: the inner ring
+     pins the shape against any surface, the outer drop-shadow sells
+     "lift". Hover/active expand the ring into a halo. */
+  position: absolute;
+  width: var(--ff-resize-handle-size);
+  height: var(--ff-resize-handle-size);
+  box-sizing: border-box;
+  border: 1.5px solid var(--ff-resize-handle-stroke);
+  border-radius: var(--ff-resize-handle-radius);
+  background: var(--ff-resize-handle-fill);
+  box-shadow:
+    0 0 0 1px var(--ff-resize-handle-ring),
+    0 1px 2px rgba(15, 15, 13, 0.18);
+  transition:
+    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+f-flow .f-resize-handle:hover,
+.f-flow .f-resize-handle:hover {
+  box-shadow:
+    0 0 0 1px var(--ff-resize-handle-ring),
+    0 0 0 5px color-mix(in oklch, var(--ff-resize-handle-ring) 25%, transparent);
+}
+f-flow .f-resize-handle:active,
+.f-flow .f-resize-handle:active {
+  background: var(--ff-resize-handle-fill-active);
+  box-shadow:
+    0 0 0 2px var(--ff-resize-handle-ring),
+    0 0 0 6px color-mix(in oklch, var(--ff-resize-handle-ring) 28%, transparent);
+}
+f-flow .f-resize-handle.f-resize-handle-left,
+.f-flow .f-resize-handle.f-resize-handle-left {
+  left: 0;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: col-resize;
+}
+f-flow .f-resize-handle.f-resize-handle-left-top,
+.f-flow .f-resize-handle.f-resize-handle-left-top {
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%);
+  cursor: nwse-resize;
+}
+f-flow .f-resize-handle.f-resize-handle-top,
+.f-flow .f-resize-handle.f-resize-handle-top {
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, -50%);
+  cursor: row-resize;
+}
+f-flow .f-resize-handle.f-resize-handle-right-top,
+.f-flow .f-resize-handle.f-resize-handle-right-top {
+  right: 0;
+  top: 0;
+  transform: translate(50%, -50%);
+  cursor: nesw-resize;
+}
+f-flow .f-resize-handle.f-resize-handle-right,
+.f-flow .f-resize-handle.f-resize-handle-right {
+  right: 0;
+  top: 50%;
+  transform: translate(50%, -50%);
+  cursor: col-resize;
+}
+f-flow .f-resize-handle.f-resize-handle-right-bottom,
+.f-flow .f-resize-handle.f-resize-handle-right-bottom {
+  right: 0;
+  bottom: 0;
+  transform: translate(50%, 50%);
+  cursor: nwse-resize;
+}
+f-flow .f-resize-handle.f-resize-handle-bottom,
+.f-flow .f-resize-handle.f-resize-handle-bottom {
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 50%);
+  cursor: row-resize;
+}
+f-flow .f-resize-handle.f-resize-handle-left-bottom,
+.f-flow .f-resize-handle.f-resize-handle-left-bottom {
+  left: 0;
+  bottom: 0;
+  transform: translate(-50%, 50%);
+  cursor: nesw-resize;
+}
+
+f-flow .f-rotate-handle,
+.f-flow .f-rotate-handle {
+  /* Quiet white circle floating above the node, connected by a thin
+     guide line so the affordance reads as "rotate-from-here". On
+     hover it picks up an accent border + halo; on active it fills
+     accent and switches the cursor to grabbing. */
+  position: absolute;
+  left: 50%;
+  top: calc(var(--ff-rotate-handle-offset) * -1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ff-rotate-handle-size);
+  height: var(--ff-rotate-handle-size);
+  box-sizing: border-box;
+  border: 1px solid var(--ff-rotate-handle-border-color);
+  border-radius: 50%;
+  background: var(--ff-rotate-handle-background-color);
+  transform: translateX(-50%);
+  cursor: grab;
+  transition:
+    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Guide line that bridges the gap between handle and node edge. */
+}
+f-flow .f-rotate-handle::after,
+.f-flow .f-rotate-handle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: calc(var(--ff-rotate-handle-offset) - var(--ff-rotate-handle-size));
+  background: var(--ff-rotate-handle-guide-color);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+f-flow .f-rotate-handle:hover,
+.f-flow .f-rotate-handle:hover {
+  border-color: var(--ff-color-accent);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--ff-color-accent) 22%, transparent);
+}
+f-flow .f-rotate-handle:active,
+.f-flow .f-rotate-handle:active {
+  background: var(--ff-color-accent);
+  border-color: var(--ff-color-accent);
+  cursor: grabbing;
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--ff-color-accent) 22%, transparent);
+}
+
+f-flow .f-node-input:not(.f-node),
+f-flow .f-node-output:not(.f-node),
+f-flow .f-connector-source:not(.f-node),
+f-flow .f-connector-target:not(.f-node),
+f-flow .f-connector-source-target:not(.f-node),
+.f-flow .f-node-input:not(.f-node),
+.f-flow .f-node-output:not(.f-node),
+.f-flow .f-connector-source:not(.f-node),
+.f-flow .f-connector-target:not(.f-node),
+.f-flow .f-connector-source-target:not(.f-node) {
+  position: absolute;
+  width: var(--ff-connector-size);
+  height: var(--ff-connector-size);
+  box-sizing: border-box;
+  border: var(--ff-connector-border-width) solid var(--ff-connector-border-color);
+  border-radius: 50%;
+  background: var(--ff-connector-background-color);
+  pointer-events: all;
+  transition:
+    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+f-flow .f-node-input:not(.f-node).left,
+f-flow .f-node-output:not(.f-node).left,
+f-flow .f-connector-source:not(.f-node).left,
+f-flow .f-connector-target:not(.f-node).left,
+f-flow .f-connector-source-target:not(.f-node).left,
+.f-flow .f-node-input:not(.f-node).left,
+.f-flow .f-node-output:not(.f-node).left,
+.f-flow .f-connector-source:not(.f-node).left,
+.f-flow .f-connector-target:not(.f-node).left,
+.f-flow .f-connector-source-target:not(.f-node).left {
+  left: calc(var(--ff-connector-size) / -2);
+  top: 50%;
+  transform: translateY(-50%);
+}
+f-flow .f-node-input:not(.f-node).right,
+f-flow .f-node-output:not(.f-node).right,
+f-flow .f-connector-source:not(.f-node).right,
+f-flow .f-connector-target:not(.f-node).right,
+f-flow .f-connector-source-target:not(.f-node).right,
+.f-flow .f-node-input:not(.f-node).right,
+.f-flow .f-node-output:not(.f-node).right,
+.f-flow .f-connector-source:not(.f-node).right,
+.f-flow .f-connector-target:not(.f-node).right,
+.f-flow .f-connector-source-target:not(.f-node).right {
+  right: calc(var(--ff-connector-size) / -2);
+  top: 50%;
+  transform: translateY(-50%);
+}
+f-flow .f-node-input:not(.f-node).top,
+f-flow .f-node-output:not(.f-node).top,
+f-flow .f-connector-source:not(.f-node).top,
+f-flow .f-connector-target:not(.f-node).top,
+f-flow .f-connector-source-target:not(.f-node).top,
+.f-flow .f-node-input:not(.f-node).top,
+.f-flow .f-node-output:not(.f-node).top,
+.f-flow .f-connector-source:not(.f-node).top,
+.f-flow .f-connector-target:not(.f-node).top,
+.f-flow .f-connector-source-target:not(.f-node).top {
+  top: calc(var(--ff-connector-size) / -2);
+  left: 50%;
+  transform: translateX(-50%);
+}
+f-flow .f-node-input:not(.f-node).top-left,
+f-flow .f-node-output:not(.f-node).top-left,
+f-flow .f-connector-source:not(.f-node).top-left,
+f-flow .f-connector-target:not(.f-node).top-left,
+f-flow .f-connector-source-target:not(.f-node).top-left,
+.f-flow .f-node-input:not(.f-node).top-left,
+.f-flow .f-node-output:not(.f-node).top-left,
+.f-flow .f-connector-source:not(.f-node).top-left,
+.f-flow .f-connector-target:not(.f-node).top-left,
+.f-flow .f-connector-source-target:not(.f-node).top-left {
+  top: calc(var(--ff-connector-size) / -2);
+  left: calc(var(--ff-connector-size) / -2);
+}
+f-flow .f-node-input:not(.f-node).top-right,
+f-flow .f-node-output:not(.f-node).top-right,
+f-flow .f-connector-source:not(.f-node).top-right,
+f-flow .f-connector-target:not(.f-node).top-right,
+f-flow .f-connector-source-target:not(.f-node).top-right,
+.f-flow .f-node-input:not(.f-node).top-right,
+.f-flow .f-node-output:not(.f-node).top-right,
+.f-flow .f-connector-source:not(.f-node).top-right,
+.f-flow .f-connector-target:not(.f-node).top-right,
+.f-flow .f-connector-source-target:not(.f-node).top-right {
+  top: calc(var(--ff-connector-size) / -2);
+  right: calc(var(--ff-connector-size) / -2);
+}
+f-flow .f-node-input:not(.f-node).bottom,
+f-flow .f-node-output:not(.f-node).bottom,
+f-flow .f-connector-source:not(.f-node).bottom,
+f-flow .f-connector-target:not(.f-node).bottom,
+f-flow .f-connector-source-target:not(.f-node).bottom,
+.f-flow .f-node-input:not(.f-node).bottom,
+.f-flow .f-node-output:not(.f-node).bottom,
+.f-flow .f-connector-source:not(.f-node).bottom,
+.f-flow .f-connector-target:not(.f-node).bottom,
+.f-flow .f-connector-source-target:not(.f-node).bottom {
+  bottom: calc(var(--ff-connector-size) / -2);
+  left: 50%;
+  transform: translateX(-50%);
+}
+f-flow .f-node-input:not(.f-node).bottom-left,
+f-flow .f-node-output:not(.f-node).bottom-left,
+f-flow .f-connector-source:not(.f-node).bottom-left,
+f-flow .f-connector-target:not(.f-node).bottom-left,
+f-flow .f-connector-source-target:not(.f-node).bottom-left,
+.f-flow .f-node-input:not(.f-node).bottom-left,
+.f-flow .f-node-output:not(.f-node).bottom-left,
+.f-flow .f-connector-source:not(.f-node).bottom-left,
+.f-flow .f-connector-target:not(.f-node).bottom-left,
+.f-flow .f-connector-source-target:not(.f-node).bottom-left {
+  bottom: calc(var(--ff-connector-size) / -2);
+  left: calc(var(--ff-connector-size) / -2);
+}
+f-flow .f-node-input:not(.f-node).bottom-right,
+f-flow .f-node-output:not(.f-node).bottom-right,
+f-flow .f-connector-source:not(.f-node).bottom-right,
+f-flow .f-connector-target:not(.f-node).bottom-right,
+f-flow .f-connector-source-target:not(.f-node).bottom-right,
+.f-flow .f-node-input:not(.f-node).bottom-right,
+.f-flow .f-node-output:not(.f-node).bottom-right,
+.f-flow .f-connector-source:not(.f-node).bottom-right,
+.f-flow .f-connector-target:not(.f-node).bottom-right,
+.f-flow .f-connector-source-target:not(.f-node).bottom-right {
+  bottom: calc(var(--ff-connector-size) / -2);
+  right: calc(var(--ff-connector-size) / -2);
+}
+f-flow .f-node-input:not(.f-node):hover,
+f-flow .f-node-output:not(.f-node):hover,
+f-flow .f-connector-source:not(.f-node):hover,
+f-flow .f-connector-target:not(.f-node):hover,
+f-flow .f-connector-source-target:not(.f-node):hover,
+.f-flow .f-node-input:not(.f-node):hover,
+.f-flow .f-node-output:not(.f-node):hover,
+.f-flow .f-connector-source:not(.f-node):hover,
+.f-flow .f-connector-target:not(.f-node):hover,
+.f-flow .f-connector-source-target:not(.f-node):hover {
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--ff-connector-accent-color) 22%, transparent);
+}
+f-flow .f-node-input:not(.f-node).f-connector-connectable,
+f-flow .f-node-output:not(.f-node).f-connector-connectable,
+f-flow .f-connector-source:not(.f-node).f-connector-connectable,
+f-flow .f-connector-target:not(.f-node).f-connector-connectable,
+f-flow .f-connector-source-target:not(.f-node).f-connector-connectable,
+.f-flow .f-node-input:not(.f-node).f-connector-connectable,
+.f-flow .f-node-output:not(.f-node).f-connector-connectable,
+.f-flow .f-connector-source:not(.f-node).f-connector-connectable,
+.f-flow .f-connector-target:not(.f-node).f-connector-connectable,
+.f-flow .f-connector-source-target:not(.f-node).f-connector-connectable {
+  border-color: var(--ff-connector-accent-color);
+}
+f-flow .f-node-input:not(.f-node).f-node-output-connected,
+f-flow .f-node-input:not(.f-node).f-node-input-connected,
+f-flow .f-node-input:not(.f-node).f-connector-connected,
+f-flow .f-node-output:not(.f-node).f-node-output-connected,
+f-flow .f-node-output:not(.f-node).f-node-input-connected,
+f-flow .f-node-output:not(.f-node).f-connector-connected,
+f-flow .f-connector-source:not(.f-node).f-node-output-connected,
+f-flow .f-connector-source:not(.f-node).f-node-input-connected,
+f-flow .f-connector-source:not(.f-node).f-connector-connected,
+f-flow .f-connector-target:not(.f-node).f-node-output-connected,
+f-flow .f-connector-target:not(.f-node).f-node-input-connected,
+f-flow .f-connector-target:not(.f-node).f-connector-connected,
+f-flow .f-connector-source-target:not(.f-node).f-node-output-connected,
+f-flow .f-connector-source-target:not(.f-node).f-node-input-connected,
+f-flow .f-connector-source-target:not(.f-node).f-connector-connected,
+.f-flow .f-node-input:not(.f-node).f-node-output-connected,
+.f-flow .f-node-input:not(.f-node).f-node-input-connected,
+.f-flow .f-node-input:not(.f-node).f-connector-connected,
+.f-flow .f-node-output:not(.f-node).f-node-output-connected,
+.f-flow .f-node-output:not(.f-node).f-node-input-connected,
+.f-flow .f-node-output:not(.f-node).f-connector-connected,
+.f-flow .f-connector-source:not(.f-node).f-node-output-connected,
+.f-flow .f-connector-source:not(.f-node).f-node-input-connected,
+.f-flow .f-connector-source:not(.f-node).f-connector-connected,
+.f-flow .f-connector-target:not(.f-node).f-node-output-connected,
+.f-flow .f-connector-target:not(.f-node).f-node-input-connected,
+.f-flow .f-connector-target:not(.f-node).f-connector-connected,
+.f-flow .f-connector-source-target:not(.f-node).f-node-output-connected,
+.f-flow .f-connector-source-target:not(.f-node).f-node-input-connected,
+.f-flow .f-connector-source-target:not(.f-node).f-connector-connected {
+  background: var(--ff-connector-connected-color);
+  border-color: var(--ff-connector-connected-color);
+}
+f-flow .f-node-input:not(.f-node).f-node-output-not-connectable,
+f-flow .f-node-input:not(.f-node).f-node-input-not-connectable,
+f-flow .f-node-input:not(.f-node).f-connector-not-connectable,
+f-flow .f-node-input:not(.f-node).f-node-input-disabled,
+f-flow .f-node-input:not(.f-node).f-node-output-disabled,
+f-flow .f-node-input:not(.f-node).f-connector-disabled,
+f-flow .f-node-output:not(.f-node).f-node-output-not-connectable,
+f-flow .f-node-output:not(.f-node).f-node-input-not-connectable,
+f-flow .f-node-output:not(.f-node).f-connector-not-connectable,
+f-flow .f-node-output:not(.f-node).f-node-input-disabled,
+f-flow .f-node-output:not(.f-node).f-node-output-disabled,
+f-flow .f-node-output:not(.f-node).f-connector-disabled,
+f-flow .f-connector-source:not(.f-node).f-node-output-not-connectable,
+f-flow .f-connector-source:not(.f-node).f-node-input-not-connectable,
+f-flow .f-connector-source:not(.f-node).f-connector-not-connectable,
+f-flow .f-connector-source:not(.f-node).f-node-input-disabled,
+f-flow .f-connector-source:not(.f-node).f-node-output-disabled,
+f-flow .f-connector-source:not(.f-node).f-connector-disabled,
+f-flow .f-connector-target:not(.f-node).f-node-output-not-connectable,
+f-flow .f-connector-target:not(.f-node).f-node-input-not-connectable,
+f-flow .f-connector-target:not(.f-node).f-connector-not-connectable,
+f-flow .f-connector-target:not(.f-node).f-node-input-disabled,
+f-flow .f-connector-target:not(.f-node).f-node-output-disabled,
+f-flow .f-connector-target:not(.f-node).f-connector-disabled,
+f-flow .f-connector-source-target:not(.f-node).f-node-output-not-connectable,
+f-flow .f-connector-source-target:not(.f-node).f-node-input-not-connectable,
+f-flow .f-connector-source-target:not(.f-node).f-connector-not-connectable,
+f-flow .f-connector-source-target:not(.f-node).f-node-input-disabled,
+f-flow .f-connector-source-target:not(.f-node).f-node-output-disabled,
+f-flow .f-connector-source-target:not(.f-node).f-connector-disabled,
+.f-flow .f-node-input:not(.f-node).f-node-output-not-connectable,
+.f-flow .f-node-input:not(.f-node).f-node-input-not-connectable,
+.f-flow .f-node-input:not(.f-node).f-connector-not-connectable,
+.f-flow .f-node-input:not(.f-node).f-node-input-disabled,
+.f-flow .f-node-input:not(.f-node).f-node-output-disabled,
+.f-flow .f-node-input:not(.f-node).f-connector-disabled,
+.f-flow .f-node-output:not(.f-node).f-node-output-not-connectable,
+.f-flow .f-node-output:not(.f-node).f-node-input-not-connectable,
+.f-flow .f-node-output:not(.f-node).f-connector-not-connectable,
+.f-flow .f-node-output:not(.f-node).f-node-input-disabled,
+.f-flow .f-node-output:not(.f-node).f-node-output-disabled,
+.f-flow .f-node-output:not(.f-node).f-connector-disabled,
+.f-flow .f-connector-source:not(.f-node).f-node-output-not-connectable,
+.f-flow .f-connector-source:not(.f-node).f-node-input-not-connectable,
+.f-flow .f-connector-source:not(.f-node).f-connector-not-connectable,
+.f-flow .f-connector-source:not(.f-node).f-node-input-disabled,
+.f-flow .f-connector-source:not(.f-node).f-node-output-disabled,
+.f-flow .f-connector-source:not(.f-node).f-connector-disabled,
+.f-flow .f-connector-target:not(.f-node).f-node-output-not-connectable,
+.f-flow .f-connector-target:not(.f-node).f-node-input-not-connectable,
+.f-flow .f-connector-target:not(.f-node).f-connector-not-connectable,
+.f-flow .f-connector-target:not(.f-node).f-node-input-disabled,
+.f-flow .f-connector-target:not(.f-node).f-node-output-disabled,
+.f-flow .f-connector-target:not(.f-node).f-connector-disabled,
+.f-flow .f-connector-source-target:not(.f-node).f-node-output-not-connectable,
+.f-flow .f-connector-source-target:not(.f-node).f-node-input-not-connectable,
+.f-flow .f-connector-source-target:not(.f-node).f-connector-not-connectable,
+.f-flow .f-connector-source-target:not(.f-node).f-node-input-disabled,
+.f-flow .f-connector-source-target:not(.f-node).f-node-output-disabled,
+.f-flow .f-connector-source-target:not(.f-node).f-connector-disabled {
+  background: var(--ff-connector-disabled-color);
+  border-color: var(--ff-connector-disabled-border-color);
+  box-shadow: none;
+}
+f-flow .f-node-input:not(.f-node),
+f-flow .f-connector-target:not(.f-node),
+.f-flow .f-node-input:not(.f-node),
+.f-flow .f-connector-target:not(.f-node) {
+  border-radius: var(--ff-connector-input-radius);
+}
+f-flow
+  .f-connections-dragging
+  .f-node-input:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected),
+f-flow
+  .f-connections-dragging
+  .f-node-output:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected),
+f-flow
+  .f-connections-dragging
+  .f-connector-source:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected),
+f-flow
+  .f-connections-dragging
+  .f-connector-target:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected),
+f-flow
+  .f-connections-dragging
+  .f-connector-source-target:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected),
+.f-flow
+  .f-connections-dragging
+  .f-node-input:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected),
+.f-flow
+  .f-connections-dragging
+  .f-node-output:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected),
+.f-flow
+  .f-connections-dragging
+  .f-connector-source:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected),
+.f-flow
+  .f-connections-dragging
+  .f-connector-target:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected),
+.f-flow
+  .f-connections-dragging
+  .f-connector-source-target:not(.f-connector-connectable):not(.f-node-input-connected):not(
+    .f-node-output-connected
+  ):not(.f-connector-connected) {
+  border-color: var(--ff-connector-disabled-border-color);
+}
+
+f-flow .f-node-outlet,
+f-flow .f-connector-outlet,
+.f-flow .f-node-outlet,
+.f-flow .f-connector-outlet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: var(--ff-outlet-padding-y) var(--ff-outlet-padding-x);
+  box-sizing: border-box;
+  border: 1px solid var(--ff-outlet-border-color);
+  border-radius: var(--ff-outlet-border-radius);
+  background: var(--ff-outlet-background-color);
+  color: var(--ff-outlet-color);
+  pointer-events: all;
+}
+f-flow .f-node-outlet.f-node-outlet-disabled,
+f-flow .f-node-outlet.f-connector-disabled,
+f-flow .f-connector-outlet.f-node-outlet-disabled,
+f-flow .f-connector-outlet.f-connector-disabled,
+.f-flow .f-node-outlet.f-node-outlet-disabled,
+.f-flow .f-node-outlet.f-connector-disabled,
+.f-flow .f-connector-outlet.f-node-outlet-disabled,
+.f-flow .f-connector-outlet.f-connector-disabled {
+  background: var(--ff-outlet-disabled-background-color);
+  border-color: var(--ff-outlet-disabled-border-color);
+  color: var(--ff-outlet-disabled-color);
+}
+
+f-flow .f-connection-content,
+.f-flow .f-connection-content {
+  box-sizing: border-box;
+  color: var(--ff-connection-content-color);
+  font-size: var(--ff-connection-content-font-size);
+  padding: var(--ff-connection-content-padding-y) var(--ff-connection-content-padding-x);
+  background: var(--ff-connection-content-background-color);
+  border: 1px solid var(--ff-connection-content-border-color);
+  border-radius: var(--ff-connection-content-border-radius);
+}
+f-flow .f-connection .f-connection-selection,
+.f-flow .f-connection .f-connection-selection {
+  fill: none;
+  stroke: transparent;
+  stroke-width: var(--ff-connection-hit-width);
+}
+f-flow .f-connection .f-connection-path,
+.f-flow .f-connection .f-connection-path {
+  fill: none;
+  stroke: var(--ff-connection-color);
+  stroke-width: var(--ff-connection-width);
+}
+f-flow .f-connection .f-connection-drag-handle,
+.f-flow .f-connection .f-connection-drag-handle {
+  fill: transparent;
+  stroke: transparent;
+  cursor: move;
+}
+f-flow .f-connection.f-snap-connection .f-connection-path,
+.f-flow .f-connection.f-snap-connection .f-connection-path {
+  stroke: var(--ff-snap-connection-color);
+  stroke-dasharray: 8 4;
+}
+f-flow .f-connection.f-selected .f-connection-content,
+.f-flow .f-connection.f-selected .f-connection-content {
+  border-color: var(--ff-connection-content-border-color-selected);
+}
+f-flow .f-connection.f-selected .f-connection-path,
+.f-flow .f-connection.f-selected .f-connection-path {
+  stroke: var(--ff-connection-selected-color);
+}
+f-flow:not(.f-dragging)
+  .f-connection:not(.f-dragging):not(.f-selected):not(.f-connection-selection-disabled):hover
+  .f-connection-selection,
+.f-flow:not(.f-dragging)
+  .f-connection:not(.f-dragging):not(.f-selected):not(.f-connection-selection-disabled):hover
+  .f-connection-selection {
+  stroke: var(--ff-connection-hover-color);
+}
+
+f-flow .f-marker,
+f-flow .connection-marker,
+.f-flow .f-marker,
+.f-flow .connection-marker {
+  color: var(--ff-marker-color);
+}
+f-flow .f-marker circle,
+f-flow .f-marker rect,
+f-flow .f-marker path,
+f-flow .f-marker polygon,
+f-flow .f-marker line,
+f-flow .connection-marker circle,
+f-flow .connection-marker rect,
+f-flow .connection-marker path,
+f-flow .connection-marker polygon,
+f-flow .connection-marker line,
+.f-flow .f-marker circle,
+.f-flow .f-marker rect,
+.f-flow .f-marker path,
+.f-flow .f-marker polygon,
+.f-flow .f-marker line,
+.f-flow .connection-marker circle,
+.f-flow .connection-marker rect,
+.f-flow .connection-marker path,
+.f-flow .connection-marker polygon,
+.f-flow .connection-marker line {
+  fill: currentColor;
+  stroke: currentColor;
+}
+f-flow .f-connection.f-snap-connection .f-marker,
+f-flow .f-connection.f-snap-connection .connection-marker,
+.f-flow .f-connection.f-snap-connection .f-marker,
+.f-flow .f-connection.f-snap-connection .connection-marker {
+  color: var(--ff-snap-connection-color);
+}
+f-flow .f-connection.f-selected .f-marker,
+f-flow .f-connection.f-selected .connection-marker,
+.f-flow .f-connection.f-selected .f-marker,
+.f-flow .f-connection.f-selected .connection-marker {
+  color: var(--ff-connection-selected-color);
+}
+
+f-flow .f-connection .f-connection-waypoints .f-candidate,
+f-flow .f-connection .f-connection-waypoints .f-waypoint,
+.f-flow .f-connection .f-connection-waypoints .f-candidate,
+.f-flow .f-connection .f-connection-waypoints .f-waypoint {
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  stroke-width: 1.5;
+}
+f-flow .f-connection .f-connection-waypoints .f-candidate:hover,
+f-flow .f-connection .f-connection-waypoints .f-waypoint:hover,
+.f-flow .f-connection .f-connection-waypoints .f-candidate:hover,
+.f-flow .f-connection .f-connection-waypoints .f-waypoint:hover {
+  transform: scale(1.1);
+}
+f-flow .f-connection .f-connection-waypoints .f-candidate,
+.f-flow .f-connection .f-connection-waypoints .f-candidate {
+  fill: var(--ff-waypoint-candidate-fill);
+  stroke: var(--ff-waypoint-candidate-stroke);
+}
+f-flow .f-connection .f-connection-waypoints .f-waypoint,
+.f-flow .f-connection .f-connection-waypoints .f-waypoint {
+  fill: var(--ff-waypoint-fill);
+  stroke: var(--ff-waypoint-stroke);
+  cursor: move;
+}
+
+f-flow .f-connection .f-connection-drag-handle,
+.f-flow .f-connection .f-connection-drag-handle {
+  fill: transparent;
+  stroke: var(--ff-connection-drag-handle-stroke);
+  stroke-width: 1.5;
+}
+
+.f-external-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  color: var(--ff-external-item-color);
+  background: var(--ff-external-item-background-color);
+  border: 1px solid var(--ff-external-item-border-color);
+  border-radius: var(--ff-external-item-border-radius);
+  box-shadow: var(--ff-external-item-shadow);
+  cursor: grab;
+  user-select: none;
+}
+.f-external-item.f-external-item-disabled {
+  color: var(--ff-external-item-disabled-color);
+  background: var(--ff-external-item-disabled-background-color);
+  cursor: not-allowed;
+}
+
+.f-external-item-preview {
+  box-sizing: border-box;
+  box-shadow: var(--ff-external-item-preview-shadow);
+}
+
+.f-external-item-placeholder {
+  box-sizing: border-box;
+  background: var(--ff-external-item-placeholder-background-color);
+  border: 1px dashed var(--ff-external-item-placeholder-border-color);
+  border-radius: var(--ff-external-item-border-radius);
+}
+
+f-flow .f-background line,
+f-flow .f-background path,
+.f-flow .f-background line,
+.f-flow .f-background path {
+  stroke: var(--ff-background-line-color);
+}
+f-flow .f-background circle,
+.f-flow .f-background circle {
+  fill: var(--ff-background-dot-color);
+}
+
+f-flow .f-selection-area,
+.f-flow .f-selection-area {
+  box-sizing: border-box;
+  background: var(--ff-selection-area-color);
+  border: 1px solid var(--ff-selection-area-border-color);
+}
+
+f-flow .f-minimap,
+.f-flow .f-minimap {
+  overflow: hidden;
+  background: var(--ff-minimap-background-color);
+  border: 1px solid var(--ff-minimap-border-color);
+  border-radius: var(--ff-minimap-border-radius);
+  box-shadow: var(--ff-minimap-shadow);
+  bottom: 16px;
+  right: 16px;
+  width: 140px;
+  height: 120px;
+}
+f-flow .f-minimap .f-minimap-node,
+f-flow .f-minimap .f-minimap-group,
+.f-flow .f-minimap .f-minimap-node,
+.f-flow .f-minimap .f-minimap-group {
+  fill: var(--ff-minimap-node-color);
+}
+f-flow .f-minimap .f-minimap-node.f-selected,
+f-flow .f-minimap .f-minimap-group.f-selected,
+.f-flow .f-minimap .f-minimap-node.f-selected,
+.f-flow .f-minimap .f-minimap-group.f-selected {
+  fill: var(--ff-minimap-node-selected-color);
+}
+f-flow .f-minimap .f-minimap-view,
+.f-flow .f-minimap .f-minimap-view {
+  fill: var(--ff-minimap-view-color);
+  stroke: var(--ff-minimap-view-border-color);
+  stroke-width: 1;
+}
+
+f-flow .f-magnetic-lines .f-line,
+f-flow .f-line-alignment .f-line,
+.f-flow .f-magnetic-lines .f-line,
+.f-flow .f-line-alignment .f-line {
+  background: var(--ff-magnetic-line-color);
+}
+
+f-flow .f-magnetic-rects .f-rect,
+.f-flow .f-magnetic-rects .f-rect {
+  box-sizing: border-box;
+  background: var(--ff-magnetic-rect-fill);
+  border: 1px solid var(--ff-magnetic-rect-border-color);
+}
+
+/*
+ * Foblex selects its dark palette with a `.dark` class or `data-theme` attribute.
+ * TailNG themes are runtime CSS variables instead, so bridge the Foblex semantic
+ * layer to those variables. The references stay live when presets or modes change.
+ */
+:root {
+  --ff-color-surface-page: var(--tng-semantic-background-canvas, var(--ff-gray-25));
+  --ff-color-surface-canvas: var(--tng-semantic-background-canvas, var(--ff-gray-25));
+  --ff-color-surface-card: var(--tng-semantic-background-surface, var(--ff-white));
+  --ff-color-surface-group: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 14%,
+    transparent
+  );
+  --ff-color-surface-group-active: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 22%,
+    transparent
+  );
+  --ff-color-surface-muted: var(--tng-semantic-background-muted, var(--ff-gray-50));
+  --ff-color-surface-soft: var(--tng-semantic-background-base, var(--ff-gray-75));
+  --ff-color-surface-accent-soft: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 12%,
+    transparent
+  );
+  --ff-color-border-default: var(--tng-semantic-border-default, var(--ff-alpha-black-12));
+  --ff-color-border-subtle: var(--tng-semantic-border-subtle, var(--ff-alpha-black-08));
+  --ff-color-border-strong: var(--tng-semantic-border-strong, var(--ff-alpha-black-20));
+  --ff-color-border-accent: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-text-primary: var(--tng-semantic-foreground-primary, var(--ff-gray-800));
+  --ff-color-text-secondary: var(--tng-semantic-foreground-secondary, var(--ff-gray-500));
+  --ff-color-text-tertiary: var(--tng-semantic-foreground-muted, var(--ff-gray-400));
+  --ff-color-text-inverse: var(--tng-semantic-foreground-inverse, var(--ff-white));
+  --ff-color-accent: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-accent-strong: var(--tng-semantic-focus-ring, var(--ff-blue-600));
+  --ff-color-success: var(--tng-semantic-accent-success, var(--ff-green-400));
+  --ff-color-warning: var(--tng-semantic-accent-warning, var(--ff-yellow-400));
+  --ff-color-danger: var(--tng-semantic-accent-danger, var(--ff-red-400));
+  --ff-color-disabled-surface: var(--tng-semantic-background-muted, var(--ff-gray-100));
+  --ff-color-disabled-border: var(--tng-semantic-border-subtle, var(--ff-alpha-black-10));
+  --ff-color-disabled-text: var(--tng-semantic-foreground-muted, var(--ff-gray-300));
+  --ff-color-selection-fill: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 14%,
+    transparent
+  );
+  --ff-color-selection-stroke: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 36%,
+    transparent
+  );
+  --ff-color-grid: color-mix(
+    in srgb,
+    var(--tng-semantic-foreground-primary, var(--ff-gray-800)) 8%,
+    transparent
+  );
+  --ff-color-grid-strong: color-mix(
+    in srgb,
+    var(--tng-semantic-foreground-primary, var(--ff-gray-800)) 18%,
+    transparent
+  );
+  --ff-color-connector-connected: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-connection: var(--tng-semantic-foreground-secondary, var(--ff-gray-600));
+  --ff-color-connection-muted: var(--tng-semantic-foreground-muted, var(--ff-gray-300));
+  --ff-color-connection-hover: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 18%,
+    transparent
+  );
+  --ff-color-grouping-drop-target-border: var(
+    --tng-semantic-foreground-primary,
+    var(--ff-gray-800)
+  );
+  --ff-color-grouping-drop-target-border-active: var(
+    --tng-semantic-accent-brand,
+    var(--ff-blue-500)
+  );
+  --ff-color-waypoint-fill: var(--tng-semantic-background-surface, var(--ff-white));
+  --ff-color-waypoint-stroke: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-waypoint-candidate-fill: var(--tng-semantic-background-surface, var(--ff-white));
+  --ff-color-waypoint-candidate-stroke: var(--tng-semantic-accent-success, var(--ff-green-400));
+  --ff-color-minimap-surface: var(--tng-semantic-background-surface, var(--ff-white));
+  --ff-color-minimap-node: var(--tng-semantic-foreground-secondary, var(--ff-gray-700));
+  --ff-color-minimap-view: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 18%,
+    transparent
+  );
+  --ff-color-magnetic-line: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-magnetic-rect-fill: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 10%,
+    transparent
+  );
+  --ff-color-magnetic-rect-border: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 28%,
+    transparent
+  );
+  --ff-shadow-surface: 0 1px 2px rgb(0 0 0 / 12%), 0 8px 20px rgb(0 0 0 / 10%);
+  --ff-shadow-floating: 0 14px 36px rgb(0 0 0 / 22%), 0 4px 12px rgb(0 0 0 / 14%);
+}

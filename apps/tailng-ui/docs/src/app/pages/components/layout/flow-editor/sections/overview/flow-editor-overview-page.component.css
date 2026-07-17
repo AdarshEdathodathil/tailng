@@ -1,0 +1,23 @@
+.flow-editor-overview__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.flow-editor-overview__canvas {
+  height: 31rem;
+  min-height: 25rem;
+}
+
+.flow-editor-overview__validation {
+  border: 1px solid var(--tng-semantic-accent-danger);
+  border-radius: 0.5rem;
+  color: var(--tng-semantic-accent-danger);
+  font-size: 0.875rem;
+  padding: 0.6rem 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .flow-editor-overview__canvas {
+    height: 27rem;
+  }
+}

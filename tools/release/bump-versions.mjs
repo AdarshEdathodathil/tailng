@@ -54,6 +54,7 @@ const libs = [
   ["icons", "libs/tailng-ui/icons/package.json", "@tailng-ui/icons"],
   ["registry", "libs/tailng-ui/registry/package.json", "@tailng-ui/registry"],
   ["charts", "libs/tailng-ui/charts/package.json", "@tailng-ui/charts"],
+  ["flow", "libs/tailng-ui/flow/package.json", "@tailng-ui/flow"],
   ["cli", "libs/tailng/cli/package.json", "@tailng/cli"],
 ];
 

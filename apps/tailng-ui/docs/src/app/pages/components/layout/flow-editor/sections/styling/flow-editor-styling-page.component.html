@@ -1,0 +1,127 @@
+<article class="docs-section-page">
+  <section class="docs-overview-block">
+    <h2 class="docs-overview-title">Flow Editor styling</h2>
+    <p class="docs-overview-lead">
+      The package supplies geometry and interaction styles, while CSS custom properties and custom
+      templates let applications align the editor with their product theme.
+    </p>
+  </section>
+
+  <section id="required-styles" class="docs-overview-block">
+    <h3>Required styles</h3>
+    <p>
+      Flow Editor requires the Foblex theme emitted by the package stylesheet. Import it globally;
+      component-scoped imports do not reliably reach Foblex's generated SVG and overlay elements.
+    </p>
+    <tng-code-block
+      [code]="requiredStylesCode"
+      adapter="shiki"
+      language="css"
+      title="styles.css"
+      [lineNumbers]="false"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+  </section>
+
+  <section id="host-sizing" class="docs-overview-block">
+    <h3>Host sizing</h3>
+    <p>
+      The editor defaults to <code>36rem</code> high with a <code>24rem</code> minimum. Override the
+      host height for full-screen builders, drawers, or compact embedded monitors. A nonzero height
+      is mandatory for Foblex geometry.
+    </p>
+    <tng-code-block
+      [code]="sizingCode"
+      adapter="shiki"
+      language="css"
+      title="agent-builder.component.css"
+      [lineNumbers]="false"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+  </section>
+
+  <section id="css-custom-properties" class="docs-overview-block">
+    <h3>CSS custom properties</h3>
+    <p>
+      Defaults resolve through TailNG semantic tokens, so runtime preset and light/dark mode changes
+      update the canvas, nodes, connections, and controls automatically. Override these properties
+      only when an individual editor needs additional product-specific treatment.
+    </p>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Property group</th>
+            <th>Properties</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Canvas</td>
+            <td>
+              <code>--tng-flow-background</code>, <code>--tng-flow-border-color</code>,
+              <code>--tng-flow-border-radius</code>, <code>--tng-flow-grid-color</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Selection</td>
+            <td><code>--tng-flow-selection-color</code>, <code>--tng-flow-danger-color</code></td>
+          </tr>
+          <tr>
+            <td>Ports</td>
+            <td>
+              <code>--tng-flow-port-border</code>, <code>--tng-flow-port-background</code>,
+              <code>--tng-flow-port-label-color</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Drag handle</td>
+            <td>
+              <code>--tng-flow-handle-border</code>, <code>--tng-flow-handle-background</code>,
+              <code>--tng-flow-handle-color</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Controls</td>
+            <td>
+              <code>--tng-flow-controls-border</code>, <code>--tng-flow-controls-background</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Status badge</td>
+            <td><code>--tng-flow-status-bg</code>, <code>--tng-flow-status-fg</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <tng-code-block
+      [code]="variablesCode"
+      adapter="shiki"
+      language="css"
+      title="TailNG semantic token mapping"
+      [lineNumbers]="false"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+  </section>
+
+  <section id="custom-node-content" class="docs-overview-block">
+    <h3>Custom node content</h3>
+    <p>
+      Consumer templates are compiled in the application's context, so they can compose any TailNG
+      or application component. Keep the editor-owned node host and ports intact by customizing only
+      the projected body.
+    </p>
+    <tng-code-block
+      [code]="templateCode"
+      adapter="shiki"
+      language="html"
+      title="Custom tool node"
+      [lineNumbers]="true"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+  </section>
+</article>

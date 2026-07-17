@@ -315,6 +315,65 @@
     ]
   },
   {
+    "title": "Flow Editor",
+    "description": "Embeddable, controlled node editor for AI agents, automations, and executable workflows.",
+    "section": "Components / Layout",
+    "url": "/components/layout/flow-editor",
+    "tags": [
+      "components",
+      "layout",
+      "flow-editor",
+      "ai",
+      "agent",
+      "workflow"
+    ]
+  },
+  {
+    "title": "Flow Editor API",
+    "description": "Inputs, outputs, graph models, template context, methods, and validation for the Flow Editor.",
+    "section": "Components / Layout",
+    "url": "/components/layout/flow-editor/api",
+    "tags": [
+      "components",
+      "layout",
+      "flow-editor",
+      "ai",
+      "agent",
+      "workflow",
+      "api"
+    ]
+  },
+  {
+    "title": "Flow Editor Styling",
+    "description": "Required styles, sizing, CSS custom properties, and custom node content for the Flow Editor.",
+    "section": "Components / Layout",
+    "url": "/components/layout/flow-editor/styling",
+    "tags": [
+      "components",
+      "layout",
+      "flow-editor",
+      "ai",
+      "agent",
+      "workflow",
+      "styling"
+    ]
+  },
+  {
+    "title": "Flow Editor Examples",
+    "description": "Custom node templates and read-only execution monitoring with the Flow Editor.",
+    "section": "Components / Layout",
+    "url": "/components/layout/flow-editor/examples",
+    "tags": [
+      "components",
+      "layout",
+      "flow-editor",
+      "ai",
+      "agent",
+      "workflow",
+      "examples"
+    ]
+  },
+  {
     "title": "Drawer",
     "description": "Slide-in overlay panel with position, mode, focus trap, and backdrop support.",
     "section": "Components / Layout",

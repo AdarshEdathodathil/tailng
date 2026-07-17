@@ -194,6 +194,32 @@ export const docsComponentOutlineItemsBySlug: Readonly<
       { id: 'import-and-usage', label: 'Import in your feature module/component' },
     ],
   },
+  'flow-editor': {
+    overview: [
+      { id: 'imports', label: 'Install and import' },
+      { id: 'controlled-workflow', label: 'Controlled workflow' },
+      { id: 'state-ownership', label: 'State ownership' },
+      { id: 'accessibility-baseline', label: 'Accessibility baseline' },
+    ],
+    api: [
+      { id: 'editor-inputs', label: 'Editor inputs' },
+      { id: 'editor-outputs', label: 'Editor outputs' },
+      { id: 'graph-models', label: 'Graph models' },
+      { id: 'template-context', label: 'Node template context' },
+      { id: 'imperative-methods', label: 'Imperative methods' },
+      { id: 'validation', label: 'Validation' },
+    ],
+    styling: [
+      { id: 'required-styles', label: 'Required styles' },
+      { id: 'host-sizing', label: 'Host sizing' },
+      { id: 'css-custom-properties', label: 'CSS custom properties' },
+      { id: 'custom-node-content', label: 'Custom node content' },
+    ],
+    examples: [
+      { id: 'custom-model-node', label: 'Custom model node' },
+      { id: 'execution-monitor', label: 'Execution monitor' },
+    ],
+  },
   table: {
     overview: [
       { id: 'imports', label: 'Imports' },

@@ -15,7 +15,7 @@ const TAILNG = "tailng";
 
 const resolveDistDir = (target) => {
   // Nx outputs TailNG UI libs under dist/libs/tailng-ui/<name>
-  if (["cdk", "primitives", "components", "icons", "theme", "registry", "charts"].includes(target)) {
+  if (["cdk", "primitives", "components", "icons", "theme", "registry", "charts", "flow"].includes(target)) {
     return path.join(dist, TAILNG_UI, target);
   }
 
@@ -28,7 +28,7 @@ const resolveDistDir = (target) => {
 };
 
 const isPackTarget = (t) =>
-  ["cdk", "primitives", "components", "icons", "theme", "registry", "charts", "cli"].includes(t);
+  ["cdk", "primitives", "components", "icons", "theme", "registry", "charts", "flow", "cli"].includes(t);
 
 for (const t of selected) {
   if (!isPackTarget(t)) continue;

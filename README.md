@@ -50,6 +50,7 @@ TailNG is built with Angular 21+, standalone APIs, signals, Nx, Vitest, and stri
 | `@tailng-ui/theme`      | Theme contracts, presets, CSS variables, component contracts, and Tailwind adapters. |
 | `@tailng-ui/icons`      | Angular icon wrappers backed by `@ng-icons`.                                         |
 | `@tailng-ui/charts`     | Apache ECharts wrappers for Angular.                                                 |
+| `@tailng-ui/flow`       | Optional workflow editor for AI agents, powered by Foblex Flow.                      |
 | `@tailng-ui/registry`   | Metadata for ownable component installs.                                             |
 | `tailng`                | CLI for listing and copying ownable components into Angular apps.                    |
 
@@ -71,6 +72,13 @@ Install the theme package:
 
 ```bash
 pnpm add @tailng-ui/theme
+```
+
+Install the optional Flow Editor package and its graph-engine peers:
+
+```bash
+pnpm add @tailng-ui/flow @tailng-ui/components @tailng-ui/icons \
+  @foblex/flow @foblex/2d @foblex/mediator @foblex/platform @foblex/utils
 ```
 
 Use the ownable-source CLI without adding it permanently:
@@ -141,6 +149,7 @@ libs/
     theme/                 Theme engine and CSS contracts
     icons/                 Icon wrappers
     charts/                Chart wrappers
+    flow/                  Optional workflow editor and Foblex integration
     registry/              Ownable install metadata
 ```
 
@@ -149,6 +158,7 @@ Layering rules:
 - Components depend on primitives and CDK contracts.
 - Primitives depend on CDK behavior utilities.
 - Styling is separated from behavior.
+- Heavy third-party integrations such as Foblex are isolated from the core component package.
 - Public APIs are exported from package entry points.
 - Deep imports are avoided.
 - Accessibility and keyboard behavior are treated as package contracts.
@@ -260,6 +270,7 @@ pnpm run test:components
 pnpm run test:theme
 pnpm run test:icons
 pnpm run test:charts
+pnpm run test:flow
 pnpm run test:registry
 pnpm run test:cli
 pnpm run test:docs

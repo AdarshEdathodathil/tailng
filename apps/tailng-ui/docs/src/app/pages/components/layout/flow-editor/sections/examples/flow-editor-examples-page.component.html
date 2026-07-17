@@ -1,0 +1,151 @@
+<article class="docs-section-page flow-editor-examples">
+  <section class="docs-overview-block">
+    <h2 class="docs-overview-title">Flow Editor examples</h2>
+    <p class="docs-overview-lead">
+      Use consumer templates for domain-specific authoring and read-only mode for live execution
+      monitoring. Give each editor a unique <code>flowId</code> when multiple canvases share a page.
+    </p>
+  </section>
+
+  <section id="custom-model-node" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Custom model node"
+      description="Compose the model body with TailNG Card components while the editor retains node position, drag behavior, selection, and connector placement."
+      ariaLabel="Custom model node styling variants"
+      tabListAriaLabel="Custom model node styles"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain CSS"
+        panelTitle="Custom model node with Plain CSS"
+        [codeTabs]="customNodePlainCssCodeTabs"
+      >
+        <tng-flow-editor
+          flowId="docs-custom-agent-editor-plain-css"
+          class="flow-editor-examples__canvas"
+          ariaLabel="Agent workflow with a custom model node styled with Plain CSS"
+          [nodes]="customPlainCssNodes()"
+          [connections]="connections"
+          [nodeViews]="customViews"
+          (nodesMoved)="onNodesMoved($event, 'plain-css')"
+        >
+          <ng-template tngFlowNode="model" let-node let-view="view" let-selected="selected">
+            <tng-card
+              class="flow-editor-examples__model"
+              tone="primary"
+              [elevated]="selected"
+              [attr.data-selected]="selected ? '' : null"
+            >
+              <tng-card-header>
+                <span class="flow-editor-examples__eyebrow">Reasoning step</span>
+                <tng-card-title>{{ node.name }}</tng-card-title>
+                <tng-card-description>{{ node.description }}</tng-card-description>
+              </tng-card-header>
+              <tng-card-content>
+                <p>{{ nodeDetail(node.data) }}</p>
+                <span
+                  class="flow-editor-examples__status"
+                  [attr.data-status]="view.status ?? 'idle'"
+                >
+                  {{ view.status ?? 'idle' }} · {{ view.progress ?? 0 }}%
+                </span>
+              </tng-card-content>
+            </tng-card>
+          </ng-template>
+        </tng-flow-editor>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Custom model node with Tailwind CSS"
+        [codeTabs]="customNodeTailwindCodeTabs"
+      >
+        <tng-flow-editor
+          flowId="docs-custom-agent-editor-tailwind-css"
+          class="block h-[29rem] min-h-[24rem] max-[720px]:h-[26rem]"
+          ariaLabel="Agent workflow with a custom model node styled with Tailwind CSS"
+          [nodes]="customTailwindNodes()"
+          [connections]="connections"
+          [nodeViews]="customViews"
+          (nodesMoved)="onNodesMoved($event, 'tailwind-css')"
+        >
+          <ng-template tngFlowNode="model" let-node let-view="view" let-selected="selected">
+            <tng-card class="block w-[17.5rem]" tone="primary" [elevated]="selected">
+              <tng-card-header>
+                <span class="text-[0.675rem] font-bold uppercase tracking-[0.1em] text-blue-500">
+                  Reasoning step
+                </span>
+                <tng-card-title>{{ node.name }}</tng-card-title>
+                <tng-card-description>{{ node.description }}</tng-card-description>
+              </tng-card-header>
+              <tng-card-content>
+                <p class="m-0 text-sm text-slate-600 dark:text-slate-300">
+                  {{ nodeDetail(node.data) }}
+                </p>
+                <span
+                  class="mt-3 inline-flex rounded-full bg-blue-500/10 px-2 py-1 text-xs font-semibold capitalize text-blue-500"
+                >
+                  {{ view.status ?? 'idle' }} · {{ view.progress ?? 0 }}%
+                </span>
+              </tng-card-content>
+            </tng-card>
+          </ng-template>
+        </tng-flow-editor>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="execution-monitor" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Read-only execution monitor"
+      description="Read-only mode disables moving, connecting, reassigning, and deletion while operators can still pan, zoom, select, and inspect the workflow."
+      ariaLabel="Read-only execution monitor styling variants"
+      tabListAriaLabel="Read-only execution monitor styles"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain CSS"
+        panelTitle="Read-only monitor with Plain CSS"
+        [codeTabs]="monitorPlainCssCodeTabs"
+      >
+        <tng-flow-editor
+          flowId="docs-execution-monitor-plain-css"
+          class="flow-editor-examples__canvas"
+          ariaLabel="Completed agent execution workflow styled with Plain CSS"
+          [nodes]="monitorNodes"
+          [connections]="connections"
+          [nodeViews]="monitorViews"
+          [readonly]="true"
+          [showSelectionArea]="false"
+        />
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Read-only monitor with Tailwind CSS"
+        [codeTabs]="monitorTailwindCodeTabs"
+      >
+        <tng-flow-editor
+          flowId="docs-execution-monitor-tailwind-css"
+          class="block h-[29rem] min-h-[24rem] max-[720px]:h-[26rem]"
+          ariaLabel="Completed agent execution workflow styled with Tailwind CSS"
+          [nodes]="monitorNodes"
+          [connections]="connections"
+          [nodeViews]="monitorViews"
+          [readonly]="true"
+          [showSelectionArea]="false"
+        />
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+</article>

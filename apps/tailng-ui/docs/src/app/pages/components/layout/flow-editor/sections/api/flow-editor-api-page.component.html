@@ -1,0 +1,287 @@
+<article class="docs-section-page">
+  <section class="docs-overview-block">
+    <h2 class="docs-overview-title">Flow Editor API</h2>
+    <p class="docs-overview-lead">
+      Import the editor, template directive, graph types, event types, and validation helper from
+      <code>&#64;tailng-ui/flow</code>.
+    </p>
+  </section>
+
+  <section id="editor-inputs" class="docs-overview-block">
+    <h3>Editor inputs</h3>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>nodes</code></td>
+            <td><code>readonly TngFlowNode&lt;TData&gt;[]</code></td>
+            <td>required</td>
+            <td>Controlled node records, including positions and port definitions.</td>
+          </tr>
+          <tr>
+            <td><code>connections</code></td>
+            <td><code>readonly TngFlowConnection[]</code></td>
+            <td><code>[]</code></td>
+            <td>Controlled connector-to-connector edges.</td>
+          </tr>
+          <tr>
+            <td><code>nodeViews</code></td>
+            <td><code>TngFlowNodeViews&lt;TStatus&gt;</code></td>
+            <td>
+              <code>{{ '{}' }}</code>
+            </td>
+            <td>Status, progress, message, and invalid state keyed by node id.</td>
+          </tr>
+          <tr>
+            <td><code>readonly</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Disables graph mutation while preserving pan, zoom, selection, and controls.</td>
+          </tr>
+          <tr>
+            <td><code>ariaLabel</code></td>
+            <td><code>string</code></td>
+            <td><code>'Workflow editor'</code></td>
+            <td>Accessible name for the editor surface.</td>
+          </tr>
+          <tr>
+            <td><code>flowId</code></td>
+            <td><code>string</code></td>
+            <td><code>'tng-flow-editor'</code></td>
+            <td>Stable Foblex flow instance id. Set a unique value for multiple editors.</td>
+          </tr>
+          <tr>
+            <td><code>fitOnInit</code></td>
+            <td><code>boolean</code></td>
+            <td><code>true</code></td>
+            <td>Fits the first non-empty node collection into the viewport.</td>
+          </tr>
+          <tr>
+            <td>
+              <code>showBackground</code>, <code>showControls</code>, <code>showSelectionArea</code>
+            </td>
+            <td><code>boolean</code></td>
+            <td><code>true</code></td>
+            <td>Controls the built-in grid, viewport toolbar, and marquee selection surface.</td>
+          </tr>
+          <tr>
+            <td><code>snapToGrid</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Snaps node dragging to <code>gridSize</code>.</td>
+          </tr>
+          <tr>
+            <td><code>gridSize</code></td>
+            <td><code>number</code></td>
+            <td><code>16</code></td>
+            <td>Horizontal and vertical grid cell size in pixels.</td>
+          </tr>
+          <tr>
+            <td><code>zoomMinimum</code>, <code>zoomMaximum</code>, <code>zoomStep</code></td>
+            <td><code>number</code></td>
+            <td><code>0.35</code>, <code>2</code>, <code>0.15</code></td>
+            <td>Viewport zoom limits and button/wheel increment.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="editor-outputs" class="docs-overview-block">
+    <h3>Editor outputs</h3>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Payload</th>
+            <th>When it emits</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>nodesMoved</code></td>
+            <td><code>TngFlowNodesMovedEvent</code></td>
+            <td>After one or more selected nodes finish moving.</td>
+          </tr>
+          <tr>
+            <td><code>connectionCreated</code></td>
+            <td><code>TngFlowConnectionCreatedEvent</code></td>
+            <td>After a source connector is dropped onto a valid target connector.</td>
+          </tr>
+          <tr>
+            <td><code>connectionReassigned</code></td>
+            <td><code>TngFlowConnectionReassignedEvent</code></td>
+            <td>After a reassignable connection endpoint moves.</td>
+          </tr>
+          <tr>
+            <td><code>selectionChanged</code></td>
+            <td><code>TngFlowSelectionChangedEvent</code></td>
+            <td>When node or connection selection changes.</td>
+          </tr>
+          <tr>
+            <td><code>deleteRequested</code></td>
+            <td><code>TngFlowDeleteRequestedEvent</code></td>
+            <td>When the user requests deletion of selected graph items.</td>
+          </tr>
+          <tr>
+            <td><code>viewportChanged</code></td>
+            <td><code>TngFlowViewportChangedEvent</code></td>
+            <td>When canvas position or scale changes.</td>
+          </tr>
+          <tr>
+            <td><code>ready</code></td>
+            <td><code>void</code></td>
+            <td>After the flow completes its first full render.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Foblex gesture callbacks may run outside Angular's zone. Flow Editor re-enters the zone before
+      every public output is emitted.
+    </p>
+  </section>
+
+  <section id="graph-models" class="docs-overview-block">
+    <h3>Graph models</h3>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Required fields</th>
+            <th>Optional behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>TngFlowNode&lt;TData&gt;</code></td>
+            <td><code>id</code>, <code>type</code>, <code>name</code>, <code>position</code></td>
+            <td><code>data</code>, description, icon, disabled state, inputs, and outputs.</td>
+          </tr>
+          <tr>
+            <td><code>TngFlowPort</code></td>
+            <td><code>id</code></td>
+            <td>
+              Label, category, disabled state, multiplicity, target allow-list, and self-connection
+              policy. Port ids must be globally unique.
+            </td>
+          </tr>
+          <tr>
+            <td><code>TngFlowConnection</code></td>
+            <td><code>id</code>, <code>sourcePortId</code>, <code>targetPortId</code></td>
+            <td>Disabled, reassignable, selectable, and line type.</td>
+          </tr>
+          <tr>
+            <td><code>TngFlowNodeView&lt;TStatus&gt;</code></td>
+            <td>none</td>
+            <td>Status, progress, invalid state, and execution message.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Built-in statuses include idle, queued, running, waiting, completed, failed, paused, retrying,
+      skipped, cancelled, and awaiting-input. Supply a custom string union through the editor's
+      <code>TStatus</code> generic when your runtime needs additional states.
+    </p>
+  </section>
+
+  <section id="template-context" class="docs-overview-block">
+    <h3>Node template context</h3>
+    <p>
+      Add <code>&lt;ng-template tngFlowNode="node-type"&gt;</code> as editor content. The template
+      replaces only the node body; Flow Editor retains node geometry, drag handling, connectors,
+      selection, and accessibility.
+    </p>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Context value</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>$implicit</code> / <code>node</code></td>
+            <td><code>TngFlowNode&lt;TData&gt;</code></td>
+            <td>Current domain node.</td>
+          </tr>
+          <tr>
+            <td><code>view</code></td>
+            <td><code>TngFlowNodeView&lt;TStatus&gt;</code></td>
+            <td>Current execution presentation.</td>
+          </tr>
+          <tr>
+            <td><code>readonly</code></td>
+            <td><code>boolean</code></td>
+            <td>Whether graph mutation is disabled.</td>
+          </tr>
+          <tr>
+            <td><code>selected</code></td>
+            <td><code>boolean</code></td>
+            <td>Current transient selection state.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="imperative-methods" class="docs-overview-block">
+    <h3>Imperative methods</h3>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>fitToScreen(animated = true)</code></td>
+            <td>Fits all rendered nodes into the viewport.</td>
+          </tr>
+          <tr>
+            <td><code>resetViewport(animated = true)</code></td>
+            <td>Resets scale and centers the flow.</td>
+          </tr>
+          <tr>
+            <td><code>centerNode(nodeId, animated = true)</code></td>
+            <td>Centers a node by id.</td>
+          </tr>
+          <tr>
+            <td><code>zoomBy(delta)</code></td>
+            <td>Changes scale while respecting zoom limits.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Access these through <code>#editor="tngFlowEditor"</code> or <code>viewChild()</code>.</p>
+  </section>
+
+  <section id="validation" class="docs-overview-block">
+    <h3>Validation</h3>
+    <p>
+      Read <code>editor.validationIssues()</code> for live issues, or call
+      <code>validateTngFlow(nodes, connections)</code> before persistence or execution.
+    </p>
+    <ul class="docs-overview-list">
+      <li>Empty or duplicate node, port, and connection ids</li>
+      <li>Missing endpoints and input/output direction mismatches</li>
+      <li>Incompatible categories or explicit target allow-lists</li>
+      <li>Disallowed self-connections and port multiplicity violations</li>
+    </ul>
+  </section>
+</article>

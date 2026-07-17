@@ -1,0 +1,159 @@
+:host {
+  display: block;
+  width: 17.5rem;
+}
+
+.tng-flow-node {
+  display: block;
+}
+
+.tng-flow-node__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.625rem;
+  align-items: start;
+}
+
+.tng-flow-node__header[data-has-icon] {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.tng-flow-node__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  color: var(--tng-semantic-accent-brand, #2563eb);
+  background: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, #2563eb) 14%,
+    var(--tng-semantic-background-surface, #eff6ff)
+  );
+}
+
+.tng-flow-node__heading {
+  display: grid;
+  grid-column: 1;
+  min-width: 0;
+  gap: 0.2rem;
+  text-align: start;
+}
+
+.tng-flow-node__header[data-has-icon] .tng-flow-node__heading {
+  grid-column: 2;
+}
+
+.tng-flow-node__name,
+.tng-flow-node__description {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tng-flow-node__name {
+  color: var(--tng-semantic-foreground-primary, #111827);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+
+.tng-flow-node__description,
+.tng-flow-node__message {
+  color: var(--tng-semantic-foreground-muted, #6b7280);
+  font-size: 0.75rem;
+  line-height: 1.1rem;
+}
+
+.tng-flow-node__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.tng-flow-node__status {
+  display: inline-flex;
+  grid-column: 2;
+  align-items: center;
+  justify-self: end;
+  min-height: 1.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  color: var(--tng-flow-status-fg, var(--tng-semantic-foreground-secondary, #4b5563));
+  background: var(--tng-flow-status-bg, var(--tng-semantic-background-muted, #f3f4f6));
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1rem;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.tng-flow-node__header[data-has-icon] .tng-flow-node__status {
+  grid-column: 3;
+}
+
+.tng-flow-node__status[data-tone='success'] {
+  --tng-flow-status-bg: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-success, #16a34a) 18%,
+    var(--tng-semantic-background-surface, #fff)
+  );
+  --tng-flow-status-fg: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-success, #16a34a) 72%,
+    var(--tng-semantic-foreground-primary, #111827)
+  );
+}
+
+.tng-flow-node__status[data-tone='danger'] {
+  --tng-flow-status-bg: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-danger, #dc2626) 18%,
+    var(--tng-semantic-background-surface, #fff)
+  );
+  --tng-flow-status-fg: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-danger, #dc2626) 72%,
+    var(--tng-semantic-foreground-primary, #111827)
+  );
+}
+
+.tng-flow-node__status[data-tone='info'] {
+  --tng-flow-status-bg: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, #2563eb) 18%,
+    var(--tng-semantic-background-surface, #fff)
+  );
+  --tng-flow-status-fg: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, #2563eb) 72%,
+    var(--tng-semantic-foreground-primary, #111827)
+  );
+}
+
+.tng-flow-node__status[data-tone='warning'] {
+  --tng-flow-status-bg: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-warning, #d97706) 18%,
+    var(--tng-semantic-background-surface, #fff)
+  );
+  --tng-flow-status-fg: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-warning, #d97706) 72%,
+    var(--tng-semantic-foreground-primary, #111827)
+  );
+}
+
+.tng-flow-node__content:empty,
+.tng-flow-node__message:empty {
+  display: none;
+}
+
+.tng-flow-node__message {
+  margin: 0.75rem 0 0;
+  text-align: start;
+}
+
+.tng-flow-node__footer {
+  margin-top: 0.75rem;
+}

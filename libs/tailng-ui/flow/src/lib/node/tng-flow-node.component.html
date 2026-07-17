@@ -1,0 +1,44 @@
+<tng-card
+  class="tng-flow-node"
+  [tone]="cardTone()"
+  variant="solid"
+  [attr.data-status]="status()"
+  [attr.data-invalid]="invalid() ? '' : null"
+>
+  <header class="tng-flow-node__header" [attr.data-has-icon]="icon() ? '' : null">
+    @if (icon(); as iconName) {
+      <span class="tng-flow-node__icon" aria-hidden="true">
+        <tng-icon [icon]="iconName" />
+      </span>
+    }
+
+    <span class="tng-flow-node__heading">
+      <strong class="tng-flow-node__name">{{ name() }}</strong>
+      @if (description(); as descriptionText) {
+        <span class="tng-flow-node__description">{{ descriptionText }}</span>
+      }
+    </span>
+
+    <span class="tng-flow-node__status" [attr.data-tone]="statusTone()">
+      {{ status() }}
+    </span>
+  </header>
+
+  <section class="tng-flow-node__content">
+    <ng-content />
+  </section>
+
+  @if (message(); as messageText) {
+    <p class="tng-flow-node__message">{{ messageText }}</p>
+  }
+
+  @if (showProgress()) {
+    <footer class="tng-flow-node__footer">
+      <tng-progress-bar
+        [ariaLabel]="name() + ' progress'"
+        [indeterminate]="progress() === null"
+        [value]="normalizedProgress()"
+      />
+    </footer>
+  }
+</tng-card>

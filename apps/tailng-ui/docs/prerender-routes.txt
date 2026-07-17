@@ -172,6 +172,11 @@
 /components/layout/stepper/overview
 /components/layout/stepper/ownable-install
 /components/layout/stepper/styling
+/components/layout/flow-editor
+/components/layout/flow-editor/api
+/components/layout/flow-editor/examples
+/components/layout/flow-editor/overview
+/components/layout/flow-editor/styling
 /components/layout/table
 /components/layout/table/api
 /components/layout/table/examples

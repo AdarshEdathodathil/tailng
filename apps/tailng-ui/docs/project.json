@@ -17,6 +17,11 @@
           {
             "glob": "**/*",
             "input": "apps/tailng-ui/docs/public"
+          },
+          {
+            "glob": "styles.css",
+            "input": "libs/tailng-ui/flow",
+            "output": "flow-editor"
           }
         ],
         "styles": [

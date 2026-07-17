@@ -20,6 +20,7 @@ if (wants("theme")) run("pnpm nx build theme --skip-nx-cache");
 if (wants("icons")) run("pnpm nx build icons --skip-nx-cache");
 if (wants("registry") || wants("cli")) run("pnpm nx build registry --skip-nx-cache");
 if (wants("charts")) run("pnpm nx build charts --skip-nx-cache");
+if (wants("flow")) run("pnpm nx build flow --skip-nx-cache");
 
 // CLI (keeps your historical target name)
 if (wants("cli")) run("pnpm nx run tailng-cli:build --skip-nx-cache");

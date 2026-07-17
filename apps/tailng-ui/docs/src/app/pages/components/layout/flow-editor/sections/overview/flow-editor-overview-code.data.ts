@@ -1,0 +1,113 @@
+import type { DocsExampleCodeTab } from '../../../../../../shared/example-panel/docs-example-panel.component';
+
+const controlledComponentCode = [
+  "import { Component, signal } from '@angular/core';",
+  'import {',
+  '  TngFlowEditorComponent,',
+  '  type TngFlowConnection,',
+  '  type TngFlowConnectionCreatedEvent,',
+  '  type TngFlowNode,',
+  '  type TngFlowNodesMovedEvent,',
+  "} from '@tailng-ui/flow';",
+  "import { agentConnections, agentNodes, agentViews } from './agent-flow.data';",
+  '',
+  '@Component({',
+  "  selector: 'app-agent-flow',",
+  '  standalone: true,',
+  '  imports: [TngFlowEditorComponent],',
+  "  templateUrl: './agent-flow.component.html',",
+  '})',
+  'export class AgentFlowComponent {',
+  '  protected readonly nodes = signal<readonly TngFlowNode[]>(agentNodes);',
+  '  protected readonly connections = signal<readonly TngFlowConnection[]>(agentConnections);',
+  '  protected readonly nodeViews = agentViews;',
+  '',
+  '  protected moveNodes(event: TngFlowNodesMovedEvent): void {',
+  '    const positions = new Map(event.nodes.map((node) => [node.id, node.position]));',
+  '    this.nodes.update((nodes) =>',
+  '      nodes.map((node) => ({ ...node, position: positions.get(node.id) ?? node.position })),',
+  '    );',
+  '  }',
+  '',
+  '  protected createConnection(event: TngFlowConnectionCreatedEvent): void {',
+  '    this.connections.update((connections) => [',
+  '      ...connections,',
+  '      {',
+  '        id: crypto.randomUUID(),',
+  '        sourcePortId: event.sourcePortId,',
+  '        targetPortId: event.targetPortId,',
+  "        type: 'bezier',",
+  '      },',
+  '    ]);',
+  '  }',
+  '}',
+].join('\n');
+
+const controlledEditorMarkup = [
+  '<tng-flow-editor',
+  '  flowId="agent-workflow"',
+  '  ariaLabel="Interactive customer support agent workflow"',
+  '  [nodes]="nodes()"',
+  '  [connections]="connections()"',
+  '  [nodeViews]="nodeViews"',
+  '  (nodesMoved)="moveNodes($event)"',
+  '  (connectionCreated)="createConnection($event)"',
+  '/>',
+].join('\n');
+
+export const flowEditorOverviewPlainCssCodeTabs: readonly DocsExampleCodeTab[] = Object.freeze([
+  {
+    value: 'ts',
+    label: 'TS',
+    language: 'ts',
+    title: 'agent-flow.component.ts',
+    code: controlledComponentCode,
+  },
+  {
+    value: 'html',
+    label: 'HTML',
+    language: 'html',
+    title: 'agent-flow.component.html',
+    code: controlledEditorMarkup.replace('ariaLabel=', 'class="agent-workflow"\n  ariaLabel='),
+  },
+  {
+    value: 'css',
+    label: 'CSS',
+    language: 'css',
+    title: 'agent-flow.component.css',
+    code: [
+      '.agent-workflow {',
+      '  display: block;',
+      '  height: min(70vh, 48rem);',
+      '  min-height: 25rem;',
+      '}',
+    ].join('\n'),
+  },
+]);
+
+export const flowEditorOverviewTailwindCodeTabs: readonly DocsExampleCodeTab[] = Object.freeze([
+  {
+    value: 'ts',
+    label: 'TS',
+    language: 'ts',
+    title: 'agent-flow.component.ts',
+    code: controlledComponentCode,
+  },
+  {
+    value: 'html',
+    label: 'HTML',
+    language: 'html',
+    title: 'agent-flow.component.html',
+    code: controlledEditorMarkup.replace(
+      'ariaLabel=',
+      'class="block h-[min(70vh,48rem)] min-h-[25rem]"\n  ariaLabel=',
+    ),
+  },
+  {
+    value: 'css',
+    label: 'CSS',
+    language: 'css',
+    title: 'agent-flow.component.css',
+    code: '/* Tailwind utilities are applied directly in the template. */',
+  },
+]);

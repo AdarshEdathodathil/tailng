@@ -1,0 +1,108 @@
+@use '@foblex/flow/styles' as flow-theme;
+
+@include flow-theme.theme-tokens();
+@include flow-theme.theme-all();
+
+/*
+ * Foblex selects its dark palette with a `.dark` class or `data-theme` attribute.
+ * TailNG themes are runtime CSS variables instead, so bridge the Foblex semantic
+ * layer to those variables. The references stay live when presets or modes change.
+ */
+:root {
+  --ff-color-surface-page: var(--tng-semantic-background-canvas, var(--ff-gray-25));
+  --ff-color-surface-canvas: var(--tng-semantic-background-canvas, var(--ff-gray-25));
+  --ff-color-surface-card: var(--tng-semantic-background-surface, var(--ff-white));
+  --ff-color-surface-group: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 14%,
+    transparent
+  );
+  --ff-color-surface-group-active: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 22%,
+    transparent
+  );
+  --ff-color-surface-muted: var(--tng-semantic-background-muted, var(--ff-gray-50));
+  --ff-color-surface-soft: var(--tng-semantic-background-base, var(--ff-gray-75));
+  --ff-color-surface-accent-soft: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 12%,
+    transparent
+  );
+  --ff-color-border-default: var(--tng-semantic-border-default, var(--ff-alpha-black-12));
+  --ff-color-border-subtle: var(--tng-semantic-border-subtle, var(--ff-alpha-black-08));
+  --ff-color-border-strong: var(--tng-semantic-border-strong, var(--ff-alpha-black-20));
+  --ff-color-border-accent: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-text-primary: var(--tng-semantic-foreground-primary, var(--ff-gray-800));
+  --ff-color-text-secondary: var(--tng-semantic-foreground-secondary, var(--ff-gray-500));
+  --ff-color-text-tertiary: var(--tng-semantic-foreground-muted, var(--ff-gray-400));
+  --ff-color-text-inverse: var(--tng-semantic-foreground-inverse, var(--ff-white));
+  --ff-color-accent: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-accent-strong: var(--tng-semantic-focus-ring, var(--ff-blue-600));
+  --ff-color-success: var(--tng-semantic-accent-success, var(--ff-green-400));
+  --ff-color-warning: var(--tng-semantic-accent-warning, var(--ff-yellow-400));
+  --ff-color-danger: var(--tng-semantic-accent-danger, var(--ff-red-400));
+  --ff-color-disabled-surface: var(--tng-semantic-background-muted, var(--ff-gray-100));
+  --ff-color-disabled-border: var(--tng-semantic-border-subtle, var(--ff-alpha-black-10));
+  --ff-color-disabled-text: var(--tng-semantic-foreground-muted, var(--ff-gray-300));
+  --ff-color-selection-fill: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 14%,
+    transparent
+  );
+  --ff-color-selection-stroke: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 36%,
+    transparent
+  );
+  --ff-color-grid: color-mix(
+    in srgb,
+    var(--tng-semantic-foreground-primary, var(--ff-gray-800)) 8%,
+    transparent
+  );
+  --ff-color-grid-strong: color-mix(
+    in srgb,
+    var(--tng-semantic-foreground-primary, var(--ff-gray-800)) 18%,
+    transparent
+  );
+  --ff-color-connector-connected: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-connection: var(--tng-semantic-foreground-secondary, var(--ff-gray-600));
+  --ff-color-connection-muted: var(--tng-semantic-foreground-muted, var(--ff-gray-300));
+  --ff-color-connection-hover: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 18%,
+    transparent
+  );
+  --ff-color-grouping-drop-target-border: var(
+    --tng-semantic-foreground-primary,
+    var(--ff-gray-800)
+  );
+  --ff-color-grouping-drop-target-border-active: var(
+    --tng-semantic-accent-brand,
+    var(--ff-blue-500)
+  );
+  --ff-color-waypoint-fill: var(--tng-semantic-background-surface, var(--ff-white));
+  --ff-color-waypoint-stroke: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-waypoint-candidate-fill: var(--tng-semantic-background-surface, var(--ff-white));
+  --ff-color-waypoint-candidate-stroke: var(--tng-semantic-accent-success, var(--ff-green-400));
+  --ff-color-minimap-surface: var(--tng-semantic-background-surface, var(--ff-white));
+  --ff-color-minimap-node: var(--tng-semantic-foreground-secondary, var(--ff-gray-700));
+  --ff-color-minimap-view: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 18%,
+    transparent
+  );
+  --ff-color-magnetic-line: var(--tng-semantic-accent-brand, var(--ff-blue-500));
+  --ff-color-magnetic-rect-fill: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 10%,
+    transparent
+  );
+  --ff-color-magnetic-rect-border: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, var(--ff-blue-400)) 28%,
+    transparent
+  );
+  --ff-shadow-surface: 0 1px 2px rgb(0 0 0 / 12%), 0 8px 20px rgb(0 0 0 / 10%);
+  --ff-shadow-floating: 0 14px 36px rgb(0 0 0 / 22%), 0 4px 12px rgb(0 0 0 / 14%);
+}
