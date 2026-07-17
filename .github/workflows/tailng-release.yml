@@ -1,0 +1,132 @@
+name: 'CLI - Release & Publish (tailng)'
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'minor: 1.1.0 -> 1.2.0 | major: 1.x -> 2.0.0'
+        required: true
+        type: choice
+        options: [minor, major]
+      npm_tag:
+        description: 'npm dist-tag'
+        required: true
+        default: 'latest'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Ensure running on main branch
+        run: |
+          if [ "${GITHUB_REF_NAME}" != "main" ]; then
+            echo "This workflow must be run from main branch"
+            exit 1
+          fi
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup Node 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.20.0
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Upgrade npm
+        run: |
+          npm install --global npm@latest
+          npm --version
+
+      - name: Enable Corepack and pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.30.0 --activate
+          pnpm --version
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test CLI
+        run: pnpm run test:cli
+
+      - name: Type-check CLI
+        run: pnpm run typecheck:cli
+
+      - name: Validate release inputs
+        run: node tools/release/validate-inputs.mjs "cli" "${{ inputs.release_type }}"
+
+      - name: Export release targets
+        run: echo "TARGETS=,cli," >> "$GITHUB_ENV"
+
+      - name: Set Git user
+        run: |
+          git config --global user.email "prince.francis@tociva.com"
+          git config --global user.name "Tociva Technologies"
+
+      - name: Bump CLI version
+        run: node tools/release/bump-versions.mjs "cli" "${{ inputs.release_type }}" --skip-root
+
+      - name: Commit and push version changes
+        run: |
+          git add libs/tailng/cli/package.json
+          git commit -m "chore(release): ${{ inputs.release_type }} (cli) [skip ci]" || echo "Nothing to commit"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Build CLI and registry dependency
+        run: node tools/release/build-selected.mjs "cli"
+
+      - name: Verify build output
+        run: node tools/release/verify-dist.mjs "cli"
+
+      - name: Sanity check built bundle
+        run: node tools/release/assert-bundles.mjs "cli"
+
+      - name: npm pack dry-run
+        run: node tools/release/npm-pack-dry-run.mjs "cli"
+
+      - name: Test packed CLI installation
+        run: node tools/release/cli-smoke-test.mjs
+
+      - name: Publish tailng
+        run: node tools/release/publish-selected.mjs "cli" "${{ inputs.npm_tag }}"
+
+      - name: Tag release
+        run: node tools/release/tag-release.mjs "libs/tailng/cli/package.json" "tailng-v" "TAILNG"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAILNG_TAG }}
+          name: tailng ${{ env.TAILNG_VERSION }}
+          body: |
+            Release Details
+            Package: tailng
+            Version: ${{ env.TAILNG_VERSION }}
+            Release Type: ${{ inputs.release_type }}
+            npm Tag: ${{ inputs.npm_tag }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

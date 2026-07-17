@@ -8,7 +8,15 @@ const selected = new Set(
     .filter(Boolean),
 );
 
-const run = (cmd) => execSync(cmd, { stdio: "inherit" });
+const run = (cmd) =>
+  execSync(cmd, {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      NX_DAEMON: "false",
+      NX_ISOLATE_PLUGINS: "false",
+    },
+  });
 const wants = (t) => selected.has(t);
 
 run("pnpm nx reset");

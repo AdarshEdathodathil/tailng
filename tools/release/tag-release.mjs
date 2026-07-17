@@ -24,13 +24,21 @@ if (!envFile) {
   fail("GITHUB_ENV is not set (this script is intended to run inside GitHub Actions)");
 }
 
-const root = JSON.parse(fs.readFileSync("package.json", "utf8"));
-const version = String(root.version ?? "").trim();
-if (!version) {
-  fail("Root package.json has no version");
+const manifestPath = process.argv[2] ?? "package.json";
+const tagPrefix = process.argv[3] ?? "v";
+const outputPrefix = process.argv[4] ?? "ROOT";
+
+if (!/^[A-Z][A-Z0-9_]*$/.test(outputPrefix)) {
+  fail(`Invalid output prefix '${outputPrefix}'`);
 }
 
-const tag = `v${version}`;
+const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+const version = String(manifest.version ?? "").trim();
+if (!version) {
+  fail(`${manifestPath} has no version`);
+}
+
+const tag = `${tagPrefix}${version}`;
 
 // Ensure we have an up-to-date view of tags (local CI clones can be shallow).
 run("git fetch --tags --force");
@@ -62,5 +70,5 @@ try {
 }
 
 // Export for later steps
-fs.appendFileSync(envFile, `ROOT_VERSION=${version}\n`);
-fs.appendFileSync(envFile, `ROOT_TAG=${tag}\n`);
+fs.appendFileSync(envFile, `${outputPrefix}_VERSION=${version}\n`);
+fs.appendFileSync(envFile, `${outputPrefix}_TAG=${tag}\n`);

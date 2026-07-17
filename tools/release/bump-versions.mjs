@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 const targets = (process.argv[2] ?? "").trim();
 const releaseType = (process.argv[3] ?? "").trim().toLowerCase();
+const skipRoot = process.argv.slice(4).includes("--skip-root");
 
 const has = (t) => ("," + targets + ",").includes("," + t + ",");
 
@@ -35,14 +36,16 @@ const bumpSemver = (v) => {
 const readJson = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
 const writeJson = (p, j) => fs.writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
 
-// 1) bump root package.json version
-{
+// 1) bump root package.json version unless this is an independent package release
+if (!skipRoot) {
   const p = "package.json";
   const j = readJson(p);
   const next = bumpSemver(j.version);
   j.version = next;
   writeJson(p, j);
   console.log(`[root] ${next}`);
+} else {
+  console.log("[root] skipped");
 }
 
 // 2) bump selected libs versions
@@ -55,7 +58,7 @@ const libs = [
   ["registry", "libs/tailng-ui/registry/package.json", "@tailng-ui/registry"],
   ["charts", "libs/tailng-ui/charts/package.json", "@tailng-ui/charts"],
   ["flow", "libs/tailng-ui/flow/package.json", "@tailng-ui/flow"],
-  ["cli", "libs/tailng/cli/package.json", "@tailng/cli"],
+  ["cli", "libs/tailng/cli/package.json", "tailng"],
 ];
 
 for (const [key, path, label] of libs) {
