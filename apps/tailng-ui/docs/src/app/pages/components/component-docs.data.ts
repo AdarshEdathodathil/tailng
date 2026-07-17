@@ -479,14 +479,21 @@ export const COMPONENTS_NAVIGATION_GROUP: ComponentsDocsGroup = {
   ],
 };
 
+function withAlphabetizedItems(group: ComponentsDocsGroup): ComponentsDocsGroup {
+  return {
+    ...group,
+    items: [...group.items].sort((left, right) => left.title.localeCompare(right.title)),
+  };
+}
+
 export const COMPONENTS_DOCS_GROUPS: readonly ComponentsDocsGroup[] = Object.freeze([
   COMPONENTS_GETTING_STARTED_GROUP,
-  COMPONENTS_LAYOUT_GROUP,
-  COMPONENTS_OVERLAY_GROUP,
-  COMPONENTS_FEEDBACK_GROUP,
-  COMPONENTS_FORM_GROUP,
-  COMPONENTS_UTILITY_GROUP,
-  COMPONENTS_NAVIGATION_GROUP,
+  withAlphabetizedItems(COMPONENTS_FORM_GROUP),
+  withAlphabetizedItems(COMPONENTS_LAYOUT_GROUP),
+  withAlphabetizedItems(COMPONENTS_NAVIGATION_GROUP),
+  withAlphabetizedItems(COMPONENTS_OVERLAY_GROUP),
+  withAlphabetizedItems(COMPONENTS_FEEDBACK_GROUP),
+  withAlphabetizedItems(COMPONENTS_UTILITY_GROUP),
 ]);
 
 const defaultGroup = COMPONENTS_GETTING_STARTED_GROUP;

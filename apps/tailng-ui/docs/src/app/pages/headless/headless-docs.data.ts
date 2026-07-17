@@ -417,14 +417,21 @@ export const HEADLESS_NAVIGATION_GROUP: HeadlessDocsGroup = {
   ],
 };
 
+function withAlphabetizedItems(group: HeadlessDocsGroup): HeadlessDocsGroup {
+  return {
+    ...group,
+    items: [...group.items].sort((left, right) => left.title.localeCompare(right.title)),
+  };
+}
+
 export const HEADLESS_DOCS_GROUPS: readonly HeadlessDocsGroup[] = Object.freeze([
   HEADLESS_GETTING_STARTED_GROUP,
-  HEADLESS_LAYOUT_GROUP,
-  HEADLESS_OVERLAY_GROUP,
-  HEADLESS_FEEDBACK_GROUP,
-  HEADLESS_FORM_GROUP,
-  HEADLESS_UTILITY_GROUP,
-  HEADLESS_NAVIGATION_GROUP,
+  withAlphabetizedItems(HEADLESS_FORM_GROUP),
+  withAlphabetizedItems(HEADLESS_LAYOUT_GROUP),
+  withAlphabetizedItems(HEADLESS_NAVIGATION_GROUP),
+  withAlphabetizedItems(HEADLESS_OVERLAY_GROUP),
+  withAlphabetizedItems(HEADLESS_FEEDBACK_GROUP),
+  withAlphabetizedItems(HEADLESS_UTILITY_GROUP),
 ]);
 
 const defaultGroup = HEADLESS_GETTING_STARTED_GROUP;

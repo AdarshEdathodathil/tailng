@@ -393,14 +393,21 @@ export const OWNABLE_RELEASE_GROUP: OwnableDocsGroup = {
   ],
 };
 
+function withAlphabetizedItems(group: OwnableDocsGroup): OwnableDocsGroup {
+  return {
+    ...group,
+    items: [...group.items].sort((left, right) => left.title.localeCompare(right.title)),
+  };
+}
+
 export const OWNABLE_DOCS_GROUPS: readonly OwnableDocsGroup[] = Object.freeze([
   OWNABLE_GETTING_STARTED_GROUP,
-  OWNABLE_LAYOUT_GROUP,
-  OWNABLE_OVERLAY_GROUP,
-  OWNABLE_FEEDBACK_GROUP,
-  OWNABLE_FORM_GROUP,
-  OWNABLE_UTILITY_GROUP,
-  OWNABLE_NAVIGATION_GROUP,
+  withAlphabetizedItems(OWNABLE_FORM_GROUP),
+  withAlphabetizedItems(OWNABLE_LAYOUT_GROUP),
+  withAlphabetizedItems(OWNABLE_NAVIGATION_GROUP),
+  withAlphabetizedItems(OWNABLE_OVERLAY_GROUP),
+  withAlphabetizedItems(OWNABLE_FEEDBACK_GROUP),
+  withAlphabetizedItems(OWNABLE_UTILITY_GROUP),
   OWNABLE_TOOLING_GROUP,
   OWNABLE_RELEASE_GROUP,
 ]);
