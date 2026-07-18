@@ -25,6 +25,19 @@
   border-color: var(--tng-flow-danger-color, var(--tng-semantic-accent-danger, #dc2626));
 }
 
+:host([data-validation='error']) .tng-flow-port__socket {
+  border-color: var(--tng-flow-port-error-color, var(--tng-semantic-accent-danger, #dc2626));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tng-flow-port-error-color, #dc2626) 18%, transparent);
+}
+
+:host([data-validation='warning']) .tng-flow-port__socket {
+  border-color: var(--tng-flow-port-warning-color, var(--tng-semantic-accent-warning, #d97706));
+}
+
+:host([data-validation='info']) .tng-flow-port__socket {
+  border-color: var(--tng-flow-port-info-color, var(--tng-semantic-accent-brand, #2563eb));
+}
+
 :host-context(.f-connector-connectable) .tng-flow-port__socket,
 :host-context(.tng-flow-editor__port-socket:hover) .tng-flow-port__socket {
   border-color: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
@@ -74,4 +87,20 @@
 
 .tng-flow-port__required {
   color: var(--tng-flow-danger-color, var(--tng-semantic-accent-danger, #dc2626));
+}
+
+.tng-flow-port__validation {
+  position: absolute;
+  z-index: 6;
+  top: -1.55rem;
+  transform: scale(0.85);
+  transform-origin: center;
+}
+
+:host([data-direction='input']) .tng-flow-port__validation {
+  left: -0.35rem;
+}
+
+:host([data-direction='output']) .tng-flow-port__validation {
+  right: -0.35rem;
 }

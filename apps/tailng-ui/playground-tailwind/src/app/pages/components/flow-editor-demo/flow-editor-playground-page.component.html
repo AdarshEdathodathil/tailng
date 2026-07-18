@@ -4,8 +4,8 @@
       <div class="grid gap-3">
         <h1 class="text-4xl font-black tracking-tight md:text-5xl">Flow Editor</h1>
         <p class="max-w-4xl text-lg text-tng-fg-secondary">
-          Milestone 2: create, validate, reconnect, select, and delete graph elements while the
-          consuming application remains the only workflow state owner.
+          Milestone 4: controlled graph data, selection, validation, and presentation with generic
+          activation and issue navigation APIs.
         </p>
       </div>
 
@@ -51,42 +51,96 @@
         </div>
       </div>
 
-      <tng-flow-editor
-        class="block h-[38rem] min-h-[30rem]"
-        flowId="tailwind-milestone-two"
-        ariaLabel="Interactive milestone two controlled workflow"
-        [definition]="workflow()"
-        [mode]="mode()"
-        [selection]="selection()"
-        [connectionValidator]="validateConnection"
-        (nodePositionChange)="updateNodePosition($event)"
-        (connectionCreateRequested)="createConnection($event)"
-        (connectionReconnectRequested)="reconnectConnection($event)"
-        (connectionsDeleteRequested)="deleteConnections($event)"
-        (nodesDeleteRequested)="deleteNodes($event)"
-        (selectionChange)="selection.set($event)"
-        (connectionRejected)="showConnectionError($event)"
-      >
-        <ng-template tngFlowNode="ai_parser" let-node let-mode="mode" let-selected="selected">
-          <tng-flow-node
-            [name]="node.name"
-            [description]="node.description ?? null"
-            [icon]="node.icon ?? null"
-            [selected]="selected"
+      <div class="grid gap-4 lg:grid-cols-[17rem_minmax(0,1fr)]">
+        <aside
+          class="grid content-start gap-3 rounded-xl border border-tng-border-subtle bg-tng-bg-canvas/70 p-4"
+          aria-label="Workflow node palette"
+        >
+          <div>
+            <h2 class="font-bold">Node palette</h2>
+            <p class="mt-1 text-xs leading-5 text-tng-fg-secondary">
+              Drag onto the canvas, or activate a button to add at the viewport center.
+            </p>
+          </div>
+          @for (item of paletteItems; track item.id) {
+            <button
+              type="button"
+              class="grid cursor-grab gap-1 rounded-lg border border-tng-border-strong bg-tng-bg-surface px-3 py-3 text-left shadow-sm transition hover:border-tng-accent-brand disabled:cursor-not-allowed disabled:opacity-50"
+              [tngFlowPaletteItem]="item"
+              [tngFlowPaletteItemDisabled]="mode() !== 'edit'"
+              [disabled]="mode() !== 'edit'"
+              (tngFlowPaletteItemActivate)="
+                editor.requestNodeCreate($event.item, undefined, $event.source)
+              "
+            >
+              <strong class="text-sm">{{ item.name }}</strong>
+              <span class="text-xs leading-5 text-tng-fg-secondary">{{ item.description }}</span>
+            </button>
+          }
+        </aside>
+
+        <tng-flow-editor
+          #editor="tngFlowEditor"
+          class="block h-[38rem] min-h-[30rem]"
+          flowId="tailwind-milestone-four"
+          ariaLabel="Interactive milestone four controlled workflow"
+          [definition]="workflow()"
+          [mode]="mode()"
+          [selection]="selection()"
+          [validation]="validation()"
+          [presentation]="presentation()"
+          [connectionValidator]="validateConnection"
+          (nodeCreateRequested)="createNode($event)"
+          (nodePositionChange)="updateNodePosition($event)"
+          (connectionCreateRequested)="createConnection($event)"
+          (connectionReconnectRequested)="reconnectConnection($event)"
+          (connectionsDeleteRequested)="deleteConnections($event)"
+          (nodesDeleteRequested)="deleteNodes($event)"
+          (selectionChange)="selection.set($event)"
+          (nodeActivated)="activateNode($event)"
+          (validationIssueActivated)="activateValidationIssue($event)"
+          (connectionRejected)="showConnectionError($event)"
+        >
+          <ng-template
+            tngFlowNode="ai_parser"
+            let-node
+            let-mode="mode"
+            let-view="view"
+            let-issues="issues"
           >
-            <div class="grid gap-3 text-sm text-tng-fg-secondary">
-              <span
-                [tngBadge]="'AI'"
-                tngBadgeTone="info"
-                class="inline-flex w-fit rounded-md border border-tng-border-subtle px-3 py-2 font-medium"
-              >
-                Parser · {{ mode }}
-              </span>
-              <span data-testid="ai-parser-summary">{{ nodeSummary(node.data) }}</span>
-            </div>
-          </tng-flow-node>
-        </ng-template>
-      </tng-flow-editor>
+            <tng-flow-node
+              [name]="node.name"
+              [description]="node.description ?? null"
+              [icon]="node.icon ?? null"
+              [selected]="view.selected"
+              [status]="view.status"
+              [progress]="view.progress"
+              [statusMessage]="view.statusMessage"
+              [validationSeverity]="view.validationSeverity"
+              [validationIssues]="issues"
+            >
+              <div class="grid gap-3 text-sm text-tng-fg-secondary">
+                <span
+                  [tngBadge]="'AI'"
+                  tngBadgeTone="info"
+                  class="inline-flex w-fit rounded-md border border-tng-border-subtle px-3 py-2 font-medium"
+                >
+                  Parser · {{ mode }}
+                </span>
+                <span data-testid="ai-parser-summary">{{ nodeSummary(node.data) }}</span>
+              </div>
+            </tng-flow-node>
+          </ng-template>
+        </tng-flow-editor>
+      </div>
+
+      <button
+        type="button"
+        class="w-fit rounded-lg border border-tng-border-strong bg-tng-bg-surface px-4 py-2 text-sm font-semibold shadow-sm hover:border-tng-accent-brand"
+        (click)="revealFirstIssue(editor)"
+      >
+        Reveal first validation issue
+      </button>
 
       @if (rejection(); as reason) {
         <div
@@ -106,9 +160,9 @@
       </div>
 
       <p class="text-sm leading-6 text-tng-fg-secondary">
-        Try a duplicate edge, connect text payload directly to a JSON input, reconnect an endpoint,
-        multi-select with Shift/Cmd/Ctrl, or select elements and press Delete. The locked validator
-        remains selectable but cannot move or be deleted.
+        Drag a palette item into a zoomed or panned viewport, activate one to add it at center, try
+        a duplicate edge, reconnect an endpoint, or select elements and press Delete. Inspect and
+        readonly modes disable palette creation.
       </p>
     </section>
   </section>

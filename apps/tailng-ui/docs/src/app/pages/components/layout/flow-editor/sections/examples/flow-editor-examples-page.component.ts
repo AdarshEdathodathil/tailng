@@ -397,7 +397,11 @@ export class FlowEditorExamplesPageComponent implements OnDestroy {
     const sourceType = candidate.sourcePort.dataType;
     const targetType = candidate.targetPort.dataType;
     if (sourceType !== undefined && targetType !== undefined && sourceType !== targetType) {
-      return { valid: false, reason: `Cannot connect ${sourceType} data to ${targetType} data.` };
+      return {
+        valid: false,
+        code: 'incompatible-data-type',
+        reason: `Cannot connect ${sourceType} data to ${targetType} data.`,
+      };
     }
     return { valid: true };
   };

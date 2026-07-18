@@ -1,11 +1,7 @@
 <tng-card
   class="tng-flow-node"
-  [tone]="cardTone()"
+  tone="neutral"
   variant="solid"
-  [attr.data-status]="status()"
-  [attr.data-selected]="selected() ? '' : null"
-  [attr.data-disabled]="disabled() ? '' : null"
-  [attr.data-invalid]="invalid() ? '' : null"
 >
   <header class="tng-flow-node__header" [attr.data-has-icon]="icon() ? '' : null">
     @if (icon(); as iconName) {
@@ -21,8 +17,16 @@
       }
     </span>
 
-    <span class="tng-flow-node__status" [attr.data-tone]="statusTone()">
-      {{ status() }}
+    <span class="tng-flow-node__state">
+      @if (validationIssues().length > 0) {
+        <tng-flow-validation-badge
+          [issues]="validationIssues()"
+          (issueActivated)="activateIssue($event)"
+        />
+      }
+      <span class="tng-flow-node__status" [attr.data-tone]="statusTone()">
+        {{ status() }}
+      </span>
     </span>
   </header>
 
@@ -30,7 +34,7 @@
     <ng-content />
   </section>
 
-  @if (message(); as messageText) {
+  @if (resolvedStatusMessage(); as messageText) {
     <p class="tng-flow-node__message">{{ messageText }}</p>
   }
 

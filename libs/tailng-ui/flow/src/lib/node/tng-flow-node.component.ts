@@ -1,6 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TngProgressBarComponent, TngCardComponent } from '@tailng-ui/components';
 import { TngIcon } from '@tailng-ui/icons';
+import { resolveTngFlowValidationSeverity } from '../model/tng-flow-issue-index';
+import type {
+  TngFlowValidationIssue,
+  TngFlowValidationSeverity,
+} from '../types/tng-flow-validation.types';
+import { TngFlowValidationBadgeComponent } from '../validation-badge/tng-flow-validation-badge.component';
 
 export type TngFlowStatusTone = 'danger' | 'info' | 'neutral' | 'success' | 'warning';
 
@@ -21,10 +27,24 @@ export function resolveTngFlowStatusTone(status: string): TngFlowStatusTone {
 
 @Component({
   selector: 'tng-flow-node',
-  imports: [TngCardComponent, TngIcon, TngProgressBarComponent],
+  imports: [
+    TngCardComponent,
+    TngFlowValidationBadgeComponent,
+    TngIcon,
+    TngProgressBarComponent,
+  ],
   templateUrl: './tng-flow-node.component.html',
   styleUrl: './tng-flow-node.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[attr.data-selected]': "selected() ? '' : null",
+    '[attr.data-disabled]': "disabled() ? '' : null",
+    '[attr.data-locked]': "locked() ? '' : null",
+    '[attr.data-status]': 'status()',
+    '[attr.data-validation]': 'resolvedValidationSeverity()',
+    '[attr.aria-invalid]': "resolvedValidationSeverity() === 'error' ? 'true' : null",
+    '[attr.aria-disabled]': "disabled() ? 'true' : null",
+  },
 })
 export class TngFlowNodeComponent {
   public readonly name = input.required<string>();
@@ -34,15 +54,25 @@ export class TngFlowNodeComponent {
   public readonly progress = input<number | null>(null);
   public readonly selected = input(false);
   public readonly disabled = input(false);
+  public readonly locked = input(false);
+  /** @deprecated Supply validation issues instead. */
   public readonly invalid = input(false);
+  public readonly validationSeverity = input<TngFlowValidationSeverity | null>(null);
+  public readonly validationIssues = input<readonly TngFlowValidationIssue[]>([]);
+  public readonly statusMessage = input<string | null>(null);
+  /** @deprecated Use `statusMessage`. */
   public readonly message = input<string | null>(null);
+  public readonly issueActivated = output<TngFlowValidationIssue>();
 
   protected readonly statusTone = computed<TngFlowStatusTone>(() =>
     resolveTngFlowStatusTone(this.status()),
   );
-  protected readonly cardTone = computed<'danger' | 'neutral'>(() =>
-    this.invalid() || this.status() === 'failed' ? 'danger' : 'neutral',
+  protected readonly resolvedValidationSeverity = computed(() =>
+    resolveTngFlowValidationSeverity(this.validationIssues()) ??
+    this.validationSeverity() ??
+    (this.invalid() ? 'error' : null),
   );
+  protected readonly resolvedStatusMessage = computed(() => this.statusMessage() ?? this.message());
   protected readonly showProgress = computed<boolean>(
     () => this.progress() !== null || this.status() === 'running' || this.status() === 'retrying',
   );
@@ -54,4 +84,8 @@ export class TngFlowNodeComponent {
 
     return Math.min(100, Math.max(0, value));
   });
+
+  protected activateIssue(issue: TngFlowValidationIssue): void {
+    this.issueActivated.emit(issue);
+  }
 }

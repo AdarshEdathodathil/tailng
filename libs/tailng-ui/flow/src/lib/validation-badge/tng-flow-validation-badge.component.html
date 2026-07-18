@@ -1,0 +1,35 @@
+@if (issues().length > 0) {
+  <details
+    class="tng-flow-validation-badge"
+    (pointerdown)="stopPointerEvent($event)"
+    (dblclick)="stopPointerEvent($event)"
+  >
+    <summary class="tng-flow-validation-badge__summary" [attr.aria-label]="summary()">
+      <span class="tng-flow-validation-badge__icon" aria-hidden="true">{{ symbol() }}</span>
+      @if (issues().length > 1) {
+        <span class="tng-flow-validation-badge__count" aria-hidden="true">
+          {{ issues().length }}
+        </span>
+      }
+    </summary>
+
+    <div class="tng-flow-validation-badge__popover">
+      <strong class="tng-flow-validation-badge__title">{{ summary() }}</strong>
+      <ul class="tng-flow-validation-badge__list">
+        @for (issue of issues(); track issue.id) {
+          <li>
+            <button
+              type="button"
+              class="tng-flow-validation-badge__issue"
+              [attr.data-severity]="issue.severity"
+              (click)="activateIssue($event, issue)"
+            >
+              <span aria-hidden="true">{{ issue.severity === 'error' ? '!' : issue.severity === 'warning' ? '▲' : 'i' }}</span>
+              <span>{{ issue.message }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    </div>
+  </details>
+}

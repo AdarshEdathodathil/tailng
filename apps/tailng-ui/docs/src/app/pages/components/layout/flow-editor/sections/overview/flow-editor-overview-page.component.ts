@@ -3,11 +3,17 @@ import { Component, inject, signal, type OnDestroy, type WritableSignal } from '
 import { TngButtonComponent, TngCodeBlockComponent } from '@tailng-ui/components';
 import {
   TngFlowEditorComponent,
+  TngFlowPaletteItemDirective,
   type TngFlowConnectionCreateRequest,
   type TngFlowConnectionsDeleteRequest,
   type TngFlowNodesDeleteRequest,
+  type TngFlowNodeCreateRequest,
   type TngFlowNodesMovedEvent,
+  type TngFlowNode,
+  type TngFlowPaletteItem,
+  type TngFlowPresentation,
   type TngFlowSelection,
+  type TngFlowValidation,
 } from '@tailng-ui/flow';
 import {
   flowEditorOverviewPlainCssCodeTabs,
@@ -27,6 +33,7 @@ import {
   flowEditorDemoNodes,
   flowEditorDemoViews,
   removeFlowItems,
+  type FlowEditorDemoData,
 } from '../../flow-editor-demo.data';
 
 type FlowEditorOverviewVariant = 'plain-css' | 'tailwind-css';
@@ -36,12 +43,30 @@ const emptySelection = (): TngFlowSelection => ({
   connectionIds: new Set<string>(),
 });
 
+const overviewPaletteItems: readonly TngFlowPaletteItem<FlowEditorDemoData>[] = [
+  {
+    id: 'human-review-catalog-item',
+    type: 'review',
+    name: 'Human review',
+    description: 'Pause the workflow for an approval decision.',
+    data: { detail: 'Manual approval required' },
+  },
+  {
+    id: 'tool-catalog-item',
+    type: 'tool',
+    name: 'Tool call',
+    description: 'Invoke an application-owned workflow tool.',
+    data: { detail: 'Application tool invocation' },
+  },
+];
+
 @Component({
   selector: 'app-flow-editor-overview-page',
   imports: [
     TngButtonComponent,
     TngCodeBlockComponent,
     TngFlowEditorComponent,
+    TngFlowPaletteItemDirective,
     DocsExampleTabsSectionComponent,
     DocsExampleVariantDirective,
   ],
@@ -51,6 +76,7 @@ const emptySelection = (): TngFlowSelection => ({
 export class FlowEditorOverviewPageComponent implements OnDestroy {
   private readonly documentRef = inject(DOCUMENT);
   private readonly connectionSequence = signal(0);
+  private readonly nodeSequence = signal(0);
 
   public readonly codeBlockTheme = signal<'github-dark' | 'github-light'>(
     resolveDocsCodeBlockTheme(this.documentRef),
@@ -60,13 +86,42 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
     this.codeBlockTheme,
   );
 
-  protected readonly plainCssNodes = signal(flowEditorDemoNodes);
+  protected readonly plainCssNodes =
+    signal<readonly TngFlowNode<FlowEditorDemoData>[]>(flowEditorDemoNodes);
   protected readonly plainCssConnections = signal(flowEditorDemoConnections);
-  protected readonly tailwindNodes = signal(flowEditorDemoNodes);
+  protected readonly tailwindNodes =
+    signal<readonly TngFlowNode<FlowEditorDemoData>[]>(flowEditorDemoNodes);
   protected readonly tailwindConnections = signal(flowEditorDemoConnections);
   protected readonly plainCssSelection = signal<TngFlowSelection>(emptySelection());
   protected readonly tailwindSelection = signal<TngFlowSelection>(emptySelection());
-  protected readonly nodeViews = flowEditorDemoViews;
+  protected readonly presentation: TngFlowPresentation = {
+    nodes: {
+      model: {
+        status: flowEditorDemoViews['model']?.status,
+        progress: flowEditorDemoViews['model']?.progress,
+        statusMessage: flowEditorDemoViews['model']?.message,
+        highlighted: true,
+      },
+      prompt: { status: 'completed', progress: 100 },
+      response: { status: 'waiting', statusMessage: 'Waiting for model output', dimmed: true },
+    },
+    connections: {
+      'prompt-to-model': { status: 'success' },
+      'model-to-response': { status: 'active', animated: true },
+    },
+  };
+  protected readonly validation: TngFlowValidation = {
+    issues: [
+      {
+        id: 'docs-model-review',
+        code: 'review-recommended',
+        severity: 'warning',
+        message: 'Review the model configuration before deployment.',
+        target: { kind: 'node', nodeId: 'model' },
+      },
+    ],
+  };
+  protected readonly paletteItems = overviewPaletteItems;
   protected readonly plainCssCodeTabs = flowEditorOverviewPlainCssCodeTabs;
   protected readonly tailwindCodeTabs = flowEditorOverviewTailwindCodeTabs;
 
@@ -91,7 +146,8 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
     '    <tng-flow-editor',
     '      [nodes]="nodes()"',
     '      [connections]="connections()"',
-    '      [nodeViews]="nodeViews"',
+    '      [presentation]="presentation"',
+    '      [validation]="validation"',
     '      (nodesMoved)="moveNodes($event)"',
     '      (connectionCreateRequested)="createConnection($event)"',
     '    />',
@@ -100,7 +156,8 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
     'export class AgentFlowComponent {',
     '  readonly nodes = signal<readonly TngFlowNode[]>(initialNodes);',
     '  readonly connections = signal<readonly TngFlowConnection[]>(initialConnections);',
-    "  readonly nodeViews = { model: { status: 'running' as const, progress: 68 } };",
+    "  readonly presentation = { nodes: { model: { status: 'running' as const, progress: 68 } } };",
+    "  readonly validation = { issues: [] };",
     '',
     '  moveNodes(event: TngFlowNodesMovedEvent): void {',
     '    const positions = new Map(event.nodes.map((node) => [node.id, node.position]));',
@@ -145,6 +202,29 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
         type: 'bezier',
       },
     ]);
+  }
+
+  protected onNodeCreateRequested(
+    event: TngFlowNodeCreateRequest<FlowEditorDemoData>,
+    variant: FlowEditorOverviewVariant,
+  ): void {
+    const nodes = variant === 'plain-css' ? this.plainCssNodes : this.tailwindNodes;
+    const id = `${event.item.type}-${this.nodeSequence()}`;
+    this.nodeSequence.update((sequence) => sequence + 1);
+    nodes.update((currentNodes) => [
+      ...currentNodes,
+      {
+        id,
+        type: event.item.type,
+        name: event.item.name,
+        description: event.item.description,
+        data: event.item.data,
+        icon: event.item.icon,
+        position: event.position,
+        ports: [],
+      },
+    ]);
+    this.selectionFor(variant).set({ nodeIds: new Set([id]), connectionIds: new Set() });
   }
 
   protected onConnectionsDeleteRequested(

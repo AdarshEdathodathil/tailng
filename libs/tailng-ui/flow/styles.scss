@@ -107,6 +107,74 @@
   --ff-shadow-floating: 0 14px 36px rgb(0 0 0 / 22%), 0 4px 12px rgb(0 0 0 / 14%);
 }
 
+/* Stable TailNG presentation tokens. Foblex selectors below remain an internal bridge. */
+tng-flow-editor {
+  --tng-flow-node-error-border: var(--tng-semantic-accent-danger, #dc2626);
+  --tng-flow-node-warning-border: var(--tng-semantic-accent-warning, #d97706);
+  --tng-flow-node-info-border: var(--tng-semantic-accent-info, #0284c7);
+  --tng-flow-port-error-color: var(--tng-semantic-accent-danger, #dc2626);
+  --tng-flow-port-warning-color: var(--tng-semantic-accent-warning, #d97706);
+  --tng-flow-port-info-color: var(--tng-semantic-accent-info, #0284c7);
+  --tng-flow-connection-error-color: var(--tng-semantic-accent-danger, #dc2626);
+  --tng-flow-connection-warning-color: var(--tng-semantic-accent-warning, #d97706);
+  --tng-flow-connection-info-color: var(--tng-semantic-accent-info, #0284c7);
+  --tng-flow-connection-active-color: var(--tng-semantic-accent-brand, #2563eb);
+  --tng-flow-connection-success-color: var(--tng-semantic-accent-success, #16a34a);
+  --tng-flow-validation-badge-size: 1.25rem;
+
+  .tng-flow-editor__connection[data-status='active'] {
+    --ff-connection-color: var(--tng-flow-connection-active-color);
+  }
+
+  .tng-flow-editor__connection[data-status='success'] {
+    --ff-connection-color: var(--tng-flow-connection-success-color);
+  }
+
+  .tng-flow-editor__connection[data-status='warning'] {
+    --ff-connection-color: var(--tng-flow-connection-warning-color);
+  }
+
+  .tng-flow-editor__connection[data-status='error'] {
+    --ff-connection-color: var(--tng-flow-connection-error-color);
+  }
+
+  .tng-flow-editor__connection[data-status='disabled'] {
+    --ff-connection-color: var(--ff-color-connection-muted);
+    opacity: 0.55;
+  }
+
+  .tng-flow-editor__connection[data-validation='info'] {
+    --ff-connection-color: var(--tng-flow-connection-info-color);
+  }
+
+  .tng-flow-editor__connection[data-validation='warning'] {
+    --ff-connection-color: var(--tng-flow-connection-warning-color);
+  }
+
+  .tng-flow-editor__connection[data-validation='error'] {
+    --ff-connection-color: var(--tng-flow-connection-error-color);
+  }
+
+  .tng-flow-editor__connection[data-highlighted] {
+    --ff-connection-width: 3px;
+  }
+
+  .tng-flow-editor__connection[data-dimmed] {
+    opacity: 0.38;
+  }
+
+  .tng-flow-editor__connection[data-animated] .f-connection-path {
+    animation: tng-flow-connection-travel 0.85s linear infinite;
+    stroke-dasharray: 7 5;
+  }
+}
+
+@keyframes tng-flow-connection-travel {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
 /*
  * Foblex positions reassignment handles just inside connection endpoints. Keep
  * those handles available without making them look like misplaced ports while

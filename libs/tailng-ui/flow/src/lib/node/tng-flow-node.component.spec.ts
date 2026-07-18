@@ -30,14 +30,14 @@ describe('TngFlowNodeComponent', () => {
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
-    const card = host.querySelector('tng-card');
     const header = host.querySelector<HTMLElement>('.tng-flow-node__header');
     const status = host.querySelector<HTMLElement>('.tng-flow-node__status');
     const progress = host.querySelector('tng-progress-bar');
 
-    expect(card?.hasAttribute('data-invalid')).toBe(true);
-    expect(card?.hasAttribute('data-selected')).toBe(true);
-    expect(card?.hasAttribute('data-disabled')).toBe(true);
+    expect(host.getAttribute('data-validation')).toBe('error');
+    expect(host.getAttribute('aria-invalid')).toBe('true');
+    expect(host.hasAttribute('data-selected')).toBe(true);
+    expect(host.hasAttribute('data-disabled')).toBe(true);
     expect(header?.hasAttribute('data-has-icon')).toBe(false);
     expect(status?.textContent?.trim()).toBe('failed');
     expect(status?.getAttribute('data-tone')).toBe('danger');

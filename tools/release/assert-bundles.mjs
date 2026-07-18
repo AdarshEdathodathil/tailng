@@ -338,16 +338,22 @@ function assertFlowPackage() {
   }
 
   const publicTypesEntry = readFileSafe(path.join(root, 'src', 'index.d.ts'));
-  const milestoneTwoSymbols = [
+  const publicContractSymbols = [
     'TngFlowConnectionCreateRequest',
     'TngFlowConnectionReconnectRequest',
     'TngFlowConnectionValidator',
     'TngFlowEditorMode',
+    'TngFlowPresentation',
     'TngFlowSelection',
+    'TngFlowValidation',
+    'TngFlowValidationBadgeComponent',
+    'TngFlowValidationTarget',
+    'sanitizeTngFlowSelection',
+    'validateTngFlowDefinition',
   ];
-  for (const symbol of milestoneTwoSymbols) {
+  for (const symbol of publicContractSymbols) {
     if (!publicTypesEntry?.includes(symbol)) {
-      fail(`flow: public types entry does not export Milestone 2 symbol '${symbol}'`);
+      fail(`flow: public types entry does not export required symbol '${symbol}'`);
     }
   }
 

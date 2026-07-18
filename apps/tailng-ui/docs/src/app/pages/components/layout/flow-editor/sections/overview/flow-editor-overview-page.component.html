@@ -37,7 +37,7 @@
   <section id="controlled-workflow" class="docs-overview-block">
     <app-docs-example-tabs-section
       heading="Controlled agent workflow"
-      description="Drag a node, select an item, or use the viewport controls. Press Delete to remove a selection."
+      description="Drag a palette item onto the canvas, activate it to place at center, move nodes, or use the viewport controls."
       ariaLabel="Controlled agent workflow styling variants"
       tabListAriaLabel="Controlled agent workflow styles"
       defaultValue="plain-css"
@@ -55,21 +55,42 @@
             Reset graph
           </tng-button>
         </div>
-        <tng-flow-editor
-          #plainCssEditor="tngFlowEditor"
-          flowId="docs-agent-workflow-plain-css"
-          class="flow-editor-overview__canvas"
-          ariaLabel="Interactive customer support agent workflow styled with Plain CSS"
-          [nodes]="plainCssNodes()"
-          [connections]="plainCssConnections()"
-          [nodeViews]="nodeViews"
-          [selection]="plainCssSelection()"
-          (nodesMoved)="onNodesMoved($event, 'plain-css')"
-          (connectionCreateRequested)="onConnectionCreateRequested($event, 'plain-css')"
-          (connectionsDeleteRequested)="onConnectionsDeleteRequested($event, 'plain-css')"
-          (nodesDeleteRequested)="onNodesDeleteRequested($event, 'plain-css')"
-          (selectionChange)="plainCssSelection.set($event)"
-        />
+        <div class="flow-editor-overview__builder">
+          <tng-flow-editor
+            #plainCssEditor="tngFlowEditor"
+            flowId="docs-agent-workflow-plain-css"
+            class="flow-editor-overview__canvas"
+            ariaLabel="Interactive customer support agent workflow styled with Plain CSS"
+            [nodes]="plainCssNodes()"
+            [connections]="plainCssConnections()"
+            [presentation]="presentation"
+            [validation]="validation"
+            [selection]="plainCssSelection()"
+            (nodeCreateRequested)="onNodeCreateRequested($event, 'plain-css')"
+            (nodesMoved)="onNodesMoved($event, 'plain-css')"
+            (connectionCreateRequested)="onConnectionCreateRequested($event, 'plain-css')"
+            (connectionsDeleteRequested)="onConnectionsDeleteRequested($event, 'plain-css')"
+            (nodesDeleteRequested)="onNodesDeleteRequested($event, 'plain-css')"
+            (selectionChange)="plainCssSelection.set($event)"
+          />
+          <aside class="flow-editor-overview__palette" aria-label="Workflow node palette">
+            <strong>Node palette</strong>
+            <span>Drag onto the canvas or activate to add at center.</span>
+            @for (item of paletteItems; track item.id) {
+              <button
+                type="button"
+                class="flow-editor-overview__palette-item"
+                [tngFlowPaletteItem]="item"
+                (tngFlowPaletteItemActivate)="
+                  plainCssEditor.requestNodeCreate($event.item, undefined, $event.source)
+                "
+              >
+                <strong>{{ item.name }}</strong>
+                <span>{{ item.description }}</span>
+              </button>
+            }
+          </aside>
+        </div>
         @if (plainCssEditor.validationIssues().length > 0) {
           <div class="flow-editor-overview__validation" role="status">
             {{ plainCssEditor.validationIssues().length }} graph validation issue(s)
@@ -89,21 +110,49 @@
             Reset graph
           </tng-button>
         </div>
-        <tng-flow-editor
-          #tailwindEditor="tngFlowEditor"
-          flowId="docs-agent-workflow-tailwind-css"
-          class="block h-[31rem] min-h-[25rem] max-[720px]:h-[27rem]"
-          ariaLabel="Interactive customer support agent workflow styled with Tailwind CSS"
-          [nodes]="tailwindNodes()"
-          [connections]="tailwindConnections()"
-          [nodeViews]="nodeViews"
-          [selection]="tailwindSelection()"
-          (nodesMoved)="onNodesMoved($event, 'tailwind-css')"
-          (connectionCreateRequested)="onConnectionCreateRequested($event, 'tailwind-css')"
-          (connectionsDeleteRequested)="onConnectionsDeleteRequested($event, 'tailwind-css')"
-          (nodesDeleteRequested)="onNodesDeleteRequested($event, 'tailwind-css')"
-          (selectionChange)="tailwindSelection.set($event)"
-        />
+        <div class="grid gap-3 lg:grid-cols-[15rem_minmax(0,1fr)]">
+          <tng-flow-editor
+            #tailwindEditor="tngFlowEditor"
+            flowId="docs-agent-workflow-tailwind-css"
+            class="block h-[31rem] min-h-[25rem] lg:col-start-2 lg:row-start-1 max-[720px]:h-[27rem]"
+            ariaLabel="Interactive customer support agent workflow styled with Tailwind CSS"
+            [nodes]="tailwindNodes()"
+            [connections]="tailwindConnections()"
+            [presentation]="presentation"
+            [validation]="validation"
+            [selection]="tailwindSelection()"
+            (nodeCreateRequested)="onNodeCreateRequested($event, 'tailwind-css')"
+            (nodesMoved)="onNodesMoved($event, 'tailwind-css')"
+            (connectionCreateRequested)="onConnectionCreateRequested($event, 'tailwind-css')"
+            (connectionsDeleteRequested)="onConnectionsDeleteRequested($event, 'tailwind-css')"
+            (nodesDeleteRequested)="onNodesDeleteRequested($event, 'tailwind-css')"
+            (selectionChange)="tailwindSelection.set($event)"
+          />
+          <aside
+            class="grid content-start gap-2 rounded-xl border border-[var(--tng-semantic-border-default)] bg-[var(--tng-semantic-background-canvas)] p-3 lg:col-start-1 lg:row-start-1"
+            aria-label="Workflow node palette"
+          >
+            <strong>Node palette</strong>
+            <span class="text-xs text-[var(--tng-semantic-foreground-muted)]">
+              Drag onto the canvas or activate to add at center.
+            </span>
+            @for (item of paletteItems; track item.id) {
+              <button
+                type="button"
+                class="grid cursor-grab gap-1 rounded-lg border border-[var(--tng-semantic-border-strong)] bg-[var(--tng-semantic-background-surface)] p-3 text-left hover:border-[var(--tng-semantic-accent-brand)]"
+                [tngFlowPaletteItem]="item"
+                (tngFlowPaletteItemActivate)="
+                  tailwindEditor.requestNodeCreate($event.item, undefined, $event.source)
+                "
+              >
+                <strong class="text-sm">{{ item.name }}</strong>
+                <span class="text-xs text-[var(--tng-semantic-foreground-muted)]">
+                  {{ item.description }}
+                </span>
+              </button>
+            }
+          </aside>
+        </div>
         @if (tailwindEditor.validationIssues().length > 0) {
           <div
             class="rounded-lg border border-[var(--tng-semantic-accent-danger)] px-3 py-2 text-sm text-[var(--tng-semantic-accent-danger)]"
@@ -134,9 +183,10 @@
     />
     <ul class="docs-overview-list">
       <li>Node, port, and connection ids must be stable.</li>
-      <li>Port ids are globally unique and connection endpoints reference those port ids.</li>
+      <li>Port ids are unique within their node and connection endpoints include both ids.</li>
       <li>
-        <code>nodeViews</code> keeps execution status separate from persisted graph structure.
+        <code>presentation</code> keeps execution state separate from persisted graph structure,
+        while <code>validation</code> remains a controlled application input.
       </li>
     </ul>
   </section>

@@ -3,9 +3,10 @@
 <section
   class="tng-flow-editor"
   [attr.aria-label]="ariaLabel()"
+  [attr.aria-invalid]="validationSeverity() === 'error' ? 'true' : null"
   [attr.data-mode]="effectiveMode()"
   [attr.data-readonly]="effectiveMode() === 'readonly' ? '' : null"
-  [attr.data-invalid]="validationIssues().length > 0 ? '' : null"
+  [attr.data-validation]="validationSeverity()"
 >
   <f-flow
     fDraggable
@@ -18,6 +19,7 @@
     (fNodesRendered)="onNodesRendered()"
     (fFullRendered)="onReady()"
     (fMoveNodes)="onMoveNodes($event)"
+    (fCreateNode)="onCreateNode($event)"
     (fCreateConnection)="onCreateConnection($event)"
     (fReassignConnection)="onReassignConnection($event)"
     (fSelectionChange)="onSelectionChange($event)"
@@ -34,6 +36,8 @@
 
     <f-canvas
       fZoom
+      [position]="viewport()?.position"
+      [scale]="viewport()?.scale ?? 1"
       [fZoomMinimum]="zoomMinimum()"
       [fZoomMaximum]="zoomMaximum()"
       [fZoomStep]="zoomStep()"
@@ -45,6 +49,7 @@
 
       @for (connection of renderableConnections(); track connection.id) {
         <f-connection
+          class="tng-flow-editor__connection"
           [fConnectionId]="connection.id"
           [fSourceId]="connectorId(connection.source.nodeId, connection.source.portId)"
           [fTargetId]="connectorId(connection.target.nodeId, connection.target.portId)"
@@ -53,7 +58,24 @@
           [fReassignDisabled]="
             !canEdit() || connection.disabled === true || connection.reassignable === false
           "
-        />
+          [attr.data-connection-id]="connection.id"
+          [attr.data-selected]="connectionViewFor(connection.id).selected ? '' : null"
+          [attr.data-status]="connectionViewFor(connection.id).status"
+          [attr.data-validation]="connectionViewFor(connection.id).validationSeverity"
+          [attr.data-highlighted]="connectionViewFor(connection.id).highlighted ? '' : null"
+          [attr.data-dimmed]="connectionViewFor(connection.id).dimmed ? '' : null"
+          [attr.data-animated]="connectionViewFor(connection.id).animated ? '' : null"
+          (dblclick)="onConnectionDoubleClick($event, connection.id)"
+        >
+          @if (connectionIssues(connection.id).length > 0) {
+            <span fConnectionContent [position]="0.5" class="tng-flow-editor__connection-badge">
+              <tng-flow-validation-badge
+                [issues]="connectionIssues(connection.id)"
+                (issueActivated)="onValidationIssueActivated($event, 'connection')"
+              />
+            </span>
+          }
+        </f-connection>
       }
 
       @for (node of graphNodes(); track node.id) {
@@ -68,7 +90,10 @@
           [style.min-height.px]="nodeMinHeight(node.id)"
           [attr.data-node-id]="node.id"
           [attr.data-node-type]="node.type"
-          [attr.data-invalid]="viewFor(node.id).invalid === true ? '' : null"
+          [attr.data-validation]="viewFor(node.id).validationSeverity"
+          [attr.data-highlighted]="viewFor(node.id).highlighted ? '' : null"
+          [attr.data-dimmed]="viewFor(node.id).dimmed ? '' : null"
+          (dblclick)="onNodeDoubleClick($event, node.id)"
         >
           @if (canEdit() && node.disabled !== true && node.locked !== true) {
             <button
@@ -94,12 +119,16 @@
                 [name]="node.name"
                 [description]="node.description ?? null"
                 [icon]="node.icon ?? null"
-                [status]="viewFor(node.id).status ?? 'idle'"
+                [status]="viewFor(node.id).status"
                 [progress]="viewFor(node.id).progress ?? null"
                 [selected]="isNodeSelected(node.id)"
                 [disabled]="node.disabled === true"
+                [locked]="node.locked === true"
                 [invalid]="viewFor(node.id).invalid === true"
-                [message]="viewFor(node.id).message ?? null"
+                [validationSeverity]="viewFor(node.id).validationSeverity"
+                [validationIssues]="nodeIssues(node.id)"
+                [statusMessage]="viewFor(node.id).statusMessage"
+                (issueActivated)="onValidationIssueActivated($event, 'node-badge')"
               />
             }
           </div>
@@ -130,6 +159,8 @@
                   [label]="portLabel(port)"
                   [required]="port.required === true"
                   [disabled]="!canEdit() || node.disabled === true || port.disabled === true"
+                  [validationIssues]="portIssues(node.id, port.id)"
+                  (issueActivated)="onValidationIssueActivated($event, 'port-badge')"
                 />
               </span>
             </span>
@@ -161,6 +192,8 @@
                   [label]="portLabel(port)"
                   [required]="port.required === true"
                   [disabled]="!canEdit() || node.disabled === true || port.disabled === true"
+                  [validationIssues]="portIssues(node.id, port.id)"
+                  (issueActivated)="onValidationIssueActivated($event, 'port-badge')"
                 />
               </span>
             </span>
@@ -174,13 +207,22 @@
     }
   </f-flow>
 
+  @if (summaryIssues().length > 0) {
+    <aside class="tng-flow-editor__validation-summary" aria-label="Flow validation summary">
+      <tng-flow-validation-badge
+        [issues]="summaryIssues()"
+        (issueActivated)="onValidationIssueActivated($event, 'flow-badge')"
+      />
+    </aside>
+  }
+
   @if (showControls()) {
     <nav class="tng-flow-editor__controls" aria-label="Flow viewport controls">
-      <tng-button appearance="outline" size="sm" title="Zoom out" (click)="zoomBy(-zoomStep())">
+      <tng-button appearance="outline" size="sm" title="Zoom out" (click)="zoomOut()">
         <span aria-hidden="true">−</span>
         <span class="tng-flow-editor__visually-hidden">Zoom out</span>
       </tng-button>
-      <tng-button appearance="outline" size="sm" title="Zoom in" (click)="zoomBy(zoomStep())">
+      <tng-button appearance="outline" size="sm" title="Zoom in" (click)="zoomIn()">
         <span aria-hidden="true">+</span>
         <span class="tng-flow-editor__visually-hidden">Zoom in</span>
       </tng-button>

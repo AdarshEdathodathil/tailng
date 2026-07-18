@@ -449,9 +449,9 @@
                 <p>{{ nodeDetail(node.data) }}</p>
                 <span
                   class="flow-editor-examples__status"
-                  [attr.data-status]="view.status ?? 'idle'"
+                  [attr.data-status]="view.status"
                 >
-                  {{ view.status ?? 'idle' }} · {{ view.progress ?? 0 }}%
+                  {{ view.status }} · {{ view.progress ?? 0 }}%
                 </span>
               </tng-card-content>
             </tng-card>
@@ -491,7 +491,7 @@
                 <span
                   class="mt-3 inline-flex rounded-full bg-blue-500/10 px-2 py-1 text-xs font-semibold capitalize text-blue-500"
                 >
-                  {{ view.status ?? 'idle' }} · {{ view.progress ?? 0 }}%
+                  {{ view.status }} · {{ view.progress ?? 0 }}%
                 </span>
               </tng-card-content>
             </tng-card>

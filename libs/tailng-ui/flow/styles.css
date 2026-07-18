@@ -63,8 +63,8 @@
     'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
     'Segoe UI Symbol', 'Noto Color Emoji';
   --ff-font-family-mono:
-    ui-monospace, 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New',
-    monospace;
+    ui-monospace, 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono',
+    'Courier New', monospace;
   --ff-font-size-xs: 12px;
   --ff-font-size-sm: 14px;
   --ff-font-size-md: 16px;
@@ -133,7 +133,7 @@
 }
 
 .dark,
-[data-theme='dark'] {
+[data-theme=dark] {
   --ff-color-surface-page: var(--ff-gray-1000);
   --ff-color-surface-canvas: var(--ff-gray-1000);
   --ff-color-surface-card: var(--ff-gray-950);
@@ -212,7 +212,9 @@
   --ff-grouping-drop-target-border-color: var(--ff-color-grouping-drop-target-border);
   --ff-grouping-drop-target-border-style: dashed;
   --ff-grouping-drop-target-border-width: 1px;
-  --ff-grouping-drop-target-border-color-active: var(--ff-color-grouping-drop-target-border-active);
+  --ff-grouping-drop-target-border-color-active: var(
+    --ff-color-grouping-drop-target-border-active
+  );
   --ff-grouping-drop-target-border-style-active: dashed;
   --ff-grouping-drop-target-border-width-active: 2px;
   /* Resize handle — UI chrome, accent-blue fill so it cannot be confused
@@ -389,25 +391,17 @@ f-flow .f-resize-handle,
   border: 1.5px solid var(--ff-resize-handle-stroke);
   border-radius: var(--ff-resize-handle-radius);
   background: var(--ff-resize-handle-fill);
-  box-shadow:
-    0 0 0 1px var(--ff-resize-handle-ring),
-    0 1px 2px rgba(15, 15, 13, 0.18);
-  transition:
-    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 0 1px var(--ff-resize-handle-ring), 0 1px 2px rgba(15, 15, 13, 0.18);
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 f-flow .f-resize-handle:hover,
 .f-flow .f-resize-handle:hover {
-  box-shadow:
-    0 0 0 1px var(--ff-resize-handle-ring),
-    0 0 0 5px color-mix(in oklch, var(--ff-resize-handle-ring) 25%, transparent);
+  box-shadow: 0 0 0 1px var(--ff-resize-handle-ring), 0 0 0 5px color-mix(in oklch, var(--ff-resize-handle-ring) 25%, transparent);
 }
 f-flow .f-resize-handle:active,
 .f-flow .f-resize-handle:active {
   background: var(--ff-resize-handle-fill-active);
-  box-shadow:
-    0 0 0 2px var(--ff-resize-handle-ring),
-    0 0 0 6px color-mix(in oklch, var(--ff-resize-handle-ring) 28%, transparent);
+  box-shadow: 0 0 0 2px var(--ff-resize-handle-ring), 0 0 0 6px color-mix(in oklch, var(--ff-resize-handle-ring) 28%, transparent);
 }
 f-flow .f-resize-handle.f-resize-handle-left,
 .f-flow .f-resize-handle.f-resize-handle-left {
@@ -486,15 +480,12 @@ f-flow .f-rotate-handle,
   background: var(--ff-rotate-handle-background-color);
   transform: translateX(-50%);
   cursor: grab;
-  transition:
-    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
   /* Guide line that bridges the gap between handle and node edge. */
 }
 f-flow .f-rotate-handle::after,
 .f-flow .f-rotate-handle::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   top: 100%;
@@ -535,10 +526,7 @@ f-flow .f-connector-source-target:not(.f-node),
   border-radius: 50%;
   background: var(--ff-connector-background-color);
   pointer-events: all;
-  transition:
-    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 f-flow .f-node-input:not(.f-node).left,
 f-flow .f-node-output:not(.f-node).left,
@@ -672,9 +660,7 @@ f-flow .f-connector-source-target:not(.f-node).f-connector-connectable,
 .f-flow .f-connector-source-target:not(.f-node).f-connector-connectable {
   border-color: var(--ff-connector-accent-color);
 }
-f-flow .f-node-input:not(.f-node).f-node-output-connected,
-f-flow .f-node-input:not(.f-node).f-node-input-connected,
-f-flow .f-node-input:not(.f-node).f-connector-connected,
+f-flow .f-node-input:not(.f-node).f-node-output-connected, f-flow .f-node-input:not(.f-node).f-node-input-connected, f-flow .f-node-input:not(.f-node).f-connector-connected,
 f-flow .f-node-output:not(.f-node).f-node-output-connected,
 f-flow .f-node-output:not(.f-node).f-node-input-connected,
 f-flow .f-node-output:not(.f-node).f-connector-connected,
@@ -705,12 +691,7 @@ f-flow .f-connector-source-target:not(.f-node).f-connector-connected,
   background: var(--ff-connector-connected-color);
   border-color: var(--ff-connector-connected-color);
 }
-f-flow .f-node-input:not(.f-node).f-node-output-not-connectable,
-f-flow .f-node-input:not(.f-node).f-node-input-not-connectable,
-f-flow .f-node-input:not(.f-node).f-connector-not-connectable,
-f-flow .f-node-input:not(.f-node).f-node-input-disabled,
-f-flow .f-node-input:not(.f-node).f-node-output-disabled,
-f-flow .f-node-input:not(.f-node).f-connector-disabled,
+f-flow .f-node-input:not(.f-node).f-node-output-not-connectable, f-flow .f-node-input:not(.f-node).f-node-input-not-connectable, f-flow .f-node-input:not(.f-node).f-connector-not-connectable, f-flow .f-node-input:not(.f-node).f-node-input-disabled, f-flow .f-node-input:not(.f-node).f-node-output-disabled, f-flow .f-node-input:not(.f-node).f-connector-disabled,
 f-flow .f-node-output:not(.f-node).f-node-output-not-connectable,
 f-flow .f-node-output:not(.f-node).f-node-input-not-connectable,
 f-flow .f-node-output:not(.f-node).f-connector-not-connectable,
@@ -775,56 +756,16 @@ f-flow .f-connector-target:not(.f-node),
 .f-flow .f-connector-target:not(.f-node) {
   border-radius: var(--ff-connector-input-radius);
 }
-f-flow
-  .f-connections-dragging
-  .f-node-input:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected),
-f-flow
-  .f-connections-dragging
-  .f-node-output:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected),
-f-flow
-  .f-connections-dragging
-  .f-connector-source:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected),
-f-flow
-  .f-connections-dragging
-  .f-connector-target:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected),
-f-flow
-  .f-connections-dragging
-  .f-connector-source-target:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected),
-.f-flow
-  .f-connections-dragging
-  .f-node-input:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected),
-.f-flow
-  .f-connections-dragging
-  .f-node-output:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected),
-.f-flow
-  .f-connections-dragging
-  .f-connector-source:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected),
-.f-flow
-  .f-connections-dragging
-  .f-connector-target:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected),
-.f-flow
-  .f-connections-dragging
-  .f-connector-source-target:not(.f-connector-connectable):not(.f-node-input-connected):not(
-    .f-node-output-connected
-  ):not(.f-connector-connected) {
+f-flow .f-connections-dragging .f-node-input:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected),
+f-flow .f-connections-dragging .f-node-output:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected),
+f-flow .f-connections-dragging .f-connector-source:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected),
+f-flow .f-connections-dragging .f-connector-target:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected),
+f-flow .f-connections-dragging .f-connector-source-target:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected),
+.f-flow .f-connections-dragging .f-node-input:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected),
+.f-flow .f-connections-dragging .f-node-output:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected),
+.f-flow .f-connections-dragging .f-connector-source:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected),
+.f-flow .f-connections-dragging .f-connector-target:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected),
+.f-flow .f-connections-dragging .f-connector-source-target:not(.f-connector-connectable):not(.f-node-input-connected):not(.f-node-output-connected):not(.f-connector-connected) {
   border-color: var(--ff-connector-disabled-border-color);
 }
 
@@ -845,8 +786,7 @@ f-flow .f-connector-outlet,
   color: var(--ff-outlet-color);
   pointer-events: all;
 }
-f-flow .f-node-outlet.f-node-outlet-disabled,
-f-flow .f-node-outlet.f-connector-disabled,
+f-flow .f-node-outlet.f-node-outlet-disabled, f-flow .f-node-outlet.f-connector-disabled,
 f-flow .f-connector-outlet.f-node-outlet-disabled,
 f-flow .f-connector-outlet.f-connector-disabled,
 .f-flow .f-node-outlet.f-node-outlet-disabled,
@@ -899,12 +839,8 @@ f-flow .f-connection.f-selected .f-connection-path,
 .f-flow .f-connection.f-selected .f-connection-path {
   stroke: var(--ff-connection-selected-color);
 }
-f-flow:not(.f-dragging)
-  .f-connection:not(.f-dragging):not(.f-selected):not(.f-connection-selection-disabled):hover
-  .f-connection-selection,
-.f-flow:not(.f-dragging)
-  .f-connection:not(.f-dragging):not(.f-selected):not(.f-connection-selection-disabled):hover
-  .f-connection-selection {
+f-flow:not(.f-dragging) .f-connection:not(.f-dragging):not(.f-selected):not(.f-connection-selection-disabled):hover .f-connection-selection,
+.f-flow:not(.f-dragging) .f-connection:not(.f-dragging):not(.f-selected):not(.f-connection-selection-disabled):hover .f-connection-selection {
   stroke: var(--ff-connection-hover-color);
 }
 
@@ -1183,6 +1119,62 @@ f-flow .f-magnetic-rects .f-rect,
   --ff-shadow-floating: 0 14px 36px rgb(0 0 0 / 22%), 0 4px 12px rgb(0 0 0 / 14%);
 }
 
+/* Stable TailNG presentation tokens. Foblex selectors below remain an internal bridge. */
+tng-flow-editor {
+  --tng-flow-node-error-border: var(--tng-semantic-accent-danger, #dc2626);
+  --tng-flow-node-warning-border: var(--tng-semantic-accent-warning, #d97706);
+  --tng-flow-node-info-border: var(--tng-semantic-accent-info, #0284c7);
+  --tng-flow-port-error-color: var(--tng-semantic-accent-danger, #dc2626);
+  --tng-flow-port-warning-color: var(--tng-semantic-accent-warning, #d97706);
+  --tng-flow-port-info-color: var(--tng-semantic-accent-info, #0284c7);
+  --tng-flow-connection-error-color: var(--tng-semantic-accent-danger, #dc2626);
+  --tng-flow-connection-warning-color: var(--tng-semantic-accent-warning, #d97706);
+  --tng-flow-connection-info-color: var(--tng-semantic-accent-info, #0284c7);
+  --tng-flow-connection-active-color: var(--tng-semantic-accent-brand, #2563eb);
+  --tng-flow-connection-success-color: var(--tng-semantic-accent-success, #16a34a);
+  --tng-flow-validation-badge-size: 1.25rem;
+}
+tng-flow-editor .tng-flow-editor__connection[data-status=active] {
+  --ff-connection-color: var(--tng-flow-connection-active-color);
+}
+tng-flow-editor .tng-flow-editor__connection[data-status=success] {
+  --ff-connection-color: var(--tng-flow-connection-success-color);
+}
+tng-flow-editor .tng-flow-editor__connection[data-status=warning] {
+  --ff-connection-color: var(--tng-flow-connection-warning-color);
+}
+tng-flow-editor .tng-flow-editor__connection[data-status=error] {
+  --ff-connection-color: var(--tng-flow-connection-error-color);
+}
+tng-flow-editor .tng-flow-editor__connection[data-status=disabled] {
+  --ff-connection-color: var(--ff-color-connection-muted);
+  opacity: 0.55;
+}
+tng-flow-editor .tng-flow-editor__connection[data-validation=info] {
+  --ff-connection-color: var(--tng-flow-connection-info-color);
+}
+tng-flow-editor .tng-flow-editor__connection[data-validation=warning] {
+  --ff-connection-color: var(--tng-flow-connection-warning-color);
+}
+tng-flow-editor .tng-flow-editor__connection[data-validation=error] {
+  --ff-connection-color: var(--tng-flow-connection-error-color);
+}
+tng-flow-editor .tng-flow-editor__connection[data-highlighted] {
+  --ff-connection-width: 3px;
+}
+tng-flow-editor .tng-flow-editor__connection[data-dimmed] {
+  opacity: 0.38;
+}
+tng-flow-editor .tng-flow-editor__connection[data-animated] .f-connection-path {
+  animation: tng-flow-connection-travel 0.85s linear infinite;
+  stroke-dasharray: 7 5;
+}
+
+@keyframes tng-flow-connection-travel {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
 /*
  * Foblex positions reassignment handles just inside connection endpoints. Keep
  * those handles available without making them look like misplaced ports while
@@ -1193,12 +1185,8 @@ f-flow .f-connection .f-connection-drag-handle,
   visibility: hidden;
   pointer-events: none;
 }
-f-flow
-  .f-connection:not(.f-connection-reassign-disabled):is(:hover, .f-selected, .f-dragging)
-  .f-connection-drag-handle,
-.f-flow
-  .f-connection:not(.f-connection-reassign-disabled):is(:hover, .f-selected, .f-dragging)
-  .f-connection-drag-handle {
+f-flow .f-connection:not(.f-connection-reassign-disabled):is(:hover, .f-selected, .f-dragging) .f-connection-drag-handle,
+.f-flow .f-connection:not(.f-connection-reassign-disabled):is(:hover, .f-selected, .f-dragging) .f-connection-drag-handle {
   visibility: visible;
   pointer-events: all;
 }

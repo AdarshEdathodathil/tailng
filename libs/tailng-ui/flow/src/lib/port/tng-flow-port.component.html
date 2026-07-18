@@ -7,3 +7,10 @@
     }
   </span>
 }
+@if (validationIssues().length > 0) {
+  <tng-flow-validation-badge
+    class="tng-flow-port__validation"
+    [issues]="validationIssues()"
+    (issueActivated)="activateIssue($event)"
+  />
+}

@@ -21,6 +21,7 @@ export type TngFlowPortDirection = 'input' | 'output';
 export type TngFlowPortKind = 'control' | 'data' | 'error';
 export type TngFlowEditorMode = 'edit' | 'inspect' | 'readonly';
 export type TngFlowDeleteRequestSource = 'api' | 'context-menu' | 'keyboard';
+export type TngFlowNodeCreateSource = 'api' | 'keyboard' | 'pointer';
 
 type TngFlowPortBase = {
   id: string;
@@ -90,6 +91,32 @@ export type TngFlowDefinition<TNodeData = unknown, TConnectionData = unknown> = 
   connections: readonly TngFlowConnection<TConnectionData>[];
 }>;
 
+/**
+ * A presentation and creation descriptor for one external palette item.
+ * Its id belongs to the palette catalog and is not a workflow node id.
+ */
+export type TngFlowPaletteItem<TData = unknown> = Readonly<{
+  id: string;
+  type: string;
+  name: string;
+  data?: TData;
+  description?: string;
+  disabled?: boolean;
+  icon?: string;
+}>;
+
+export type TngFlowPaletteItemActivation<TData = unknown> = Readonly<{
+  item: TngFlowPaletteItem<TData>;
+  source: 'keyboard' | 'pointer';
+}>;
+
+export type TngFlowNodeCreateRequest<TData = unknown> = Readonly<{
+  item: TngFlowPaletteItem<TData>;
+  /** Requested node top-left position in canvas coordinates. */
+  position: TngFlowPoint;
+  source: TngFlowNodeCreateSource;
+}>;
+
 export type TngFlowSelection = Readonly<{
   nodeIds: ReadonlySet<string>;
   connectionIds: ReadonlySet<string>;
@@ -109,10 +136,13 @@ export type TngFlowConnectionCandidate<TNodeData = unknown> = Readonly<{
   targetPort: TngFlowPort;
 }>;
 
-export type TngFlowConnectionValidation = Readonly<{
-  valid: boolean;
-  reason?: string;
-}>;
+export type TngFlowConnectionValidation =
+  | Readonly<{ valid: true }>
+  | Readonly<{
+      valid: false;
+      code: string;
+      reason: string;
+    }>;
 
 export type TngFlowConnectionValidator<TNodeData = unknown> = (
   candidate: TngFlowConnectionCandidate<TNodeData>,
@@ -145,13 +175,17 @@ export type TngFlowNodesDeleteRequest = Readonly<{
 export type TngFlowConnectionRejectedEvent = Readonly<{
   source?: TngFlowEndpoint;
   target?: TngFlowEndpoint;
+  code: string;
   reason: string;
+  origin: 'tailng' | 'consumer';
 }>;
 
 export type TngFlowNodeView<TStatus extends string = TngFlowNodeStatus> = Readonly<{
   status?: TStatus;
   progress?: number | null;
+  /** @deprecated Supply a `TngFlowValidationIssue` with an error severity. */
   invalid?: boolean;
+  /** @deprecated Use `TngFlowPresentation.nodes[nodeId].statusMessage`. */
   message?: string | null;
 }>;
 
@@ -204,7 +238,10 @@ export type TngFlowDeleteRequestedEvent = Readonly<{
   connectionIds: readonly string[];
 }>;
 
-export type TngFlowViewportChangedEvent = Readonly<{
+export type TngFlowViewport = Readonly<{
   position: TngFlowPoint;
   scale: number;
 }>;
+
+/** @deprecated Use `TngFlowViewport`. */
+export type TngFlowViewportChangedEvent = TngFlowViewport;

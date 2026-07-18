@@ -9,12 +9,18 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 import { TngFlowEditorComponent } from './tng-flow-editor.component';
 import { TngFlowNodeTemplateDirective } from '../node-template/tng-flow-node-template.directive';
+import { createTngFlowPaletteItemEnvelope } from '../palette-item/tng-flow-palette-item.directive';
+import type { TngFlowValidationIssueActivatedEvent } from '../types/tng-flow-events.types';
+import type { TngFlowPresentation } from '../types/tng-flow-presentation.types';
+import type { TngFlowValidation } from '../types/tng-flow-validation.types';
 import type {
   TngFlowDefinition,
   TngFlowConnectionRejectedEvent,
   TngFlowNode,
+  TngFlowNodeCreateRequest,
   TngFlowNodePositionChange,
   TngFlowNodesMovedEvent,
+  TngFlowPaletteItem,
 } from '../types/tng-flow.types';
 
 const nodes: readonly TngFlowNode<{ summary: string }>[] = [
@@ -74,11 +80,17 @@ const definition: TngFlowDefinition<{ summary: string }> = {
       [nodes]="nodes()"
       [connections]="[]"
       [selection]="selection()"
+      [presentation]="presentation()"
+      [validation]="validation()"
       [fitOnInit]="false"
     >
-      <ng-template tngFlowNode="tool" let-node let-selected="selected">
-        <article data-testid="custom-node">
-          {{ node.data.summary }} / {{ selected ? 'selected' : 'idle' }}
+      <ng-template tngFlowNode="tool" let-node let-view="view" let-issues="issues">
+        <article
+          data-testid="custom-node"
+          [attr.data-validation]="view.validationSeverity"
+          [attr.data-issue-count]="issues.length"
+        >
+          {{ node.data.summary }} / {{ view.selected ? 'selected' : 'idle' }}
         </article>
       </ng-template>
     </tng-flow-editor>
@@ -90,6 +102,8 @@ class FlowEditorHost {
     nodeIds: new Set<string>(),
     connectionIds: new Set<string>(),
   });
+  public readonly presentation = signal<TngFlowPresentation>({});
+  public readonly validation = signal<TngFlowValidation>({ issues: [] });
 }
 
 @Component({
@@ -109,8 +123,13 @@ class FlowDefinitionHost {
 type EditorEventHarness = Readonly<{
   onMoveNodes: (event: FMoveNodesEvent) => void;
   onCreateConnection: (event: FCreateConnectionEvent) => void;
+  onCreateNode: (event: {
+    data: unknown;
+    externalItemRect: { x: number; y: number; width: number; height: number };
+  }) => void;
   onSelectionChange: (event: FSelectionChangeEvent) => void;
   onDeleteSelected: (event: FDeleteSelectedEvent) => void;
+  onViewportChange: (event: { position: { x: number; y: number }; scale: number }) => void;
   onReassignConnection: (event: {
     connectionId: string;
     endpoint: 'source' | 'target';
@@ -120,6 +139,7 @@ type EditorEventHarness = Readonly<{
     nextTargetId: string | undefined;
     dropPosition: { x: number; y: number };
   }) => void;
+  onReady: () => void;
   portPositionPercent: (index: number, count: number) => number;
 }>;
 
@@ -152,6 +172,68 @@ describe('TngFlowEditorComponent', () => {
     ).toContain('selected');
   });
 
+  it('provides resolved presentation and indexed issues to custom node templates', () => {
+    const fixture = TestBed.createComponent(FlowEditorHost);
+    fixture.componentInstance.presentation.set({
+      nodes: { custom: { status: 'running', highlighted: true } },
+    });
+    fixture.componentInstance.validation.set({
+      issues: [
+        {
+          id: 'custom-warning',
+          code: 'review',
+          severity: 'warning',
+          message: 'Review the custom node.',
+          target: { kind: 'node', nodeId: 'custom' },
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const customNode = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="custom-node"]',
+    );
+    expect(customNode?.getAttribute('data-validation')).toBe('warning');
+    expect(customNode?.getAttribute('data-issue-count')).toBe('1');
+  });
+
+  it('keeps runtime status separate from node and port validation', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('presentation', {
+      nodes: { default: { status: 'running', progress: 40 } },
+    });
+    fixture.componentRef.setInput('validation', {
+      issues: [
+        {
+          id: 'node-warning',
+          code: 'review',
+          severity: 'warning',
+          message: 'Review the node.',
+          target: { kind: 'node', nodeId: 'default' },
+        },
+        {
+          id: 'port-error',
+          code: 'required-input',
+          severity: 'error',
+          message: 'Connect this input.',
+          target: { kind: 'port', nodeId: 'default', portId: 'default-input' },
+        },
+      ],
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const visibleNode = host.querySelector('[data-node-id="default"] tng-flow-node');
+    const port = host.querySelector('[data-node-id="default"] tng-flow-port');
+    expect(visibleNode?.getAttribute('data-status')).toBe('running');
+    expect(visibleNode?.getAttribute('data-validation')).toBe('warning');
+    expect(visibleNode?.hasAttribute('aria-invalid')).toBe(false);
+    expect(port?.getAttribute('data-validation')).toBe('error');
+    expect(port?.getAttribute('aria-invalid')).toBe('true');
+  });
+
   it('renders a complete definition with exact connections and locked nodes', () => {
     const fixture = TestBed.createComponent(FlowDefinitionHost);
     fixture.detectChanges();
@@ -170,6 +252,37 @@ describe('TngFlowEditorComponent', () => {
     expect(host.querySelector('#custom-to-locked')?.classList).toContain(
       'f-connection-reassign-disabled',
     );
+  });
+
+  it('projects connection presentation and validation onto TailNG data attributes', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('presentation', {
+      connections: {
+        'custom-to-default': { status: 'active', animated: true, highlighted: true },
+      },
+    });
+    fixture.componentRef.setInput('validation', {
+      issues: [
+        {
+          id: 'connection-warning',
+          code: 'review-path',
+          severity: 'warning',
+          message: 'Review this connection.',
+          target: { kind: 'connection', connectionId: 'custom-to-default' },
+        },
+      ],
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const connection = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-connection-id="custom-to-default"]',
+    );
+    expect(connection?.getAttribute('data-status')).toBe('active');
+    expect(connection?.getAttribute('data-validation')).toBe('warning');
+    expect(connection?.hasAttribute('data-animated')).toBe(true);
+    expect(connection?.hasAttribute('data-highlighted')).toBe(true);
   });
 
   it('distributes ports evenly across each node side', () => {
@@ -270,6 +383,74 @@ describe('TngFlowEditorComponent', () => {
     expect(deleted).toHaveBeenCalledWith({ nodeIds: ['custom'], connectionIds: [] });
   });
 
+  it('emits controlled node-create requests for branded palette drops', () => {
+    const fixture = TestBed.createComponent(
+      TngFlowEditorComponent<{
+        summary: string;
+      }>,
+    );
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('snapToGrid', true);
+    fixture.componentRef.setInput('gridSize', 16);
+    fixture.detectChanges();
+
+    const editor = fixture.componentInstance;
+    const harness = editor as unknown as EditorEventHarness;
+    const created = vi.fn<(event: TngFlowNodeCreateRequest<{ summary: string }>) => void>();
+    const item: TngFlowPaletteItem<{ summary: string }> = {
+      id: 'model-palette-item',
+      type: 'model',
+      name: 'Model',
+      data: { summary: 'New model' },
+    };
+    editor.nodeCreateRequested.subscribe(created);
+
+    harness.onCreateNode({
+      data: createTngFlowPaletteItemEnvelope(item),
+      externalItemRect: { x: 103, y: 73, width: 280, height: 112 },
+    });
+    harness.onCreateNode({
+      data: item,
+      externalItemRect: { x: 200, y: 200, width: 280, height: 112 },
+    });
+
+    expect(created).toHaveBeenCalledOnce();
+    expect(created).toHaveBeenCalledWith({
+      item,
+      position: { x: 96, y: 80 },
+      source: 'pointer',
+    });
+    expect(nodes[0].position).toEqual({ x: 40, y: 80 });
+  });
+
+  it('supports explicit keyboard/API placement and blocks creation outside edit mode', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent<{ summary: string }>);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const editor = fixture.componentInstance;
+    const created = vi.fn<(event: TngFlowNodeCreateRequest<{ summary: string }>) => void>();
+    const item: TngFlowPaletteItem<{ summary: string }> = {
+      id: 'tool-palette-item',
+      type: 'tool',
+      name: 'Tool',
+    };
+    editor.nodeCreateRequested.subscribe(created);
+
+    editor.requestNodeCreate(item, { x: 120, y: 144 }, 'keyboard');
+    fixture.componentRef.setInput('mode', 'inspect');
+    fixture.detectChanges();
+    editor.requestNodeCreate(item, { x: 300, y: 300 }, 'api');
+
+    expect(created).toHaveBeenCalledOnce();
+    expect(created).toHaveBeenCalledWith({
+      item,
+      position: { x: 120, y: 144 },
+      source: 'keyboard',
+    });
+  });
+
   it('blocks graph mutation events in read-only mode', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('nodes', nodes);
@@ -295,6 +476,38 @@ describe('TngFlowEditorComponent', () => {
     expect(created).not.toHaveBeenCalled();
     expect(deleted).not.toHaveBeenCalled();
     expect(selected).not.toHaveBeenCalled();
+  });
+
+  it('activates nodes by double click and Enter only in edit and inspect modes', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('selection', {
+      nodeIds: new Set(['custom']),
+      connectionIds: new Set(),
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const editor = fixture.componentInstance;
+    const activated = vi.fn();
+    editor.nodeActivated.subscribe(activated);
+    const host = fixture.nativeElement as HTMLElement;
+    host
+      .querySelector('[data-node-id="custom"]')
+      ?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    fixture.componentRef.setInput('mode', 'inspect');
+    fixture.detectChanges();
+    host.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+    fixture.componentRef.setInput('mode', 'readonly');
+    fixture.detectChanges();
+    host
+      .querySelector('[data-node-id="custom"]')
+      ?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+    expect(activated.mock.calls).toEqual([
+      [{ nodeId: 'custom', source: 'pointer' }],
+      [{ nodeId: 'custom', source: 'keyboard' }],
+    ]);
   });
 
   it('allows selection but blocks graph mutation requests in inspect mode', () => {
@@ -355,11 +568,80 @@ describe('TngFlowEditorComponent', () => {
       target: { nodeId: 'default', portId: 'default-input' },
     });
     expect(rejected.mock.calls[0]?.[0].reason).toContain('output');
+    expect(rejected.mock.calls[0]?.[0]).toMatchObject({
+      code: 'invalid-source-direction',
+      origin: 'tailng',
+    });
+  });
+
+  it('skips malformed persisted connections and reports their structural issue safely', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', {
+      id: 'malformed',
+      nodes,
+      connections: [
+        {
+          id: 'broken',
+          source: { nodeId: 'missing', portId: 'output' },
+          target: { nodeId: 'default', portId: 'default-input' },
+        },
+      ],
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+
+    expect(() => fixture.detectChanges()).not.toThrow();
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('f-connection')).toHaveLength(0);
+    expect(fixture.componentInstance.validationIssues().map((issue) => issue.code)).toContain(
+      'missing-source-node',
+    );
+  });
+
+  it('reveals a target, requests controlled selection, and activates issues by stable id', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('validation', {
+      issues: [
+        {
+          id: 'reveal-node',
+          code: 'review',
+          severity: 'warning',
+          message: 'Review this node.',
+          target: { kind: 'node', nodeId: 'default' },
+        },
+      ],
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const editor = fixture.componentInstance;
+    const harness = editor as unknown as EditorEventHarness;
+    const selected = vi.fn();
+    const issueActivated = vi.fn<(event: TngFlowValidationIssueActivatedEvent) => void>();
+    const centerNode = vi.spyOn(editor, 'centerNode').mockReturnValue(true);
+    editor.selectionChange.subscribe(selected);
+    editor.validationIssueActivated.subscribe(issueActivated);
+    harness.onReady();
+
+    expect(editor.revealTarget({ kind: 'node', nodeId: 'default' }, { select: true })).toBe(true);
+    expect(centerNode).toHaveBeenCalledWith('default', true);
+    expect(selected).toHaveBeenCalledWith({
+      nodeIds: new Set(['default']),
+      connectionIds: new Set(),
+    });
+    expect(editor.activateValidationIssue('reveal-node')).toBe(true);
+    expect(issueActivated.mock.calls[0]?.[0]).toMatchObject({
+      source: 'api',
+      issue: { id: 'reveal-node' },
+    });
   });
 
   it('runs the consumer validator after built-in validation', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
-    const validator = vi.fn(() => ({ valid: false, reason: 'Consumer rejected this pair.' }));
+    const validator = vi.fn(() => ({
+      valid: false as const,
+      code: 'consumer-rule',
+      reason: 'Consumer rejected this pair.',
+    }));
     fixture.componentRef.setInput('nodes', nodes);
     fixture.componentRef.setInput('connectionValidator', validator);
     fixture.componentRef.setInput('fitOnInit', false);
@@ -383,6 +665,10 @@ describe('TngFlowEditorComponent', () => {
     expect(validator).toHaveBeenCalledOnce();
     expect(created).not.toHaveBeenCalled();
     expect(rejected.mock.calls[0]?.[0].reason).toBe('Consumer rejected this pair.');
+    expect(rejected.mock.calls[0]?.[0]).toMatchObject({
+      code: 'consumer-rule',
+      origin: 'consumer',
+    });
   });
 
   it('validates reconnection and emits the complete controlled request', () => {
@@ -459,5 +745,23 @@ describe('TngFlowEditorComponent', () => {
     fixture.componentInstance.zoomBy(0.15);
 
     expect(canvas?.style.transform).toContain('matrix(1.15');
+  });
+
+  it('emits the canonical viewport output together with its deprecated alias', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const editor = fixture.componentInstance;
+    const harness = editor as unknown as EditorEventHarness;
+    const canonical = vi.fn();
+    const legacy = vi.fn();
+    editor.viewportChange.subscribe(canonical);
+    editor.viewportChanged.subscribe(legacy);
+
+    harness.onViewportChange({ position: { x: -24, y: 32 }, scale: 1.15 });
+
+    expect(canonical).toHaveBeenCalledWith({ position: { x: -24, y: 32 }, scale: 1.15 });
+    expect(legacy).toHaveBeenCalledWith({ position: { x: -24, y: 32 }, scale: 1.15 });
   });
 });

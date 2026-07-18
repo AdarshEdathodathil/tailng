@@ -1,0 +1,120 @@
+:host {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font: inherit;
+}
+
+:host:empty {
+  display: none;
+}
+
+.tng-flow-validation-badge {
+  position: relative;
+}
+
+.tng-flow-validation-badge__summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tng-flow-validation-badge-size, 1.25rem);
+  height: var(--tng-flow-validation-badge-size, 1.25rem);
+  padding: 0 0.25rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: var(--tng-flow-validation-color, var(--tng-semantic-foreground-secondary, #475569));
+  background: var(--tng-semantic-background-surface, #fff);
+  cursor: pointer;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  list-style: none;
+}
+
+.tng-flow-validation-badge__summary::-webkit-details-marker {
+  display: none;
+}
+
+.tng-flow-validation-badge__summary:focus-visible {
+  outline: 2px solid var(--tng-semantic-focus-ring, #2563eb);
+  outline-offset: 2px;
+}
+
+:host([data-severity='error']) {
+  --tng-flow-validation-color: var(--tng-flow-error-color, var(--tng-semantic-accent-danger, #dc2626));
+}
+
+:host([data-severity='warning']) {
+  --tng-flow-validation-color: var(--tng-flow-warning-color, var(--tng-semantic-accent-warning, #d97706));
+}
+
+:host([data-severity='info']) {
+  --tng-flow-validation-color: var(--tng-flow-info-color, var(--tng-semantic-accent-brand, #2563eb));
+}
+
+.tng-flow-validation-badge__count {
+  margin-inline-start: 0.2rem;
+}
+
+.tng-flow-validation-badge__popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  width: min(20rem, 75vw);
+  padding: 0.625rem;
+  border: 1px solid var(--tng-semantic-border-default, #d1d5db);
+  border-radius: 0.625rem;
+  color: var(--tng-semantic-foreground-primary, #111827);
+  background: var(--tng-semantic-background-surface, #fff);
+  box-shadow: 0 12px 30px rgb(15 23 42 / 18%);
+}
+
+.tng-flow-validation-badge__title {
+  display: block;
+  margin-block-end: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.tng-flow-validation-badge__list {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.tng-flow-validation-badge__issue {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.35rem;
+  border: 0;
+  border-radius: 0.35rem;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-align: start;
+}
+
+.tng-flow-validation-badge__issue:hover,
+.tng-flow-validation-badge__issue:focus-visible {
+  background: var(--tng-semantic-background-muted, #f1f5f9);
+  outline: none;
+}
+
+.tng-flow-validation-badge__issue[data-severity='error'] > :first-child {
+  color: var(--tng-flow-error-color, var(--tng-semantic-accent-danger, #dc2626));
+}
+
+.tng-flow-validation-badge__issue[data-severity='warning'] > :first-child {
+  color: var(--tng-flow-warning-color, var(--tng-semantic-accent-warning, #d97706));
+}
+
+.tng-flow-validation-badge__issue[data-severity='info'] > :first-child {
+  color: var(--tng-flow-info-color, var(--tng-semantic-accent-brand, #2563eb));
+}

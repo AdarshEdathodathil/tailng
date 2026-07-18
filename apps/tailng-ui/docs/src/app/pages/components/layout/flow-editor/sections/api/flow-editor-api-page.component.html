@@ -42,12 +42,24 @@
             <td>Controlled connector-to-connector edges.</td>
           </tr>
           <tr>
+            <td><code>presentation</code></td>
+            <td><code>TngFlowPresentation&lt;TStatus&gt;</code></td>
+            <td><code>{{ '{}' }}</code></td>
+            <td>Controlled runtime status and visual emphasis for nodes and connections.</td>
+          </tr>
+          <tr>
+            <td><code>validation</code></td>
+            <td><code>TngFlowValidation</code></td>
+            <td><code>EMPTY_TNG_FLOW_VALIDATION</code></td>
+            <td>Controlled application issues merged with TailNG structural issues.</td>
+          </tr>
+          <tr>
             <td><code>nodeViews</code></td>
             <td><code>TngFlowNodeViews&lt;TStatus&gt;</code></td>
             <td>
               <code>{{ '{}' }}</code>
             </td>
-            <td>Status, progress, message, and invalid state keyed by node id.</td>
+            <td>Deprecated compatibility input. Use <code>presentation.nodes</code>.</td>
           </tr>
           <tr>
             <td><code>mode</code></td>
@@ -60,6 +72,12 @@
             <td><code>TngFlowSelection</code></td>
             <td>empty sets</td>
             <td>Controlled node and connection selection owned by the consuming application.</td>
+          </tr>
+          <tr>
+            <td><code>viewport</code></td>
+            <td><code>TngFlowViewport | null</code></td>
+            <td><code>null</code></td>
+            <td>Optional externally supplied canvas position and scale.</td>
           </tr>
           <tr>
             <td><code>connectionValidator</code></td>
@@ -145,6 +163,11 @@
             <td>Once per moved node, with its previous and new positions.</td>
           </tr>
           <tr>
+            <td><code>nodeCreateRequested</code></td>
+            <td><code>TngFlowNodeCreateRequest&lt;TData&gt;</code></td>
+            <td>After a typed palette drop, keyboard activation, or API creation request.</td>
+          </tr>
+          <tr>
             <td><code>connectionCreateRequested</code></td>
             <td><code>TngFlowConnectionCreateRequest</code></td>
             <td>After a connection candidate passes built-in and consumer validation.</td>
@@ -175,9 +198,29 @@
             <td>When a drop targets a known port but connection validation fails.</td>
           </tr>
           <tr>
-            <td><code>viewportChanged</code></td>
-            <td><code>TngFlowViewportChangedEvent</code></td>
+            <td><code>nodeActivated</code></td>
+            <td><code>TngFlowNodeActivatedEvent</code></td>
+            <td>On node double-click, Enter activation, or the public activation API.</td>
+          </tr>
+          <tr>
+            <td><code>connectionActivated</code></td>
+            <td><code>TngFlowConnectionActivatedEvent</code></td>
+            <td>On connection double-click, Enter activation, or the public activation API.</td>
+          </tr>
+          <tr>
+            <td><code>validationIssueActivated</code></td>
+            <td><code>TngFlowValidationIssueActivatedEvent</code></td>
+            <td>When a rendered issue marker is selected or activated through the API.</td>
+          </tr>
+          <tr>
+            <td><code>viewportChange</code></td>
+            <td><code>TngFlowViewport</code></td>
             <td>When canvas position or scale changes.</td>
+          </tr>
+          <tr>
+            <td><code>viewportChanged</code> <small>(deprecated)</small></td>
+            <td><code>TngFlowViewportChangedEvent</code></td>
+            <td>Compatibility alias for <code>viewportChange</code>.</td>
           </tr>
           <tr>
             <td><code>ready</code></td>
@@ -235,9 +278,27 @@
             </td>
           </tr>
           <tr>
-            <td><code>TngFlowNodeView&lt;TStatus&gt;</code></td>
+            <td><code>TngFlowPresentation&lt;TStatus&gt;</code></td>
             <td>none</td>
-            <td>Status, progress, invalid state, and execution message.</td>
+            <td>Runtime status, progress, messages, highlights, dimming, and connection animation.</td>
+          </tr>
+          <tr>
+            <td><code>TngFlowValidation</code></td>
+            <td><code>issues</code></td>
+            <td>
+              Generic errors, warnings, and information with a discriminated flow, node, port, or
+              connection target.
+            </td>
+          </tr>
+          <tr>
+            <td><code>TngFlowPaletteItem&lt;TData&gt;</code></td>
+            <td><code>id</code>, <code>type</code>, <code>name</code></td>
+            <td>Catalog metadata and optional node data. Its id is not a workflow node id.</td>
+          </tr>
+          <tr>
+            <td><code>TngFlowNodeCreateRequest&lt;TData&gt;</code></td>
+            <td><code>item</code>, <code>position</code>, <code>source</code></td>
+            <td>Controlled request using a top-left canvas position.</td>
           </tr>
         </tbody>
       </table>
@@ -277,8 +338,13 @@
           </tr>
           <tr>
             <td><code>view</code></td>
-            <td><code>TngFlowNodeView&lt;TStatus&gt;</code></td>
-            <td>Current execution presentation.</td>
+            <td><code>TngFlowResolvedNodeView&lt;TStatus&gt;</code></td>
+            <td>Resolved structural, controlled selection, presentation, and validation state.</td>
+          </tr>
+          <tr>
+            <td><code>issues</code></td>
+            <td><code>readonly TngFlowValidationIssue[]</code></td>
+            <td>Indexed validation issues targeting this node.</td>
           </tr>
           <tr>
             <td><code>mode</code></td>
@@ -298,6 +364,26 @@
         </tbody>
       </table>
     </div>
+  </section>
+
+  <section id="palette-items" class="docs-overview-block">
+    <h3>Palette items</h3>
+    <p>
+      Apply <code>[tngFlowPaletteItem]</code> to a native button to make a typed catalog item
+      draggable. Bind <code>(tngFlowPaletteItemActivate)</code> to
+      <code>editor.requestNodeCreate(...)</code> for click and keyboard placement at the visible
+      viewport center.
+    </p>
+    <ul class="docs-overview-list">
+      <li><code>tngFlowPaletteItemDisabled</code> disables drag and activation.</li>
+      <li><code>tngFlowPaletteItemPreview</code> accepts a drag-preview template.</li>
+      <li><code>tngFlowPaletteItemPlaceholder</code> accepts a source placeholder template.</li>
+      <li><code>tngFlowPaletteItemPreviewMatchSize</code> controls preview sizing.</li>
+    </ul>
+    <p>
+      The directive and editor exchange a private payload. Foblex external-item data is not part of
+      the TailNG public contract.
+    </p>
   </section>
 
   <section id="imperative-methods" class="docs-overview-block">
@@ -321,11 +407,37 @@
           </tr>
           <tr>
             <td><code>centerNode(nodeId, animated = true)</code></td>
-            <td>Centers a node by id.</td>
+            <td>Centers a node by id and returns whether it exists.</td>
+          </tr>
+          <tr>
+            <td><code>revealTarget(target, options?)</code></td>
+            <td>Centers a validation target and optionally requests controlled selection.</td>
+          </tr>
+          <tr>
+            <td><code>activateNode(nodeId)</code> / <code>activateConnection(connectionId)</code></td>
+            <td>Emits a generic API activation event when allowed by the current mode.</td>
+          </tr>
+          <tr>
+            <td><code>activateValidationIssue(issueId)</code></td>
+            <td>Reveals and emits a known validation issue by stable id.</td>
           </tr>
           <tr>
             <td><code>zoomBy(delta)</code></td>
             <td>Changes scale while respecting zoom limits.</td>
+          </tr>
+          <tr>
+            <td><code>zoomIn()</code> / <code>zoomOut()</code></td>
+            <td>Changes scale by the configured zoom step.</td>
+          </tr>
+          <tr>
+            <td><code>screenToCanvas(point)</code></td>
+            <td>Converts client-screen coordinates into the current canvas coordinate system.</td>
+          </tr>
+          <tr>
+            <td><code>requestNodeCreate(item, position?, source?)</code></td>
+            <td>
+              Emits a controlled creation request, using viewport center when position is omitted.
+            </td>
           </tr>
         </tbody>
       </table>
@@ -336,8 +448,9 @@
   <section id="validation" class="docs-overview-block">
     <h3>Validation</h3>
     <p>
-      Read <code>editor.validationIssues()</code> for live issues, or call
-      <code>validateTngFlow(nodes, connections)</code> before persistence or execution.
+      Supply application issues through <code>validation</code>. Read
+      <code>editor.resolvedValidation()</code> for application and structural issues together, or
+      call <code>validateTngFlowDefinition(definition)</code> before persistence or execution.
     </p>
     <ul class="docs-overview-list">
       <li>Empty or duplicate node, port, and connection ids</li>

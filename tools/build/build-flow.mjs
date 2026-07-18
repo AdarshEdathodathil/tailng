@@ -9,6 +9,7 @@ const componentsTypesEntry = resolve(
   'dist/libs/tailng-ui/components/src/index.d.ts',
 );
 const iconsTypesEntry = resolve(workspaceRoot, 'dist/libs/tailng-ui/icons/src/index.d.ts');
+const sassPath = resolve(workspaceRoot, 'node_modules/.bin/sass');
 
 const ngcCandidates = [
   resolve(workspaceRoot, 'node_modules/@angular/compiler-cli/bundles/src/bin/ngc.js'),
@@ -33,6 +34,11 @@ if (!existsSync(iconsTypesEntry)) {
   process.exit(1);
 }
 
+if (!existsSync(sassPath)) {
+  console.error('build-flow: could not locate the Sass compiler.');
+  process.exit(1);
+}
+
 rmSync(distRoot, { recursive: true, force: true });
 mkdirSync(distRoot, { recursive: true });
 
@@ -46,8 +52,24 @@ if (ngcResult.status !== 0) {
   process.exit(ngcResult.status ?? 1);
 }
 
-for (const asset of ['package.json', 'README.md', 'styles.css', 'styles.scss']) {
+for (const asset of ['package.json', 'README.md', 'styles.scss']) {
   cpSync(resolve(workspaceRoot, 'libs/tailng-ui/flow', asset), resolve(distRoot, asset));
+}
+
+
+const sassResult = spawnSync(
+  sassPath,
+  [
+    `--load-path=${resolve(workspaceRoot, 'node_modules')}`,
+    resolve(workspaceRoot, 'libs/tailng-ui/flow/styles.scss'),
+    resolve(distRoot, 'styles.css'),
+    '--no-source-map',
+  ],
+  { cwd: workspaceRoot, stdio: 'inherit' },
+);
+
+if (sassResult.status !== 0) {
+  process.exit(sassResult.status ?? 1);
 }
 
 function resolvePnpmCompilerCliCandidates(root) {

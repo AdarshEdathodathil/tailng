@@ -8,6 +8,52 @@
   min-height: 25rem;
 }
 
+.flow-editor-overview__builder {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 15rem minmax(0, 1fr);
+}
+
+.flow-editor-overview__builder .flow-editor-overview__canvas {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.flow-editor-overview__palette {
+  align-content: start;
+  background: var(--tng-semantic-background-canvas);
+  border: 1px solid var(--tng-semantic-border-default);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+  grid-column: 1;
+  grid-row: 1;
+  padding: 0.75rem;
+}
+
+.flow-editor-overview__palette > span,
+.flow-editor-overview__palette-item span {
+  color: var(--tng-semantic-foreground-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.flow-editor-overview__palette-item {
+  background: var(--tng-semantic-background-surface);
+  border: 1px solid var(--tng-semantic-border-strong);
+  border-radius: 0.5rem;
+  color: inherit;
+  cursor: grab;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.flow-editor-overview__palette-item:hover {
+  border-color: var(--tng-semantic-accent-brand);
+}
+
 .flow-editor-overview__validation {
   border: 1px solid var(--tng-semantic-accent-danger);
   border-radius: 0.5rem;
@@ -17,6 +63,23 @@
 }
 
 @media (max-width: 720px) {
+  .flow-editor-overview__builder {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-editor-overview__builder .flow-editor-overview__canvas,
+  .flow-editor-overview__palette {
+    grid-column: 1;
+  }
+
+  .flow-editor-overview__builder .flow-editor-overview__canvas {
+    grid-row: 2;
+  }
+
+  .flow-editor-overview__palette {
+    grid-row: 1;
+  }
+
   .flow-editor-overview__canvas {
     height: 27rem;
   }

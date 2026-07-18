@@ -26,7 +26,9 @@ import {
   type TngFlowConnectionsDeleteRequest,
   type TngFlowDefinition,
   type TngFlowNodesDeleteRequest,
+  type TngFlowPresentation,
   type TngFlowSelection,
+  type TngFlowValidation,
 } from '@tailng-ui/flow';
 
 const initialWorkflow: TngFlowDefinition = {
@@ -76,6 +78,8 @@ const emptySelection = (): TngFlowSelection => ({
     <tng-flow-editor
       [definition]="workflow()"
       [selection]="selection()"
+      [presentation]="presentation"
+      [validation]="validation"
       (connectionCreateRequested)="createConnection($event)"
       (connectionsDeleteRequested)="deleteConnections($event)"
       (nodesDeleteRequested)="deleteNodes($event)"
@@ -86,6 +90,10 @@ const emptySelection = (): TngFlowSelection => ({
 export class AgentWorkflowComponent {
   readonly workflow = signal(initialWorkflow);
   readonly selection = signal(emptySelection());
+  readonly presentation: TngFlowPresentation = {
+    nodes: { model: { status: 'running', progress: 60 } },
+  };
+  readonly validation: TngFlowValidation = { issues: [] };
 
   createConnection(request: TngFlowConnectionCreateRequest): void {
     this.workflow.update((workflow) => ({
@@ -118,15 +126,72 @@ export class AgentWorkflowComponent {
 }
 ```
 
-The editor never mutates `definition` or creates connection IDs. Event handlers update the application signal or store and pass a new snapshot back.
+The editor never mutates `definition` or creates node or connection IDs. Event handlers update the application signal or store and pass a new snapshot back.
+
+## Palette and node creation
+
+Use the headless `TngFlowPaletteItemDirective` on native buttons. A drag emits a controlled
+`nodeCreateRequested` event at the dropped canvas position; activation can call
+`requestNodeCreate()` to use the visible viewport center.
+
+```html
+<aside aria-label="Workflow node palette">
+  @for (item of paletteItems; track item.id) {
+  <button
+    type="button"
+    [tngFlowPaletteItem]="item"
+    (tngFlowPaletteItemActivate)="
+        editor.requestNodeCreate($event.item, undefined, $event.source)
+      "
+  >
+    {{ item.name }}
+  </button>
+  }
+</aside>
+
+<tng-flow-editor
+  #editor="tngFlowEditor"
+  [definition]="workflow()"
+  (nodeCreateRequested)="createNode($event)"
+/>
+```
+
+```ts
+readonly paletteItems: readonly TngFlowPaletteItem<NodeData>[] = [
+  {
+    id: 'model-catalog-item',
+    type: 'model',
+    name: 'Model',
+    data: { model: 'reasoning' },
+  },
+];
+
+createNode(request: TngFlowNodeCreateRequest<NodeData>): void {
+  const node: TngFlowNode<NodeData> = {
+    id: crypto.randomUUID(),
+    type: request.item.type,
+    name: request.item.name,
+    data: request.item.data,
+    position: request.position,
+    ports: [],
+  };
+  this.workflow.update((workflow) => ({
+    ...workflow,
+    nodes: [...workflow.nodes, node],
+  }));
+}
+```
+
+Palette item ids identify catalog entries; the consumer still creates the workflow node id. The
+directive supports disabled state plus optional preview and placeholder `TemplateRef` inputs.
 
 ## Modes
 
-| Mode       | Select | Move | Connect | Delete | Pan/zoom |
-| ---------- | -----: | ---: | ------: | -----: | -------: |
-| `edit`     |    Yes |  Yes |     Yes |    Yes |      Yes |
-| `inspect`  |    Yes |   No |      No |     No |      Yes |
-| `readonly` |     No |   No |      No |     No |      Yes |
+| Mode       | Select | Activate | Move | Connect | Delete | Pan/zoom |
+| ---------- | -----: | -------: | ---: | ------: | -----: | -------: |
+| `edit`     |    Yes |      Yes |  Yes |     Yes |    Yes |      Yes |
+| `inspect`  |    Yes |      Yes |   No |      No |     No |      Yes |
+| `readonly` |     No |       No |   No |      No |     No |      Yes |
 
 Use `[mode]="'inspect'"` for an interactive execution view and `[mode]="'readonly'"` for a non-selectable viewer.
 
@@ -138,7 +203,11 @@ The editor validates direction, disabled state, self-connections, port kind, dup
 readonly validateConnection: TngFlowConnectionValidator = (candidate) => {
   return candidate.sourcePort.dataType === candidate.targetPort.dataType
     ? { valid: true }
-    : { valid: false, reason: 'Port data types are incompatible.' };
+    : {
+        valid: false,
+        code: 'incompatible-data-type',
+        reason: 'Port data types are incompatible.',
+      };
 };
 ```
 
@@ -150,11 +219,25 @@ Custom templates replace only the node body. TailNG retains geometry, connectors
 
 ```html
 <tng-flow-editor [definition]="workflow()" [selection]="selection()">
-  <ng-template tngFlowNode="tool" let-node let-view="view" let-mode="mode" let-selected="selected">
-    <app-tool-node [tool]="node.data" [status]="view.status" [mode]="mode" [selected]="selected" />
+  <ng-template tngFlowNode="tool" let-node let-view="view" let-issues="issues">
+    <app-tool-node
+      [tool]="node.data"
+      [status]="view.status"
+      [selected]="view.selected"
+      [validationSeverity]="view.validationSeverity"
+      [validationIssues]="issues"
+    />
   </ng-template>
 </tng-flow-editor>
 ```
+
+Validation and presentation are independent controlled projections. Validation uses stable issue
+ids and discriminated flow, node, port, or connection targets. Presentation adds transient runtime
+status, progress, emphasis, and connection animation without changing graph data or selection.
+
+Use `revealTarget(target, { select: true })` to navigate to a known validation target. Node and
+connection double-clicks emit generic activation events in edit and inspect modes; the consuming
+application decides whether to open an inspector or take another action.
 
 The editor host has a default height of `36rem`; override the host height in the consuming component when needed.
 
@@ -163,10 +246,17 @@ The editor host has a default height of `36rem`; override the host height in the
 - `Delete` / `Backspace`: request deletion of editable selected elements.
 - `Escape`: clear selection or cancel connection creation.
 - `Command/Ctrl + A`: select all in edit mode.
+- `Enter`: activate the focused or sole selected node/connection in edit and inspect modes.
 - Shift, Command, or Ctrl while clicking: toggle multi-selection.
+
+Palette buttons use their native Enter and Space activation. The example above routes that
+activation through the editor's controlled node-creation request.
 
 Keyboard commands only act while the flow has focus and never intercept text editing inside custom nodes.
 
 ## Compatibility
 
-The Milestone 1 `inputs`/`outputs`, `readonly`, `connectionCreated`, `connectionReassigned`, `selectionChanged`, and combined `deleteRequested` APIs remain available as deprecated aliases for one compatibility cycle. New code should use `ports`, `mode`, controlled `selection`, and the request outputs documented above.
+The `inputs`/`outputs`, `nodeViews`, `readonly`, `connectionCreated`, `connectionReassigned`,
+`selectionChanged`, and combined `deleteRequested` APIs remain available as deprecated aliases for
+one compatibility cycle. New code should use `ports`, `presentation`, `mode`, controlled
+`selection`, and the request outputs documented above.

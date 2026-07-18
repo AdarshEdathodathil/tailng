@@ -1,191 +1,450 @@
-/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- Validation accumulates issues in private mutable maps and arrays. */
+/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types, complexity, max-lines-per-function, max-params -- Defensive parsing of unknown graph input is intentionally branch-heavy. */
 import { createTngFlowConnectorId } from '../model/tng-flow-connector-id';
-import { getTngFlowNodePorts, tngFlowConnectionPairKey } from '../model/tng-flow-graph';
-import type { TngFlowConnection, TngFlowNode, TngFlowPort } from '../types/tng-flow.types';
+import {
+  createTngFlowGraphIndex,
+  getTngFlowNodePorts,
+  tngFlowConnectionPairKey,
+  type TngFlowGraphIndex,
+  type TngFlowPortRecord,
+} from '../model/tng-flow-graph';
+import type {
+  TngFlowStructuralIssueCode,
+  TngFlowValidationIssue,
+  TngFlowValidationSeverity,
+  TngFlowValidationTarget,
+} from '../types/tng-flow-validation.types';
+import type {
+  TngFlowConnection,
+  TngFlowConnectionType,
+  TngFlowDefinition,
+  TngFlowEndpoint,
+  TngFlowNode,
+  TngFlowPort,
+  TngFlowPortDirection,
+  TngFlowPortKind,
+} from '../types/tng-flow.types';
 
-export type TngFlowValidationIssueCode =
-  | 'duplicate-connection-id'
-  | 'duplicate-connection'
-  | 'duplicate-node-id'
-  | 'duplicate-port-id'
-  | 'empty-connection-id'
-  | 'empty-node-id'
-  | 'empty-port-id'
-  | 'incompatible-ports'
-  | 'incompatible-port-kind'
-  | 'invalid-source-port'
-  | 'invalid-target-port'
-  | 'missing-source-port'
-  | 'missing-target-port'
-  | 'mixed-port-model'
-  | 'port-connection-limit'
-  | 'self-connection-disabled';
+/** @deprecated Use `TngFlowStructuralIssueCode`. */
+export type TngFlowValidationIssueCode = TngFlowStructuralIssueCode;
+export type { TngFlowValidationIssue } from '../types/tng-flow-validation.types';
 
-export type TngFlowValidationIssue = Readonly<{
-  code: TngFlowValidationIssueCode;
-  message: string;
-  connectionId?: string;
-  nodeId?: string;
-  portId?: string;
+export type TngFlowAnalysis<TNodeData = unknown, TConnectionData = unknown> = Readonly<{
+  nodes: readonly TngFlowNode<TNodeData>[];
+  connections: readonly TngFlowConnection<TConnectionData>[];
+  index: TngFlowGraphIndex<TNodeData, TConnectionData>;
+  issues: readonly TngFlowValidationIssue[];
 }>;
 
-type PortRecord = Readonly<{
-  direction: 'input' | 'output';
-  nodeId: string;
-  port: TngFlowPort;
-}>;
-
-type ValidationState = {
-  connectionCounts: Map<string, number>;
-  connectionIds: Set<string>;
-  connectionPairs: Set<string>;
+type UnknownRecord = Record<string, unknown>;
+type MutableAnalysis<TNodeData, TConnectionData> = {
+  nodes: TngFlowNode<TNodeData>[];
+  connections: TngFlowConnection<TConnectionData>[];
   issues: TngFlowValidationIssue[];
-  nodeIds: Set<string>;
-  ports: Map<string, PortRecord>;
 };
 
-type ResolvedConnection = Readonly<{
-  connection: TngFlowConnection;
-  source: PortRecord;
-  target: PortRecord;
-}>;
+const CONNECTION_TYPES: readonly TngFlowConnectionType[] = [
+  'adaptive-curve',
+  'bezier',
+  'segment',
+  'straight',
+];
+const PORT_DIRECTIONS: readonly TngFlowPortDirection[] = ['input', 'output'];
+const PORT_KINDS: readonly TngFlowPortKind[] = ['control', 'data', 'error'];
 
-function createValidationState(): ValidationState {
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function encoded(value: string | number): string {
+  return encodeURIComponent(String(value));
+}
+
+function addIssue(
+  issues: TngFlowValidationIssue[],
+  code: TngFlowStructuralIssueCode,
+  message: string,
+  target: TngFlowValidationTarget,
+  identity: string,
+  severity: TngFlowValidationSeverity = 'error',
+): void {
+  issues.push({
+    id: `tailng:${code}:${identity}`,
+    code,
+    severity,
+    message,
+    target,
+  });
+}
+
+function optionalString(record: UnknownRecord, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function optionalNonEmptyString(record: UnknownRecord, key: string): string | undefined {
+  const value = optionalString(record, key)?.trim();
+  return value === undefined || value.length === 0 ? undefined : value;
+}
+
+function optionalBoolean(record: UnknownRecord, key: string): boolean | undefined {
+  const value = record[key];
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function optionalStringArray(record: UnknownRecord, key: string): readonly string[] | undefined {
+  const value = record[key];
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : undefined;
+}
+
+function sanitizePort(
+  rawPort: unknown,
+  nodeId: string,
+  fallbackDirection: TngFlowPortDirection | undefined,
+  index: number,
+  issues: TngFlowValidationIssue[],
+): TngFlowPort | undefined {
+  if (!isRecord(rawPort)) {
+    addIssue(
+      issues,
+      'invalid-port-record',
+      `Node "${nodeId}" contains a malformed port record.`,
+      { kind: 'node', nodeId },
+      `${encoded(nodeId)}:${index}`,
+    );
+    return undefined;
+  }
+
+  const id = typeof rawPort['id'] === 'string' ? rawPort['id'].trim() : '';
+  if (id.length === 0) {
+    addIssue(
+      issues,
+      'empty-port-id',
+      `Node "${nodeId}" contains a port with an empty id.`,
+      { kind: 'node', nodeId },
+      `${encoded(nodeId)}:${index}`,
+    );
+    return undefined;
+  }
+
+  const rawDirection = rawPort['direction'];
+  const direction =
+    typeof rawDirection === 'string' && PORT_DIRECTIONS.includes(rawDirection as TngFlowPortDirection)
+      ? (rawDirection as TngFlowPortDirection)
+      : fallbackDirection;
+  if (direction === undefined) {
+    addIssue(
+      issues,
+      'invalid-port-direction',
+      `Port "${id}" on node "${nodeId}" has an invalid direction.`,
+      { kind: 'port', nodeId, portId: id },
+      `${encoded(nodeId)}:${encoded(id)}`,
+    );
+    return undefined;
+  }
+
+  const rawKind = rawPort['kind'];
+  const kind =
+    typeof rawKind === 'string' && PORT_KINDS.includes(rawKind as TngFlowPortKind)
+      ? (rawKind as TngFlowPortKind)
+      : 'data';
+
   return {
-    connectionCounts: new Map(),
-    connectionIds: new Set(),
-    connectionPairs: new Set(),
-    issues: [],
-    nodeIds: new Set(),
-    ports: new Map(),
+    id,
+    direction,
+    kind,
+    name: optionalString(rawPort, 'name'),
+    label: optionalString(rawPort, 'label'),
+    dataType: optionalString(rawPort, 'dataType'),
+    category: optionalString(rawPort, 'category'),
+    required: optionalBoolean(rawPort, 'required'),
+    disabled: optionalBoolean(rawPort, 'disabled'),
+    multiple: optionalBoolean(rawPort, 'multiple'),
+    accepts: optionalStringArray(rawPort, 'accepts'),
+    allowSelfConnection: optionalBoolean(rawPort, 'allowSelfConnection'),
   };
 }
 
-function isNonEmptyId(value: string): boolean {
-  return value.trim().length > 0;
-}
-
-function validateNodeId(node: TngFlowNode, state: ValidationState): void {
-  if (!isNonEmptyId(node.id)) {
-    state.issues.push({ code: 'empty-node-id', message: 'A node has an empty id.' });
-    return;
-  }
-
-  if (state.nodeIds.has(node.id)) {
-    state.issues.push({
-      code: 'duplicate-node-id',
-      message: `Node id "${node.id}" is used more than once.`,
-      nodeId: node.id,
-    });
-    return;
-  }
-
-  state.nodeIds.add(node.id);
-}
-
-function registerPort(record: PortRecord, state: ValidationState): void {
-  const { direction, nodeId, port } = record;
-  if (!isNonEmptyId(port.id)) {
-    state.issues.push({
-      code: 'empty-port-id',
-      message: `Node "${nodeId}" has an ${direction} port with an empty id.`,
-      nodeId,
-    });
-    return;
-  }
-
-  const id = createTngFlowConnectorId(nodeId, port.id);
-  if (state.ports.has(id)) {
-    state.issues.push({
-      code: 'duplicate-port-id',
-      message: `Port id "${port.id}" is used more than once on node "${nodeId}".`,
-      nodeId,
-      portId: port.id,
-    });
-    return;
-  }
-
-  state.ports.set(id, record);
-}
-
-function registerNode(node: TngFlowNode, state: ValidationState): void {
-  validateNodeId(node, state);
-  if (node.ports !== undefined && (node.inputs !== undefined || node.outputs !== undefined)) {
-    state.issues.push({
-      code: 'mixed-port-model',
-      message: `Node "${node.id}" mixes canonical ports with legacy inputs or outputs.`,
-      nodeId: node.id,
-    });
-  }
-  for (const port of getTngFlowNodePorts(node)) {
-    registerPort({ direction: port.direction, nodeId: node.id, port }, state);
-  }
-}
-
-function validateConnectionId(connection: TngFlowConnection, state: ValidationState): void {
-  if (!isNonEmptyId(connection.id)) {
-    state.issues.push({ code: 'empty-connection-id', message: 'A connection has an empty id.' });
-    return;
-  }
-
-  if (state.connectionIds.has(connection.id)) {
-    state.issues.push({
-      code: 'duplicate-connection-id',
-      message: `Connection id "${connection.id}" is used more than once.`,
-      connectionId: connection.id,
-    });
-    return;
-  }
-
-  state.connectionIds.add(connection.id);
-}
-
-function validateSource(
-  connection: TngFlowConnection,
-  source: PortRecord | undefined,
+function sanitizePorts(
+  node: UnknownRecord,
+  nodeId: string,
   issues: TngFlowValidationIssue[],
-): void {
-  if (source === undefined) {
-    issues.push({
-      code: 'missing-source-port',
-      message: `Connection "${connection.id}" references missing source port "${connection.source.portId}" on node "${connection.source.nodeId}".`,
-      connectionId: connection.id,
-      nodeId: connection.source.nodeId,
-      portId: connection.source.portId,
-    });
-  } else if (source.direction !== 'output') {
-    issues.push({
-      code: 'invalid-source-port',
-      message: `Connection "${connection.id}" uses input port "${connection.source.portId}" as its source.`,
-      connectionId: connection.id,
-      nodeId: connection.source.nodeId,
-      portId: connection.source.portId,
-    });
+): readonly TngFlowPort[] {
+  const usesCanonicalPorts = Array.isArray(node['ports']);
+  const hasLegacyPorts = Array.isArray(node['inputs']) || Array.isArray(node['outputs']);
+  if (usesCanonicalPorts && hasLegacyPorts) {
+    addIssue(
+      issues,
+      'mixed-port-model',
+      `Node "${nodeId}" mixes canonical ports with legacy inputs or outputs.`,
+      { kind: 'node', nodeId },
+      encoded(nodeId),
+    );
   }
+
+  const rawPorts: readonly Readonly<{ value: unknown; direction?: TngFlowPortDirection }>[] =
+    usesCanonicalPorts
+      ? (node['ports'] as unknown[]).map((value) => ({ value }))
+      : [
+          ...(Array.isArray(node['inputs'])
+            ? (node['inputs'] as unknown[]).map((value) => ({
+                value,
+                direction: 'input' as const,
+              }))
+            : []),
+          ...(Array.isArray(node['outputs'])
+            ? (node['outputs'] as unknown[]).map((value) => ({
+                value,
+                direction: 'output' as const,
+              }))
+            : []),
+        ];
+  const ids = new Set<string>();
+  const ports: TngFlowPort[] = [];
+
+  rawPorts.forEach((raw, index) => {
+    const port = sanitizePort(raw.value, nodeId, raw.direction, index, issues);
+    if (port === undefined) {
+      return;
+    }
+    if (ids.has(port.id)) {
+      addIssue(
+        issues,
+        'duplicate-port-id',
+        `Port id "${port.id}" is used more than once on node "${nodeId}".`,
+        { kind: 'port', nodeId, portId: port.id },
+        `${encoded(nodeId)}:${encoded(port.id)}:${index}`,
+      );
+      return;
+    }
+    ids.add(port.id);
+    ports.push(port);
+  });
+
+  return ports;
 }
 
-function validateTarget(
-  connection: TngFlowConnection,
-  target: PortRecord | undefined,
+function sanitizeNode<TNodeData>(
+  rawNode: unknown,
+  index: number,
+  nodesById: Map<string, TngFlowNode<TNodeData>>,
   issues: TngFlowValidationIssue[],
-): void {
-  if (target === undefined) {
-    issues.push({
-      code: 'missing-target-port',
-      message: `Connection "${connection.id}" references missing target port "${connection.target.portId}" on node "${connection.target.nodeId}".`,
-      connectionId: connection.id,
-      nodeId: connection.target.nodeId,
-      portId: connection.target.portId,
-    });
-  } else if (target.direction !== 'input') {
-    issues.push({
-      code: 'invalid-target-port',
-      message: `Connection "${connection.id}" uses output port "${connection.target.portId}" as its target.`,
-      connectionId: connection.id,
-      nodeId: connection.target.nodeId,
-      portId: connection.target.portId,
-    });
+): TngFlowNode<TNodeData> | undefined {
+  if (!isRecord(rawNode)) {
+    addIssue(
+      issues,
+      'invalid-node-record',
+      'The definition contains a malformed node record.',
+      { kind: 'flow' },
+      String(index),
+    );
+    return undefined;
   }
+
+  const id = typeof rawNode['id'] === 'string' ? rawNode['id'].trim() : '';
+  if (id.length === 0) {
+    addIssue(
+      issues,
+      'empty-node-id',
+      'A node has an empty id.',
+      { kind: 'flow' },
+      String(index),
+    );
+    return undefined;
+  }
+  const ports = sanitizePorts(rawNode, id, issues);
+  const existingNode = nodesById.get(id);
+  if (existingNode !== undefined) {
+    addIssue(
+      issues,
+      'duplicate-node-id',
+      `Node id "${id}" is used more than once.`,
+      { kind: 'flow' },
+      `${encoded(id)}:${index}`,
+    );
+    const existingPortIds = new Set(getTngFlowNodePorts(existingNode).map((port) => port.id));
+    for (const port of ports) {
+      if (existingPortIds.has(port.id)) {
+        addIssue(
+          issues,
+          'duplicate-port-id',
+          `Port id "${port.id}" is used more than once on node "${id}".`,
+          { kind: 'port', nodeId: id, portId: port.id },
+          `${encoded(id)}:${encoded(port.id)}:${index}`,
+        );
+      }
+    }
+    return undefined;
+  }
+
+  const rawPosition = rawNode['position'];
+  const hasValidPosition =
+    isRecord(rawPosition) &&
+    typeof rawPosition['x'] === 'number' &&
+    Number.isFinite(rawPosition['x']) &&
+    typeof rawPosition['y'] === 'number' &&
+    Number.isFinite(rawPosition['y']);
+  if (!hasValidPosition) {
+    addIssue(
+      issues,
+      'invalid-node-position',
+      `Node "${id}" has a non-finite or missing position and was placed at the origin.`,
+      { kind: 'node', nodeId: id },
+      encoded(id),
+    );
+  }
+
+  const type = optionalNonEmptyString(rawNode, 'type') ?? 'unknown';
+  const name = optionalNonEmptyString(rawNode, 'name') ?? id;
+  if (type === 'unknown' || (name === id && optionalString(rawNode, 'name') === undefined)) {
+    addIssue(
+      issues,
+      'invalid-node-record',
+      `Node "${id}" is missing a valid type or name.`,
+      { kind: 'node', nodeId: id },
+      `${encoded(id)}:identity`,
+    );
+  }
+
+  const node: TngFlowNode<TNodeData> = {
+    id,
+    type,
+    name,
+    position: hasValidPosition
+      ? { x: rawPosition['x'] as number, y: rawPosition['y'] as number }
+      : { x: 0, y: 0 },
+    data: rawNode['data'] as TNodeData | undefined,
+    description: optionalString(rawNode, 'description'),
+    disabled: optionalBoolean(rawNode, 'disabled'),
+    icon: optionalString(rawNode, 'icon'),
+    ports,
+    locked: optionalBoolean(rawNode, 'locked'),
+  };
+  nodesById.set(id, node);
+  return node;
+}
+
+function sanitizeNodes<TNodeData>(
+  value: unknown,
+  issues: TngFlowValidationIssue[],
+): readonly TngFlowNode<TNodeData>[] {
+  if (!Array.isArray(value)) {
+    addIssue(
+      issues,
+      'invalid-nodes',
+      'The flow definition does not contain a valid nodes array.',
+      { kind: 'flow' },
+      'nodes',
+    );
+    return [];
+  }
+
+  const nodesById = new Map<string, TngFlowNode<TNodeData>>();
+  return value
+    .map((node, index) => sanitizeNode<TNodeData>(node, index, nodesById, issues))
+    .filter((node): node is TngFlowNode<TNodeData> => node !== undefined);
+}
+
+function sanitizeEndpoint(value: unknown): TngFlowEndpoint | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const nodeId = typeof value['nodeId'] === 'string' ? value['nodeId'].trim() : '';
+  const portId = typeof value['portId'] === 'string' ? value['portId'].trim() : '';
+  return nodeId.length > 0 && portId.length > 0 ? { nodeId, portId } : undefined;
+}
+
+function sanitizeConnection<TConnectionData>(
+  rawConnection: unknown,
+  index: number,
+  ids: Set<string>,
+  issues: TngFlowValidationIssue[],
+): TngFlowConnection<TConnectionData> | undefined {
+  if (!isRecord(rawConnection)) {
+    addIssue(
+      issues,
+      'invalid-connections',
+      'The definition contains a malformed connection record.',
+      { kind: 'flow' },
+      String(index),
+    );
+    return undefined;
+  }
+
+  const id = typeof rawConnection['id'] === 'string' ? rawConnection['id'].trim() : '';
+  if (id.length === 0) {
+    addIssue(
+      issues,
+      'empty-connection-id',
+      'A connection has an empty id.',
+      { kind: 'flow' },
+      String(index),
+    );
+    return undefined;
+  }
+  if (ids.has(id)) {
+    addIssue(
+      issues,
+      'duplicate-connection-id',
+      `Connection id "${id}" is used more than once.`,
+      { kind: 'flow' },
+      `${encoded(id)}:${index}`,
+    );
+  } else {
+    ids.add(id);
+  }
+
+  const source = sanitizeEndpoint(rawConnection['source']);
+  const target = sanitizeEndpoint(rawConnection['target']);
+  if (source === undefined || target === undefined) {
+    addIssue(
+      issues,
+      source === undefined ? 'missing-source-port' : 'missing-target-port',
+      `Connection "${id}" contains a malformed endpoint.`,
+      { kind: 'connection', connectionId: id },
+      encoded(id),
+    );
+    return undefined;
+  }
+
+  const rawType = rawConnection['type'];
+  const type =
+    typeof rawType === 'string' && CONNECTION_TYPES.includes(rawType as TngFlowConnectionType)
+      ? (rawType as TngFlowConnectionType)
+      : undefined;
+  return {
+    id,
+    source,
+    target,
+    data: rawConnection['data'] as TConnectionData | undefined,
+    disabled: optionalBoolean(rawConnection, 'disabled'),
+    reassignable: optionalBoolean(rawConnection, 'reassignable'),
+    selectable: optionalBoolean(rawConnection, 'selectable'),
+    type,
+  };
+}
+
+function sanitizeConnections<TConnectionData>(
+  value: unknown,
+  issues: TngFlowValidationIssue[],
+): readonly TngFlowConnection<TConnectionData>[] {
+  if (!Array.isArray(value)) {
+    addIssue(
+      issues,
+      'invalid-connections',
+      'The flow definition does not contain a valid connections array.',
+      { kind: 'flow' },
+      'connections',
+    );
+    return [];
+  }
+  const ids = new Set<string>();
+  return value
+    .map((connection, index) =>
+      sanitizeConnection<TConnectionData>(connection, index, ids, issues),
+    )
+    .filter(
+      (connection): connection is TngFlowConnection<TConnectionData> => connection !== undefined,
+    );
 }
 
 function acceptsTarget(source: TngFlowPort, target: TngFlowPort): boolean {
@@ -197,95 +456,203 @@ function acceptsTarget(source: TngFlowPort, target: TngFlowPort): boolean {
   );
 }
 
-function validateResolvedConnection(
-  resolved: ResolvedConnection,
+function resolveConnection<TNodeData, TConnectionData>(
+  connection: TngFlowConnection<TConnectionData>,
+  nodeIndex: TngFlowGraphIndex<TNodeData, never>,
+  issues: TngFlowValidationIssue[],
+): Readonly<{ source: TngFlowPortRecord<TNodeData>; target: TngFlowPortRecord<TNodeData> }> | undefined {
+  const sourceNode = nodeIndex.nodesById.get(connection.source.nodeId);
+  const targetNode = nodeIndex.nodesById.get(connection.target.nodeId);
+  if (sourceNode === undefined) {
+    addIssue(
+      issues,
+      'missing-source-node',
+      `Connection "${connection.id}" references a missing source node.`,
+      { kind: 'connection', connectionId: connection.id },
+      encoded(connection.id),
+    );
+  }
+  if (targetNode === undefined) {
+    addIssue(
+      issues,
+      'missing-target-node',
+      `Connection "${connection.id}" references a missing target node.`,
+      { kind: 'connection', connectionId: connection.id },
+      encoded(connection.id),
+    );
+  }
+  if (sourceNode === undefined || targetNode === undefined) {
+    return undefined;
+  }
+
+  const source = nodeIndex.portsByConnectorId.get(
+    createTngFlowConnectorId(connection.source.nodeId, connection.source.portId),
+  );
+  const target = nodeIndex.portsByConnectorId.get(
+    createTngFlowConnectorId(connection.target.nodeId, connection.target.portId),
+  );
+  if (source === undefined) {
+    addIssue(
+      issues,
+      'missing-source-port',
+      `Connection "${connection.id}" references a missing source port.`,
+      { kind: 'connection', connectionId: connection.id },
+      encoded(connection.id),
+    );
+  }
+  if (target === undefined) {
+    addIssue(
+      issues,
+      'missing-target-port',
+      `Connection "${connection.id}" references a missing target port.`,
+      { kind: 'connection', connectionId: connection.id },
+      encoded(connection.id),
+    );
+  }
+  if (source === undefined || target === undefined) {
+    return undefined;
+  }
+
+  let hasInvalidDirection = false;
+  if (source.port.direction !== 'output') {
+    addIssue(
+      issues,
+      'invalid-source-port',
+      `Connection "${connection.id}" uses an input port as its source.`,
+      { kind: 'connection', connectionId: connection.id },
+      encoded(connection.id),
+    );
+    hasInvalidDirection = true;
+  }
+  if (target.port.direction !== 'input') {
+    addIssue(
+      issues,
+      'invalid-target-port',
+      `Connection "${connection.id}" uses an output port as its target.`,
+      { kind: 'connection', connectionId: connection.id },
+      encoded(connection.id),
+    );
+    hasInvalidDirection = true;
+  }
+  if (hasInvalidDirection) {
+    return undefined;
+  }
+  return { source, target };
+}
+
+function validateResolvedConnection<TNodeData, TConnectionData>(
+  connection: TngFlowConnection<TConnectionData>,
+  source: TngFlowPortRecord<TNodeData>,
+  target: TngFlowPortRecord<TNodeData>,
   issues: TngFlowValidationIssue[],
 ): void {
-  const { connection, source, target } = resolved;
   if (!acceptsTarget(source.port, target.port)) {
-    issues.push({
-      code: 'incompatible-ports',
-      message: `Source port "${source.port.id}" does not accept target port "${target.port.id}".`,
-      connectionId: connection.id,
-    });
+    addIssue(
+      issues,
+      'incompatible-ports',
+      `Source port "${source.port.id}" does not accept target port "${target.port.id}".`,
+      { kind: 'connection', connectionId: connection.id },
+      encoded(connection.id),
+    );
   }
-
   if (source.port.kind !== target.port.kind) {
-    issues.push({
-      code: 'incompatible-port-kind',
-      message: `Source port "${source.port.id}" and target port "${target.port.id}" have different kinds.`,
-      connectionId: connection.id,
-    });
+    addIssue(
+      issues,
+      'incompatible-port-kind',
+      `Connection "${connection.id}" joins ports with different kinds.`,
+      { kind: 'connection', connectionId: connection.id },
+      encoded(connection.id),
+    );
   }
-
-  if (source.nodeId === target.nodeId && source.port.allowSelfConnection !== true) {
-    issues.push({
-      code: 'self-connection-disabled',
-      message: `Source port "${source.port.id}" does not allow connections to its own node.`,
-      connectionId: connection.id,
-      nodeId: source.nodeId,
-      portId: source.port.id,
-    });
+  if (source.node.id === target.node.id && source.port.allowSelfConnection !== true) {
+    addIssue(
+      issues,
+      'self-connection-disabled',
+      `Port "${source.port.id}" does not allow connections to its own node.`,
+      { kind: 'connection', connectionId: connection.id },
+      encoded(connection.id),
+    );
   }
 }
 
-function validateConnectionPair(connection: TngFlowConnection, state: ValidationState): void {
-  const pair = tngFlowConnectionPairKey(connection.source, connection.target);
-  if (state.connectionPairs.has(pair)) {
-    state.issues.push({
-      code: 'duplicate-connection',
-      message: `Connection "${connection.id}" duplicates an existing endpoint pair.`,
-      connectionId: connection.id,
-    });
-  }
-  state.connectionPairs.add(pair);
-}
+function validateConnections<TNodeData, TConnectionData>(
+  connections: readonly TngFlowConnection<TConnectionData>[],
+  nodeIndex: TngFlowGraphIndex<TNodeData, never>,
+  analysis: MutableAnalysis<TNodeData, TConnectionData>,
+): void {
+  const pairs = new Set<string>();
+  const counts = new Map<string, number>();
+  const renderedConnectionIds = new Set<string>();
 
-function countConnection(portId: string, state: ValidationState): void {
-  state.connectionCounts.set(portId, (state.connectionCounts.get(portId) ?? 0) + 1);
-}
-
-function validateConnection(connection: TngFlowConnection, state: ValidationState): void {
-  validateConnectionId(connection, state);
-  validateConnectionPair(connection, state);
-  const sourceId = createTngFlowConnectorId(connection.source.nodeId, connection.source.portId);
-  const targetId = createTngFlowConnectorId(connection.target.nodeId, connection.target.portId);
-  const source = state.ports.get(sourceId);
-  const target = state.ports.get(targetId);
-  validateSource(connection, source, state.issues);
-  validateTarget(connection, target, state.issues);
-
-  if (source?.direction === 'output' && target?.direction === 'input') {
-    validateResolvedConnection({ connection, source, target }, state.issues);
-  }
-
-  countConnection(sourceId, state);
-  countConnection(targetId, state);
-}
-
-function validateConnectionLimits(state: ValidationState): void {
-  for (const [connectorId, count] of state.connectionCounts) {
-    const record = state.ports.get(connectorId);
-    if (count <= 1 || record === undefined || record.port.multiple === true) {
-      continue;
+  connections.forEach((connection, index) => {
+    const hasRenderableId = !renderedConnectionIds.has(connection.id);
+    renderedConnectionIds.add(connection.id);
+    const resolved = resolveConnection(connection, nodeIndex, analysis.issues);
+    if (resolved === undefined || !hasRenderableId) {
+      return;
     }
 
-    state.issues.push({
-      code: 'port-connection-limit',
-      message: `Port "${record.port.id}" has ${count} connections but is not marked as multiple.`,
-      nodeId: record.nodeId,
-      portId: record.port.id,
-    });
+    const pair = tngFlowConnectionPairKey(connection.source, connection.target);
+    if (pairs.has(pair)) {
+      addIssue(
+        analysis.issues,
+        'duplicate-connection',
+        `Connection "${connection.id}" duplicates an existing endpoint pair.`,
+        { kind: 'connection', connectionId: connection.id },
+        `${encoded(connection.id)}:${index}`,
+      );
+    }
+    pairs.add(pair);
+    validateResolvedConnection(connection, resolved.source, resolved.target, analysis.issues);
+    analysis.connections.push(connection);
+
+    for (const record of [resolved.source, resolved.target]) {
+      counts.set(record.connectorId, (counts.get(record.connectorId) ?? 0) + 1);
+    }
+  });
+
+  for (const [connectorId, count] of counts) {
+    const record = nodeIndex.portsByConnectorId.get(connectorId);
+    if (record === undefined || count <= 1 || record.port.multiple === true) {
+      continue;
+    }
+    addIssue(
+      analysis.issues,
+      'port-connection-limit',
+      `Port "${record.port.id}" has ${count} connections but is not marked as multiple.`,
+      { kind: 'port', nodeId: record.node.id, portId: record.port.id },
+      `${encoded(record.node.id)}:${encoded(record.port.id)}`,
+    );
   }
 }
 
+export function analyzeTngFlow<TNodeData = unknown, TConnectionData = unknown>(
+  nodesValue: unknown,
+  connectionsValue: unknown,
+): TngFlowAnalysis<TNodeData, TConnectionData> {
+  const analysis: MutableAnalysis<TNodeData, TConnectionData> = {
+    nodes: [],
+    connections: [],
+    issues: [],
+  };
+  analysis.nodes.push(...sanitizeNodes<TNodeData>(nodesValue, analysis.issues));
+  const nodeIndex = createTngFlowGraphIndex<TNodeData, never>(analysis.nodes, []);
+  const connections = sanitizeConnections<TConnectionData>(connectionsValue, analysis.issues);
+  validateConnections(connections, nodeIndex, analysis);
+  const index = createTngFlowGraphIndex(analysis.nodes, analysis.connections);
+  return { ...analysis, index };
+}
+
+export function validateTngFlowDefinition(
+  definition: TngFlowDefinition,
+): readonly TngFlowValidationIssue[] {
+  return analyzeTngFlow(definition.nodes, definition.connections).issues;
+}
+
+/** @deprecated Use `validateTngFlowDefinition`. */
 export function validateTngFlow(
   nodes: readonly TngFlowNode[],
   connections: readonly TngFlowConnection[],
 ): readonly TngFlowValidationIssue[] {
-  const state = createValidationState();
-  nodes.forEach((node) => registerNode(node, state));
-  connections.forEach((connection) => validateConnection(connection, state));
-  validateConnectionLimits(state);
-  return state.issues;
+  return analyzeTngFlow(nodes, connections).issues;
 }
