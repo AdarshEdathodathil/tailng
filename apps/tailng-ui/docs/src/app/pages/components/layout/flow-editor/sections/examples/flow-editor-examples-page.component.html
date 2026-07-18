@@ -2,9 +2,9 @@
   <section class="docs-overview-block">
     <h2 class="docs-overview-title">Flow Editor examples</h2>
     <p class="docs-overview-lead">
-      Explore connection editing and validation, controlled selection and deletion, editor modes,
-      node movement, custom node composition, and read-only monitoring. Give each editor a unique
-      <code>flowId</code> when multiple canvases share a page.
+      Explore timed execution, connection editing and validation, controlled selection and
+      deletion, editor modes, node movement, custom node composition, and read-only monitoring.
+      Give each editor a unique <code>flowId</code> when multiple canvases share a page.
     </p>
   </section>
 
@@ -25,6 +25,27 @@
         [codeTabs]="documentReviewDemoCodeTabs"
       >
         <app-document-review-demo />
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="timed-execution-workflow" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Timed workflow simulation"
+      description="Start an automatic execution where each connection remains in progress for three seconds before the next node is reached. The presentation signal drives node status and flowing edge motion without changing the workflow definition."
+      ariaLabel="Timed workflow simulation demo"
+      tabListAriaLabel="Timed workflow demo"
+      defaultValue="interactive"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="interactive"
+        label="Interactive demo"
+        panelTitle="Automatic three-second workflow handoffs"
+        [codeTabs]="timedExecutionDemoCodeTabs"
+      >
+        <app-timed-execution-demo />
       </ng-template>
     </app-docs-example-tabs-section>
   </section>

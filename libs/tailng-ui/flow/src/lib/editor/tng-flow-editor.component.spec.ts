@@ -254,12 +254,23 @@ describe('TngFlowEditorComponent', () => {
     );
   });
 
-  it('projects connection presentation and validation onto TailNG data attributes', () => {
+  it('projects connection motion and validation onto TailNG data attributes', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('definition', definition);
     fixture.componentRef.setInput('presentation', {
       connections: {
-        'custom-to-default': { status: 'active', animated: true, highlighted: true },
+        'custom-to-default': {
+          status: 'active',
+          motion: 'flow',
+          motionSpeed: 'fast',
+          motionDirection: 'reverse',
+          highlighted: true,
+        },
+        'custom-to-locked': {
+          status: 'active',
+          motion: 'flow',
+          motionSpeed: 'slow',
+        },
       },
     });
     fixture.componentRef.setInput('validation', {
@@ -281,8 +292,24 @@ describe('TngFlowEditorComponent', () => {
     );
     expect(connection?.getAttribute('data-status')).toBe('active');
     expect(connection?.getAttribute('data-validation')).toBe('warning');
+    expect(connection?.getAttribute('data-motion')).toBe('flow');
+    expect(connection?.getAttribute('data-motion-speed')).toBe('fast');
+    expect(connection?.getAttribute('data-motion-direction')).toBe('reverse');
     expect(connection?.hasAttribute('data-animated')).toBe(true);
     expect(connection?.hasAttribute('data-highlighted')).toBe(true);
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[data-motion="flow"]'),
+    ).toHaveLength(2);
+
+    fixture.componentRef.setInput('presentation', {
+      connections: { 'custom-to-default': { motion: 'none' } },
+    });
+    fixture.detectChanges();
+
+    expect(connection?.getAttribute('data-motion')).toBe('none');
+    expect(connection?.getAttribute('data-motion-speed')).toBe('normal');
+    expect(connection?.getAttribute('data-motion-direction')).toBe('forward');
+    expect(connection?.hasAttribute('data-animated')).toBe(false);
   });
 
   it('distributes ports evenly across each node side', () => {

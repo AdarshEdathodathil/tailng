@@ -280,7 +280,15 @@
           <tr>
             <td><code>TngFlowPresentation&lt;TStatus&gt;</code></td>
             <td>none</td>
-            <td>Runtime status, progress, messages, highlights, dimming, and connection animation.</td>
+            <td>Runtime status, progress, messages, highlights, dimming, and connection motion.</td>
+          </tr>
+          <tr>
+            <td><code>TngFlowConnectionPresentation</code></td>
+            <td>none</td>
+            <td>
+              Status and emphasis plus flowing motion, speed, and direction. This state is never
+              persisted into the graph connection.
+            </td>
           </tr>
           <tr>
             <td><code>TngFlowValidation</code></td>
@@ -311,6 +319,60 @@
     <p>
       <code>TngFlowPortComponent</code> is the reusable visual port shell used by the editor. Foblex
       connector directives remain private to <code>TngFlowEditorComponent</code>.
+    </p>
+  </section>
+
+  <section id="connection-motion" class="docs-overview-block">
+    <h3>Connection motion</h3>
+    <p>
+      Set connection motion through <code>presentation.connections</code>. Motion changes only the
+      SVG path presentation, so straight, Bézier, segmented, and adaptive connections retain their
+      existing geometry. Multiple connections can move at the same time.
+    </p>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>motion</code></td>
+            <td><code>'none' | 'flow'</code></td>
+            <td><code>'none'</code></td>
+            <td>Shows a directional travelling dash when set to <code>'flow'</code>.</td>
+          </tr>
+          <tr>
+            <td><code>motionSpeed</code></td>
+            <td><code>'slow' | 'normal' | 'fast'</code></td>
+            <td><code>'normal'</code></td>
+            <td>Selects the duration token used by flowing motion.</td>
+          </tr>
+          <tr>
+            <td><code>motionDirection</code></td>
+            <td><code>'forward' | 'reverse'</code></td>
+            <td><code>'forward'</code></td>
+            <td>Moves from source to target or in the reverse visual direction.</td>
+          </tr>
+          <tr>
+            <td><code>animated</code> <small>(deprecated)</small></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>
+              Compatibility alias for <code>motion: 'flow'</code>. An explicit
+              <code>motion</code> value takes precedence.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Reduced-motion preferences disable the dash animation while preserving a static emphasized
+      path, so execution state remains visible without movement.
     </p>
   </section>
 

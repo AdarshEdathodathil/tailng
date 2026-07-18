@@ -47,36 +47,42 @@
         <f-connection-for-create />
       }
 
-      @for (connection of renderableConnections(); track connection.id) {
-        <f-connection
-          class="tng-flow-editor__connection"
-          [fConnectionId]="connection.id"
-          [fSourceId]="connectorId(connection.source.nodeId, connection.source.portId)"
-          [fTargetId]="connectorId(connection.target.nodeId, connection.target.portId)"
-          [fType]="connection.type ?? 'bezier'"
-          [fSelectionDisabled]="!canSelect() || connection.selectable === false"
-          [fReassignDisabled]="
-            !canEdit() || connection.disabled === true || connection.reassignable === false
-          "
-          [attr.data-connection-id]="connection.id"
-          [attr.data-selected]="connectionViewFor(connection.id).selected ? '' : null"
-          [attr.data-status]="connectionViewFor(connection.id).status"
-          [attr.data-validation]="connectionViewFor(connection.id).validationSeverity"
-          [attr.data-highlighted]="connectionViewFor(connection.id).highlighted ? '' : null"
-          [attr.data-dimmed]="connectionViewFor(connection.id).dimmed ? '' : null"
-          [attr.data-animated]="connectionViewFor(connection.id).animated ? '' : null"
-          (dblclick)="onConnectionDoubleClick($event, connection.id)"
-        >
-          @if (connectionIssues(connection.id).length > 0) {
-            <span fConnectionContent [position]="0.5" class="tng-flow-editor__connection-badge">
-              <tng-flow-validation-badge
-                [issues]="connectionIssues(connection.id)"
-                (issueActivated)="onValidationIssueActivated($event, 'connection')"
-              />
-            </span>
-          }
-        </f-connection>
-      }
+      <ng-container ngProjectAs="[fConnections]">
+        @for (connection of renderableConnections(); track connection.id) {
+          @let view = connectionViewFor(connection.id);
+          <f-connection
+            class="tng-flow-editor__connection"
+            [fConnectionId]="connection.id"
+            [fSourceId]="connectorId(connection.source.nodeId, connection.source.portId)"
+            [fTargetId]="connectorId(connection.target.nodeId, connection.target.portId)"
+            [fType]="connection.type ?? 'bezier'"
+            [fSelectionDisabled]="!canSelect() || connection.selectable === false"
+            [fReassignDisabled]="
+              !canEdit() || connection.disabled === true || connection.reassignable === false
+            "
+            [attr.data-connection-id]="connection.id"
+            [attr.data-selected]="view.selected ? '' : null"
+            [attr.data-status]="view.status"
+            [attr.data-validation]="view.validationSeverity"
+            [attr.data-highlighted]="view.highlighted ? '' : null"
+            [attr.data-dimmed]="view.dimmed ? '' : null"
+            [attr.data-motion]="view.motion"
+            [attr.data-motion-speed]="view.motionSpeed"
+            [attr.data-motion-direction]="view.motionDirection"
+            [attr.data-animated]="view.animated ? '' : null"
+            (dblclick)="onConnectionDoubleClick($event, connection.id)"
+          >
+            @if (connectionIssues(connection.id).length > 0) {
+              <span fConnectionContent [position]="0.5" class="tng-flow-editor__connection-badge">
+                <tng-flow-validation-badge
+                  [issues]="connectionIssues(connection.id)"
+                  (issueActivated)="onValidationIssueActivated($event, 'connection')"
+                />
+              </span>
+            }
+          </f-connection>
+        }
+      </ng-container>
 
       @for (node of graphNodes(); track node.id) {
         <div

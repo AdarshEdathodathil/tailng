@@ -84,7 +84,18 @@
             <td>Connections and badges</td>
             <td>
               <code>--tng-flow-connection-error-color</code>,
+              <code>--tng-flow-connection-active-color</code>,
+              <code>--tng-flow-connection-success-color</code>,
               <code>--tng-flow-validation-badge-size</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Connection motion</td>
+            <td>
+              <code>--tng-flow-connection-motion-duration-slow</code>,
+              <code>--tng-flow-connection-motion-duration-normal</code>,
+              <code>--tng-flow-connection-motion-duration-fast</code>,
+              <code>--tng-flow-connection-motion-reduced-width</code>
             </td>
           </tr>
           <tr>
@@ -116,6 +127,16 @@
       [wrap]="true"
       [sanitizeHtml]="false"
     />
+  </section>
+
+  <section id="connection-motion" class="docs-overview-block">
+    <h3>Connection motion</h3>
+    <p>
+      Use the typed presentation API to activate connection motion. Duration custom properties can
+      tune the three speeds without exposing Foblex class names as public TailNG styling hooks.
+      Under <code>prefers-reduced-motion: reduce</code>, Flow Editor removes the animation and dash
+      pattern while keeping the path visibly emphasized.
+    </p>
   </section>
 
   <section id="custom-node-content" class="docs-overview-block">

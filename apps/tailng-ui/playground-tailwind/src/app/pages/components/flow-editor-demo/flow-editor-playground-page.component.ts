@@ -281,7 +281,13 @@ export class FlowEditorPlaygroundPageComponent {
       response: { status: 'waiting', dimmed: true },
     },
     connections: {
-      'parser-to-validator': { status: 'active', animated: true, highlighted: true },
+      'parser-to-validator': {
+        status: 'active',
+        motion: 'flow',
+        motionSpeed: 'fast',
+        motionDirection: 'reverse',
+        highlighted: true,
+      },
       'validator-to-response': { dimmed: true },
     },
   });

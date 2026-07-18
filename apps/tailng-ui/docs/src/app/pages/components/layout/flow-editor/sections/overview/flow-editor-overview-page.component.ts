@@ -107,7 +107,12 @@ export class FlowEditorOverviewPageComponent implements OnDestroy {
     },
     connections: {
       'prompt-to-model': { status: 'success' },
-      'model-to-response': { status: 'active', animated: true },
+      'model-to-response': {
+        status: 'active',
+        motion: 'flow',
+        motionSpeed: 'normal',
+        motionDirection: 'forward',
+      },
     },
   };
   protected readonly validation: TngFlowValidation = {

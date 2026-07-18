@@ -82,7 +82,7 @@ function createExecutionPresentation(activeIndex: number): TngFlowPresentation {
       index < activeIndex
         ? { status: 'success' as const }
         : index === activeIndex - 1
-          ? { status: 'active' as const, animated: true }
+          ? { status: 'active' as const, motion: 'flow' as const }
           : { status: 'idle' as const, dimmed: true },
     ]),
   );

@@ -1,0 +1,59 @@
+<article class="timed-execution-demo">
+  <header class="timed-execution-demo__hero">
+    <div>
+      <span class="timed-execution-demo__eyebrow">Automatic execution</span>
+      <h4>Three-second workflow handoffs</h4>
+      <p>
+        Follow a linear order workflow while each connection remains visibly in progress before
+        activating the next node.
+      </p>
+    </div>
+    <dl class="timed-execution-demo__stats" aria-label="Simulation settings">
+      <div>
+        <dt>Delay</dt>
+        <dd>3 sec</dd>
+      </div>
+      <div>
+        <dt>Steps</dt>
+        <dd>{{ definition.nodes.length }}</dd>
+      </div>
+    </dl>
+  </header>
+
+  <div class="timed-execution-demo__toolbar">
+    <div class="timed-execution-demo__actions">
+      <tng-button type="button" size="sm" [disabled]="isRunning()" (click)="runSimulation()">
+        {{ isRunning() ? 'Simulation running…' : 'Run simulation' }}
+      </tng-button>
+      <tng-button
+        type="button"
+        size="sm"
+        appearance="outline"
+        tone="neutral"
+        (click)="resetSimulation()"
+      >
+        Reset
+      </tng-button>
+    </div>
+
+    <div
+      class="timed-execution-demo__progress"
+      [attr.data-running]="isRunning() ? '' : null"
+      aria-live="polite"
+    >
+      <span aria-hidden="true"></span>
+      <p>{{ statusMessage() }}</p>
+    </div>
+  </div>
+
+  <tng-flow-editor
+    flowId="docs-timed-execution-workflow"
+    class="timed-execution-demo__canvas"
+    ariaLabel="Automatic timed order workflow simulation"
+    [definition]="definition"
+    [presentation]="presentation()"
+    mode="inspect"
+    [showSelectionArea]="false"
+    [zoomMinimum]="0.25"
+  />
+</article>

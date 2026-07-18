@@ -69,6 +69,9 @@ export type {
 export type { TngFlowRevealOptions } from './lib/types/tng-flow-navigation.types';
 export { EMPTY_TNG_FLOW_PRESENTATION } from './lib/types/tng-flow-presentation.types';
 export type {
+  TngFlowConnectionMotion,
+  TngFlowConnectionMotionDirection,
+  TngFlowConnectionMotionSpeed,
   TngFlowConnectionPresentation,
   TngFlowConnectionStatus,
   TngFlowNodePresentation,

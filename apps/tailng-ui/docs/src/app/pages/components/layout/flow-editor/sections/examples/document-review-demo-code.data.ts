@@ -72,7 +72,7 @@ export class DocumentReviewComponent {
       },
       connections: {
         'start-to-upload': { status: 'success' },
-        'upload-to-extract': { status: 'active', animated: true },
+        'upload-to-extract': { status: 'active', motion: 'flow' },
       },
     });
   }

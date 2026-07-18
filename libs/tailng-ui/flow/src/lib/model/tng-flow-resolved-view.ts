@@ -46,6 +46,7 @@ export function resolveTngFlowConnectionView<TConnectionData>(
   presentation: TngFlowConnectionPresentation | undefined,
   issues: readonly TngFlowValidationIssue[],
 ): TngFlowResolvedConnectionView {
+  const motion = presentation?.motion ?? (presentation?.animated === true ? 'flow' : 'none');
   return {
     selected,
     disabled: connection.disabled === true,
@@ -54,6 +55,9 @@ export function resolveTngFlowConnectionView<TConnectionData>(
     issues,
     highlighted: presentation?.highlighted === true,
     dimmed: presentation?.dimmed === true,
-    animated: presentation?.animated === true,
+    motion,
+    motionSpeed: presentation?.motionSpeed ?? 'normal',
+    motionDirection: presentation?.motionDirection ?? 'forward',
+    animated: motion !== 'none',
   };
 }

@@ -25,6 +25,8 @@ import {
   type TngFlowNodeViews,
   type TngFlowSelection,
 } from '@tailng-ui/flow';
+import { documentReviewDemoCodeTabs } from './document-review-demo-code.data';
+import { DocumentReviewDemoComponent } from './document-review-demo.component';
 import {
   connectionEditingPlainCssCodeTabs,
   connectionEditingTailwindCodeTabs,
@@ -39,8 +41,8 @@ import {
   selectionModesPlainCssCodeTabs,
   selectionModesTailwindCodeTabs,
 } from './flow-editor-examples-code.data';
-import { DocumentReviewDemoComponent } from './document-review-demo.component';
-import { documentReviewDemoCodeTabs } from './document-review-demo-code.data';
+import { timedExecutionDemoCodeTabs } from './timed-execution-demo-code.data';
+import { TimedExecutionDemoComponent } from './timed-execution-demo.component';
 import {
   DocsExampleTabsSectionComponent,
   DocsExampleVariantDirective,
@@ -341,6 +343,7 @@ const linearWorkflowDefinition: TngFlowDefinition = Object.freeze({
     TngFlowEditorComponent,
     TngFlowNodeTemplateDirective,
     DocumentReviewDemoComponent,
+    TimedExecutionDemoComponent,
     DocsExampleTabsSectionComponent,
     DocsExampleVariantDirective,
   ],
@@ -395,6 +398,7 @@ export class FlowEditorExamplesPageComponent implements OnDestroy {
   protected readonly monitorPlainCssCodeTabs = monitorPlainCssCodeTabs;
   protected readonly monitorTailwindCodeTabs = monitorTailwindCodeTabs;
   protected readonly documentReviewDemoCodeTabs = documentReviewDemoCodeTabs;
+  protected readonly timedExecutionDemoCodeTabs = timedExecutionDemoCodeTabs;
   protected readonly validateConnection = (
     candidate: TngFlowConnectionCandidate,
   ): TngFlowConnectionValidation => {

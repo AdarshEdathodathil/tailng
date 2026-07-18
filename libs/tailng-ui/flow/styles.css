@@ -1132,6 +1132,10 @@ tng-flow-editor {
   --tng-flow-connection-info-color: var(--tng-semantic-accent-info, #0284c7);
   --tng-flow-connection-active-color: var(--tng-semantic-accent-brand, #2563eb);
   --tng-flow-connection-success-color: var(--tng-semantic-accent-success, #16a34a);
+  --tng-flow-connection-motion-duration-slow: 1.8s;
+  --tng-flow-connection-motion-duration-normal: 1s;
+  --tng-flow-connection-motion-duration-fast: 0.55s;
+  --tng-flow-connection-motion-reduced-width: 3px;
   --tng-flow-validation-badge-size: 1.25rem;
 }
 tng-flow-editor .tng-flow-editor__connection[data-status=active] {
@@ -1165,14 +1169,35 @@ tng-flow-editor .tng-flow-editor__connection[data-highlighted] {
 tng-flow-editor .tng-flow-editor__connection[data-dimmed] {
   opacity: 0.38;
 }
-tng-flow-editor .tng-flow-editor__connection[data-animated] .f-connection-path {
-  animation: tng-flow-connection-travel 0.85s linear infinite;
-  stroke-dasharray: 7 5;
+tng-flow-editor .tng-flow-editor__connection[data-motion=flow] .f-connection-path {
+  animation: tng-flow-connection-forward var(--tng-flow-connection-motion-duration-normal) linear infinite;
+  stroke-dasharray: 8 6;
+}
+tng-flow-editor .tng-flow-editor__connection[data-motion=flow][data-motion-speed=slow] .f-connection-path {
+  animation-duration: var(--tng-flow-connection-motion-duration-slow);
+}
+tng-flow-editor .tng-flow-editor__connection[data-motion=flow][data-motion-speed=fast] .f-connection-path {
+  animation-duration: var(--tng-flow-connection-motion-duration-fast);
+}
+tng-flow-editor .tng-flow-editor__connection[data-motion=flow][data-motion-direction=reverse] .f-connection-path {
+  animation-name: tng-flow-connection-reverse;
 }
 
-@keyframes tng-flow-connection-travel {
+@keyframes tng-flow-connection-forward {
   to {
-    stroke-dashoffset: -12;
+    stroke-dashoffset: -28;
+  }
+}
+@keyframes tng-flow-connection-reverse {
+  to {
+    stroke-dashoffset: 28;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  tng-flow-editor .tng-flow-editor__connection[data-motion=flow] .f-connection-path {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-width: var(--tng-flow-connection-motion-reduced-width);
   }
 }
 /*

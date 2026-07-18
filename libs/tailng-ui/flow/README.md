@@ -233,7 +233,27 @@ Custom templates replace only the node body. TailNG retains geometry, connectors
 
 Validation and presentation are independent controlled projections. Validation uses stable issue
 ids and discriminated flow, node, port, or connection targets. Presentation adds transient runtime
-status, progress, emphasis, and connection animation without changing graph data or selection.
+status, progress, emphasis, and connection motion without changing graph data or selection.
+
+Connection motion communicates active execution without changing the connection geometry or the
+persisted flow definition:
+
+```ts
+readonly presentation: TngFlowPresentation = {
+  connections: {
+    'validate-to-review': {
+      status: 'active',
+      motion: 'flow',
+      motionSpeed: 'normal',
+      motionDirection: 'forward',
+    },
+  },
+};
+```
+
+`motion` defaults to `none`, `motionSpeed` to `normal`, and `motionDirection` to `forward`.
+Slow, normal, and fast duration tokens can be overridden on an individual editor. When the user
+prefers reduced motion, the animated dash becomes a static emphasized path.
 
 Use `revealTarget(target, { select: true })` to navigate to a known validation target. Node and
 connection double-clicks emit generic activation events in edit and inspect modes; the consuming
@@ -256,7 +276,8 @@ Keyboard commands only act while the flow has focus and never intercept text edi
 
 ## Compatibility
 
-The `inputs`/`outputs`, `nodeViews`, `readonly`, `connectionCreated`, `connectionReassigned`,
-`selectionChanged`, and combined `deleteRequested` APIs remain available as deprecated aliases for
-one compatibility cycle. New code should use `ports`, `presentation`, `mode`, controlled
-`selection`, and the request outputs documented above.
+The `inputs`/`outputs`, `nodeViews`, `readonly`, connection-presentation `animated`,
+`connectionCreated`, `connectionReassigned`, `selectionChanged`, and combined `deleteRequested`
+APIs remain available as deprecated aliases for one compatibility cycle. New code should use
+`ports`, `presentation` with `motion`, `mode`, controlled `selection`, and the request outputs
+documented above.
