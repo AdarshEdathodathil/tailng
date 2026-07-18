@@ -39,6 +39,8 @@ import {
   selectionModesPlainCssCodeTabs,
   selectionModesTailwindCodeTabs,
 } from './flow-editor-examples-code.data';
+import { DocumentReviewDemoComponent } from './document-review-demo.component';
+import { documentReviewDemoCodeTabs } from './document-review-demo-code.data';
 import {
   DocsExampleTabsSectionComponent,
   DocsExampleVariantDirective,
@@ -338,6 +340,7 @@ const linearWorkflowDefinition: TngFlowDefinition = Object.freeze({
     TngCardTitleComponent,
     TngFlowEditorComponent,
     TngFlowNodeTemplateDirective,
+    DocumentReviewDemoComponent,
     DocsExampleTabsSectionComponent,
     DocsExampleVariantDirective,
   ],
@@ -391,6 +394,7 @@ export class FlowEditorExamplesPageComponent implements OnDestroy {
   protected readonly selectionModesTailwindCodeTabs = selectionModesTailwindCodeTabs;
   protected readonly monitorPlainCssCodeTabs = monitorPlainCssCodeTabs;
   protected readonly monitorTailwindCodeTabs = monitorTailwindCodeTabs;
+  protected readonly documentReviewDemoCodeTabs = documentReviewDemoCodeTabs;
   protected readonly validateConnection = (
     candidate: TngFlowConnectionCandidate,
   ): TngFlowConnectionValidation => {

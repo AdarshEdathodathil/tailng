@@ -8,6 +8,27 @@
     </p>
   </section>
 
+  <section id="document-review-workflow" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Document Review Workflow"
+      description="Build, validate, and inspect an interactive document review process. This application-style demo combines custom node templates, dynamic graph editing, external validation, inspector integration, connection rules, and execution presentation."
+      ariaLabel="Document review workflow demo"
+      tabListAriaLabel="Document review demo"
+      defaultValue="interactive"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="interactive"
+        label="Interactive demo"
+        panelTitle="Document review workflow studio"
+        [codeTabs]="documentReviewDemoCodeTabs"
+      >
+        <app-document-review-demo />
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
   <section id="branch-and-merge-workflow" class="docs-overview-block">
     <app-docs-example-tabs-section
       heading="Branch and merge workflow"

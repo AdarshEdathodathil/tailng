@@ -1,0 +1,217 @@
+<article class="document-review-demo">
+  <header class="document-review-demo__hero">
+    <div>
+      <span class="document-review-demo__eyebrow">Interactive workflow studio</span>
+      <h4>Document Review Workflow</h4>
+      <p>
+        Upload, extract, validate, and route a document through automatic approval or human review.
+      </p>
+    </div>
+    <dl class="document-review-demo__stats" aria-label="Workflow summary">
+      <div>
+        <dt>Steps</dt>
+        <dd>{{ definition().nodes.length }}</dd>
+      </div>
+      <div>
+        <dt>Paths</dt>
+        <dd>2</dd>
+      </div>
+      <div>
+        <dt>Issues</dt>
+        <dd>{{ validation().issues.length }}</dd>
+      </div>
+    </dl>
+  </header>
+
+  <div class="document-review-demo__toolbar">
+    <div class="document-review-demo__mode-group" aria-label="Editor mode">
+      @for (editorMode of editorModes; track editorMode) {
+        <tng-button
+          type="button"
+          size="sm"
+          [appearance]="mode() === editorMode ? 'solid' : 'outline'"
+          [tone]="mode() === editorMode ? 'primary' : 'neutral'"
+          [ariaPressed]="mode() === editorMode"
+          (click)="setMode(editorMode)"
+        >
+          {{ editorMode }}
+        </tng-button>
+      }
+    </div>
+
+    <div class="document-review-demo__actions" aria-label="Workflow tools">
+      <tng-button
+        type="button"
+        size="sm"
+        appearance="outline"
+        tone="neutral"
+        [disabled]="!canEdit()"
+        (click)="editor.requestNodeCreate(notificationPaletteItem)"
+      >
+        + Add step
+      </tng-button>
+      <tng-button
+        type="button"
+        size="sm"
+        appearance="outline"
+        tone="danger"
+        [disabled]="!canRemoveSelected()"
+        (click)="removeSelectedNode()"
+      >
+        Remove selected
+      </tng-button>
+      <tng-button
+        type="button"
+        size="sm"
+        appearance="outline"
+        tone="neutral"
+        (click)="toggleValidation()"
+      >
+        {{ hasValidation() ? 'Clear issue' : 'Add issue' }}
+      </tng-button>
+      <tng-button
+        type="button"
+        size="sm"
+        appearance="outline"
+        tone="neutral"
+        [disabled]="!hasValidation()"
+        (click)="showFirstError(editor)"
+      >
+        Show first error
+      </tng-button>
+      <tng-button type="button" size="sm" appearance="outline" (click)="startExecution()">
+        Run simulation
+      </tng-button>
+      <tng-button
+        type="button"
+        size="sm"
+        [disabled]="!canAdvanceExecution()"
+        (click)="advanceExecution()"
+      >
+        Next step
+      </tng-button>
+      <tng-button type="button" size="sm" appearance="ghost" tone="neutral" (click)="reset()">
+        Reset
+      </tng-button>
+    </div>
+  </div>
+
+  <div class="document-review-demo__workspace">
+    <tng-flow-editor
+      #editor="tngFlowEditor"
+      flowId="docs-document-review-workflow"
+      class="document-review-demo__canvas"
+      ariaLabel="Interactive document review workflow"
+      [definition]="definition()"
+      [selection]="selection()"
+      [validation]="validation()"
+      [presentation]="presentation()"
+      [mode]="mode()"
+      [zoomMinimum]="0.18"
+      [connectionValidator]="validateConnection"
+      (nodeCreateRequested)="createNode($event)"
+      (nodePositionChange)="moveNode($event)"
+      (connectionCreateRequested)="createConnection($event)"
+      (connectionReconnectRequested)="reconnectConnection($event)"
+      (connectionsDeleteRequested)="deleteConnections($event)"
+      (nodesDeleteRequested)="deleteNodes($event)"
+      (selectionChange)="updateSelection($event)"
+      (connectionRejected)="rejectConnection($event)"
+      (validationIssueActivated)="activateIssue($event)"
+    >
+      <ng-template tngFlowNode="decision" let-node let-view="view" let-issues="issues">
+        <tng-flow-node
+          [name]="node.name"
+          [description]="node.description ?? null"
+          [icon]="node.icon ?? null"
+          [status]="view.status"
+          [progress]="view.progress"
+          [selected]="view.selected"
+          [validationSeverity]="view.validationSeverity"
+          [validationIssues]="issues"
+          [statusMessage]="view.statusMessage"
+          (issueActivated)="editor.activateValidationIssue($event.id)"
+        >
+          <div class="document-review-demo__decision">
+            <span><i data-tone="success"></i>Auto approve</span>
+            <span><i data-tone="warning"></i>Needs review</span>
+          </div>
+        </tng-flow-node>
+      </ng-template>
+    </tng-flow-editor>
+
+    <aside class="document-review-demo__inspector" aria-label="Selected node inspector">
+      <header>
+        <div>
+          <span class="document-review-demo__eyebrow">Inspector</span>
+          <h5>Selected node</h5>
+        </div>
+        <span class="document-review-demo__mode-chip">{{ mode() }}</span>
+      </header>
+
+      @if (selectedNode(); as node) {
+        <section class="document-review-demo__node-summary">
+          <span>{{ node.type }}</span>
+          <strong>{{ node.name }}</strong>
+          <p>{{ node.description }}</p>
+        </section>
+
+        <section class="document-review-demo__inspector-section">
+          <h6>Purpose</h6>
+          <p>{{ node.data?.summary ?? 'No summary provided.' }}</p>
+        </section>
+
+        <section class="document-review-demo__inspector-section">
+          <h6>Configuration</h6>
+          @if (selectedConfiguration().length > 0) {
+            <dl class="document-review-demo__configuration">
+              @for (entry of selectedConfiguration(); track entry.key) {
+                <div>
+                  <dt>{{ entry.key }}</dt>
+                  <dd>{{ entry.value }}</dd>
+                </div>
+              }
+            </dl>
+          } @else {
+            <p class="document-review-demo__muted">No configuration required.</p>
+          }
+        </section>
+
+        <section class="document-review-demo__inspector-section">
+          <h6>Ports</h6>
+          <ul class="document-review-demo__ports">
+            @for (port of node.ports ?? []; track port.id) {
+              <li>
+                <span>{{ port.name ?? port.id }}</span>
+                <small>{{ port.direction }} · {{ port.dataType ?? port.kind }}</small>
+              </li>
+            }
+          </ul>
+        </section>
+
+        @if (selectedIssues().length > 0) {
+          <section class="document-review-demo__issue" role="alert">
+            <strong>Configuration required</strong>
+            <span>{{ selectedIssues()[0].message }}</span>
+          </section>
+        }
+      } @else {
+        <div class="document-review-demo__empty-inspector">
+          <span aria-hidden="true">⌁</span>
+          <strong>Select a workflow step</strong>
+          <p>Its domain data, ports, and validation issues will appear here.</p>
+        </div>
+      }
+    </aside>
+  </div>
+
+  <footer
+    class="document-review-demo__event"
+    [attr.data-tone]="rejection() ? 'danger' : 'neutral'"
+    aria-live="polite"
+  >
+    <span aria-hidden="true"></span>
+    <strong>Last event</strong>
+    <p>{{ lastEvent() }}</p>
+  </footer>
+</article>

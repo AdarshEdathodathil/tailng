@@ -216,6 +216,7 @@ export const docsComponentOutlineItemsBySlug: Readonly<
       { id: 'custom-node-content', label: 'Custom node content' },
     ],
     examples: [
+      { id: 'document-review-workflow', label: 'Document review workflow' },
       { id: 'branch-and-merge-workflow', label: 'Branch and merge workflow' },
       { id: 'connection-editing', label: 'Create, validate, and reconnect' },
       { id: 'selection-deletion-and-modes', label: 'Selection, deletion, and modes' },
