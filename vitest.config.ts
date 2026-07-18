@@ -15,6 +15,21 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: '@foblex/2d',
+        replacement: resolve(__dirname, 'node_modules/@foblex/2d/fesm2015/foblex-2d.js'),
+      },
+      {
+        find: '@foblex/mediator',
+        replacement: resolve(
+          __dirname,
+          'node_modules/@foblex/mediator/fesm2015/foblex-mediator.js',
+        ),
+      },
+      {
+        find: '@foblex/utils',
+        replacement: resolve(__dirname, 'node_modules/@foblex/utils/fesm2015/foblex-utils.js'),
+      },
+      {
         find: '@tailng-ui/primitives',
         replacement: resolve(__dirname, 'libs/tailng-ui/primitives/src/index.ts'),
       },
@@ -28,5 +43,18 @@ export default defineConfig({
     include: ['libs/**/*.{test,spec}.ts', 'apps/**/*.{test,spec}.ts'],
     // Add this to prevent Vitest from hanging on large monorepos
     exclude: ['**/node_modules/**', '**/dist/**', '**/cypress/**'],
+    // Angular compilation can briefly saturate workers in the full 450+ file run.
+    testTimeout: 10_000,
+    server: {
+      deps: {
+        inline: [
+          '@foblex/2d',
+          '@foblex/flow',
+          '@foblex/mediator',
+          '@foblex/platform',
+          '@foblex/utils',
+        ],
+      },
+    },
   },
 });

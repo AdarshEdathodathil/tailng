@@ -83,7 +83,7 @@ The current package version exposes registry items for:
 
 - `accordion`, `autocomplete`, `avatar`, `badge`, `bottom-sheet`, `breadcrumb`
 - `button`, `button-toggle`, `card`, `checkbox`, `chips`, `code-block`
-- `collapsible`, `combobox`, `context-menu`, `copy`, `dialog`, `drawer`
+- `collapsible`, `combobox`, `confetti`, `context-menu`, `copy`, `dialog`, `drawer`
 - `dropdown-menu`, `empty`, `grid`, `input`, `input-otp`, `label`
 - `menu`, `menubar`, `multiselect`, `navigation-menu`, `pagination`, `popover`, `progress-bar`
 - `progress-spinner`, `radio`, `select`, `separator`, `skeleton`, `slider`
