@@ -189,6 +189,39 @@ describe('TngFlowEditorComponent', () => {
     ]).toEqual([25, 50, 75]);
   });
 
+  it('uses the same minimum height for port positioning and the visible default node', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'merge',
+        type: 'merge',
+        name: 'Merge decision',
+        position: { x: 40, y: 80 },
+        inputs: [
+          { id: 'assessment', direction: 'input', label: 'Assessment' },
+          { id: 'review', direction: 'input', label: 'Review' },
+        ],
+        outputs: [{ id: 'decision', direction: 'output', label: 'Decision' }],
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const node = host.querySelector<HTMLElement>('[data-node-id="merge"]');
+    const nodeContent = node?.querySelector<HTMLElement>('.tng-flow-editor__node-content');
+    const visibleNode = nodeContent?.querySelector<HTMLElement>('tng-flow-node');
+    const inputPorts = node?.querySelectorAll<HTMLElement>('.tng-flow-editor__port--input');
+    const outputPort = node?.querySelector<HTMLElement>('.tng-flow-editor__port--output');
+
+    expect(node?.style.minHeight).toBe('116px');
+    expect(nodeContent?.style.minHeight).toBe('116px');
+    expect(visibleNode?.style.minHeight).toBe('116px');
+    expect(Number.parseFloat(inputPorts?.[0]?.style.top ?? '')).toBeCloseTo(100 / 3);
+    expect(Number.parseFloat(inputPorts?.[1]?.style.top ?? '')).toBeCloseTo(200 / 3);
+    expect(Number.parseFloat(outputPort?.style.top ?? '')).toBe(50);
+  });
+
   it('translates Foblex gestures into controlled TailNG events', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('nodes', nodes);

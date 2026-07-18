@@ -82,7 +82,7 @@
             </button>
           }
 
-          <div class="tng-flow-editor__node-content">
+          <div class="tng-flow-editor__node-content" [style.min-height.px]="nodeMinHeight(node.id)">
             @if (templateFor(node.type); as nodeTemplate) {
               <ng-container
                 [ngTemplateOutlet]="nodeTemplate"
@@ -90,6 +90,7 @@
               />
             } @else {
               <tng-flow-node
+                [style.min-height.px]="nodeMinHeight(node.id)"
                 [name]="node.name"
                 [description]="node.description ?? null"
                 [icon]="node.icon ?? null"

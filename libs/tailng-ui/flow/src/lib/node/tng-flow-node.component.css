@@ -5,6 +5,7 @@
 
 .tng-flow-node {
   display: block;
+  min-height: inherit;
 }
 
 .tng-flow-node[data-selected] {

@@ -6,9 +6,11 @@
   background: var(--tng-semantic-background-surface);
   border: 1px solid var(--tng-semantic-border-strong);
   border-radius: var(--tng-card-radius, var(--tng-radius-surface, 1rem));
+  box-sizing: border-box;
   color: var(--tng-semantic-foreground-primary);
   display: grid;
   gap: 1rem;
+  min-height: inherit;
   padding: 1rem;
   position: relative;
 }
@@ -30,11 +32,15 @@
 }
 
 .tng-card[data-elevated] {
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--tng-semantic-foreground-primary) 12%, transparent);
+  box-shadow: 0 12px 28px
+    color-mix(in srgb, var(--tng-semantic-foreground-primary) 12%, transparent);
 }
 
 .tng-card[data-interactive] {
-  transition: var(--tng-card-transition, var(--tng-transition-interactive, border-color 150ms ease, box-shadow 150ms ease));
+  transition: var(
+    --tng-card-transition,
+    var(--tng-transition-interactive, border-color 150ms ease, box-shadow 150ms ease)
+  );
 }
 
 .tng-card[data-interactive]:focus-within,
@@ -51,23 +57,43 @@
 }
 
 .tng-card[data-tone='primary'] {
-  border-color: color-mix(in srgb, var(--tng-semantic-accent-brand) 40%, var(--tng-semantic-border-strong));
+  border-color: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand) 40%,
+    var(--tng-semantic-border-strong)
+  );
 }
 
 .tng-card[data-tone='success'] {
-  border-color: color-mix(in srgb, var(--tng-semantic-accent-success) 40%, var(--tng-semantic-border-strong));
+  border-color: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-success) 40%,
+    var(--tng-semantic-border-strong)
+  );
 }
 
 .tng-card[data-tone='warning'] {
-  border-color: color-mix(in srgb, var(--tng-semantic-accent-warning) 45%, var(--tng-semantic-border-strong));
+  border-color: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-warning) 45%,
+    var(--tng-semantic-border-strong)
+  );
 }
 
 .tng-card[data-tone='danger'] {
-  border-color: color-mix(in srgb, var(--tng-semantic-accent-danger) 45%, var(--tng-semantic-border-strong));
+  border-color: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-danger) 45%,
+    var(--tng-semantic-border-strong)
+  );
 }
 
 .tng-card[data-tone='info'] {
-  border-color: color-mix(in srgb, var(--tng-semantic-accent-brand) 45%, var(--tng-semantic-border-strong));
+  border-color: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand) 45%,
+    var(--tng-semantic-border-strong)
+  );
 }
 
 .tng-card-header {
@@ -143,7 +169,10 @@
 }
 
 .tng-card-link:focus-visible {
-  box-shadow: var(--tng-card-focus-ring, var(--tng-focus-ring, 0 0 0 3px var(--tng-semantic-focus-ring)));
+  box-shadow: var(
+    --tng-card-focus-ring,
+    var(--tng-focus-ring, 0 0 0 3px var(--tng-semantic-focus-ring))
+  );
   outline: none;
 }
 
