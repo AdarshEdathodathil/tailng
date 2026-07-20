@@ -146,7 +146,7 @@ export const THEME_DOCS_GROUPS: readonly ThemeDocsGroup[] = [
 ] as const;
 
 export const DEFAULT_THEME_DOCS_PRESET: ThemeDocsPresetId = 'default';
-export const DEFAULT_THEME_DOCS_MODE: ThemeDocsModeId = 'dark';
+export const DEFAULT_THEME_DOCS_MODE: ThemeDocsModeId = 'light';
 export const DEFAULT_THEME_DOCS_SEGMENT = `${THEME_GUIDES_GROUP.id}/${THEME_GUIDES_GROUP.items[0]?.slug ?? 'getting-started'}`;
 
 export const THEME_DOCS_PRESET_OPTIONS: readonly ThemeDocsPresetOption[] = [

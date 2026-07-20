@@ -470,7 +470,7 @@ export class App {
 
   private readStoredThemeMode(): ThemeModeId {
     const storedMode = readStorageValue(this.localStorageRef, themeModeStorageKey);
-    return isThemeModeId(storedMode) ? storedMode : 'dark';
+    return isThemeModeId(storedMode) ? storedMode : 'light';
   }
 
   private isMacPlatform(): boolean {

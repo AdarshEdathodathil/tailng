@@ -375,7 +375,6 @@ export class LandingPageComponent {
   protected readonly installOptions = installOptions;
   protected readonly themeHighlights = themeHighlights;
   protected readonly exploreLinks = exploreLinks;
-  protected readonly showComponentPreviews = signal(false);
 
   // ─── Showcase: autocomplete ─────────────────────────────────────────────────
   protected readonly countryQuery = signal('');
