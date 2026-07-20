@@ -12,13 +12,9 @@ const PORT = Number(process.env.PUPPETEER_PRERENDER_PORT ?? 4173);
 const HOST = '127.0.0.1';
 const NAVIGATION_TIMEOUT_MS = Number(process.env.PUPPETEER_PRERENDER_NAV_TIMEOUT_MS ?? 120000);
 const LAUNCH_TIMEOUT_MS = Number(process.env.PUPPETEER_PRERENDER_LAUNCH_TIMEOUT_MS ?? 120000);
-const READY_TIMEOUT_MS = Number(process.env.PUPPETEER_PRERENDER_READY_TIMEOUT_MS ?? 30000);
+const READY_TIMEOUT_MS = Number(process.env.PUPPETEER_PRERENDER_READY_TIMEOUT_MS ?? 120000);
 const POST_GOTO_WAIT_MS = Number(process.env.PUPPETEER_PRERENDER_POST_GOTO_WAIT_MS ?? 0);
-const AVAILABLE_PROCESSORS =
-  typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
-const PRERENDER_CONCURRENCY = Number(
-  process.env.PUPPETEER_PRERENDER_CONCURRENCY ?? Math.min(4, AVAILABLE_PROCESSORS),
-);
+const PRERENDER_CONCURRENCY = Number(process.env.PUPPETEER_PRERENDER_CONCURRENCY ?? 1);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const assertNonNegativeNumber = (name, value) => {
