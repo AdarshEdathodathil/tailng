@@ -5,14 +5,40 @@ import http from 'node:http';
 import serveHandler from 'serve-handler';
 import puppeteer from 'puppeteer';
 
-const DIST_DIR = 'dist/apps/tailng-ui/docs/browser';
-const ROUTES_FILE = 'apps/tailng-ui/docs/prerender-routes.txt';
-const PORT = 4173;
+const DIST_DIR = process.env.DOCS_DIST ?? 'dist/apps/tailng-ui/docs/browser';
+const ROUTES_FILE =
+  process.env.DOCS_PRERENDER_ROUTES_FILE ?? 'apps/tailng-ui/docs/prerender-routes.txt';
+const PORT = Number(process.env.PUPPETEER_PRERENDER_PORT ?? 4173);
 const HOST = '127.0.0.1';
 const NAVIGATION_TIMEOUT_MS = Number(process.env.PUPPETEER_PRERENDER_NAV_TIMEOUT_MS ?? 120000);
 const LAUNCH_TIMEOUT_MS = Number(process.env.PUPPETEER_PRERENDER_LAUNCH_TIMEOUT_MS ?? 120000);
-const POST_GOTO_WAIT_MS = Number(process.env.PUPPETEER_PRERENDER_POST_GOTO_WAIT_MS ?? 1500);
+const READY_TIMEOUT_MS = Number(process.env.PUPPETEER_PRERENDER_READY_TIMEOUT_MS ?? 30000);
+const POST_GOTO_WAIT_MS = Number(process.env.PUPPETEER_PRERENDER_POST_GOTO_WAIT_MS ?? 0);
+const AVAILABLE_PROCESSORS =
+  typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
+const PRERENDER_CONCURRENCY = Number(
+  process.env.PUPPETEER_PRERENDER_CONCURRENCY ?? Math.min(4, AVAILABLE_PROCESSORS),
+);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const assertNonNegativeNumber = (name, value) => {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`${name} must be a non-negative number. Received: ${value}`);
+  }
+};
+
+const assertPositiveInteger = (name, value) => {
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${name} must be a positive integer. Received: ${value}`);
+  }
+};
+
+assertPositiveInteger('PUPPETEER_PRERENDER_PORT', PORT);
+assertPositiveInteger('PUPPETEER_PRERENDER_NAV_TIMEOUT_MS', NAVIGATION_TIMEOUT_MS);
+assertPositiveInteger('PUPPETEER_PRERENDER_LAUNCH_TIMEOUT_MS', LAUNCH_TIMEOUT_MS);
+assertPositiveInteger('PUPPETEER_PRERENDER_READY_TIMEOUT_MS', READY_TIMEOUT_MS);
+assertNonNegativeNumber('PUPPETEER_PRERENDER_POST_GOTO_WAIT_MS', POST_GOTO_WAIT_MS);
+assertPositiveInteger('PUPPETEER_PRERENDER_CONCURRENCY', PRERENDER_CONCURRENCY);
 
 const resolveChromeExecutablePath = () => {
   const explicitPath = process.env.PUPPETEER_EXECUTABLE_PATH;
@@ -20,7 +46,8 @@ const resolveChromeExecutablePath = () => {
     return explicitPath;
   }
 
-  const cacheDir = process.env.PUPPETEER_CACHE_DIR ?? path.join(os.homedir(), '.cache', 'puppeteer');
+  const cacheDir =
+    process.env.PUPPETEER_CACHE_DIR ?? path.join(os.homedir(), '.cache', 'puppeteer');
   const sortEntriesByVersion = (entries) =>
     [...entries].sort((a, b) => {
       const versionOf = (name) => {
@@ -69,7 +96,11 @@ const resolveChromeExecutablePath = () => {
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       const versionDir = path.join(shellRoot, entry.name);
-      const candidate = path.join(versionDir, 'chrome-headless-shell-mac-arm64', 'chrome-headless-shell');
+      const candidate = path.join(
+        versionDir,
+        'chrome-headless-shell-mac-arm64',
+        'chrome-headless-shell',
+      );
       if (fs.existsSync(candidate)) {
         return candidate;
       }
@@ -92,6 +123,10 @@ const routes = fs
   .filter((l) => l && !l.startsWith('#'))
   .map((r) => (r.startsWith('/') ? r : `/${r}`));
 
+if (routes.length === 0) {
+  throw new Error(`No prerender routes found in ${ROUTES_FILE}.`);
+}
+
 const isAssetRequest = (url) =>
   url === '/favicon.ico' ||
   url.startsWith('/assets/') ||
@@ -111,11 +146,12 @@ const isAssetRequest = (url) =>
   url.endsWith('.xml');
 
 const server = http.createServer((req, res) => {
-  const url = req.url ?? '/';
+  const url = new URL(req.url ?? '/', `http://${HOST}`).pathname;
 
   // Serve built assets from dist
   if (isAssetRequest(url)) {
-    return serveHandler(req, res, { public: DIST_DIR });
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return serveHandler(req, res, { etag: true, public: DIST_DIR });
   }
 
   // SPA fallback
@@ -124,20 +160,19 @@ const server = http.createServer((req, res) => {
   res.end(indexHtml);
 });
 
-await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+await new Promise((resolve, reject) => {
+  const handleError = (error) => reject(error);
+  server.once('error', handleError);
+  server.listen(PORT, HOST, () => {
+    server.off('error', handleError);
+    resolve();
+  });
+});
 
 const chromeExecutablePath = resolveChromeExecutablePath() ?? undefined;
-console.log(`prerender: browser executable = ${chromeExecutablePath ?? 'puppeteer-managed default'}`);
-
-const browser = await puppeteer.launch({
-  headless: 'new',
-  timeout: LAUNCH_TIMEOUT_MS,
-  args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  executablePath: chromeExecutablePath,
-});
-const page = await browser.newPage();
-page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
-page.setDefaultTimeout(NAVIGATION_TIMEOUT_MS);
+console.log(
+  `prerender: browser executable = ${chromeExecutablePath ?? 'puppeteer-managed default'}`,
+);
 
 /* ---------------------------------------------
  * PATCH: absolutize known build assets
@@ -158,36 +193,128 @@ const absolutizeAssets = (html) =>
     .replace(
       /href=["']([^"']+\.(?:css|js|map|woff2?|ttf|svg|png|jpe?g|webp)(?:\?[^"']*)?)["']/g,
       (m, v) =>
-        v.startsWith('/') || v.startsWith('http') || v.startsWith('//')
-          ? m
-          : `href="/${v}"`
+        v.startsWith('/') || v.startsWith('http') || v.startsWith('//') ? m : `href="/${v}"`,
     );
 
-for (const route of routes) {
-  const url = `http://${HOST}:${PORT}${route}`;
-  console.log(`prerendering ${route}`);
-  try {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: NAVIGATION_TIMEOUT_MS });
-  } catch (err) {
-    // Some SPA routes keep connections open; retry with a less strict wait.
-    console.warn(`goto failed for ${route} (${err?.message ?? String(err)}). Retrying...`);
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT_MS });
+const configurePage = async (page) => {
+  page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
+  page.setDefaultTimeout(READY_TIMEOUT_MS);
+  await page.setCacheEnabled(true);
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  await page.evaluateOnNewDocument(() => {
+    globalThis.__TAILNG_DOCS_PRERENDER__ = true;
+  });
+};
+
+const waitForRenderReady = async (page) => {
+  await page.waitForFunction(
+    () => {
+      const routeReady = document.documentElement.dataset['docsRouteReady'];
+      const appRoot = document.querySelector('app-root[ng-version]');
+      const routeLoading = document.querySelector('[aria-busy="true"]');
+      const codeHighlighting = document.querySelector('[data-highlighting="pending"]');
+
+      return (
+        routeReady === globalThis.location.pathname &&
+        appRoot !== null &&
+        routeLoading === null &&
+        codeHighlighting === null
+      );
+    },
+    { polling: 'raf', timeout: READY_TIMEOUT_MS },
+  );
+
+  if (POST_GOTO_WAIT_MS > 0) {
+    await sleep(POST_GOTO_WAIT_MS);
   }
-  // Give Angular a moment to finish bootstrapping/rendering.
-  await sleep(POST_GOTO_WAIT_MS);
+};
 
-  let html = await page.content();
+const renderRoute = async (page, route) => {
+  const url = `http://${HOST}:${PORT}${route}`;
+  const response = await page.goto(url, {
+    waitUntil: 'domcontentloaded',
+    timeout: NAVIGATION_TIMEOUT_MS,
+  });
 
-  html = absolutizeAssets(html);
+  if (response === null || !response.ok()) {
+    throw new Error(`Navigation returned ${response?.status() ?? 'no response'} for ${route}.`);
+  }
 
+  await waitForRenderReady(page);
+
+  const html = absolutizeAssets(await page.content());
   const dir = path.join(DIST_DIR, route === '/' ? '' : route);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'index.html'), html);
+};
 
-  console.log(`prerendered ${route}`);
+const closeServer = async () => {
+  if (!server.listening) {
+    return;
+  }
+
+  await new Promise((resolve, reject) => {
+    server.close((error) => (error === undefined ? resolve() : reject(error)));
+  });
+};
+
+let browser;
+try {
+  browser = await puppeteer.launch({
+    headless: 'new',
+    timeout: LAUNCH_TIMEOUT_MS,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    executablePath: chromeExecutablePath,
+  });
+
+  const workerCount = Math.min(PRERENDER_CONCURRENCY, routes.length);
+  let nextRouteIndex = 0;
+  let completedRouteCount = 0;
+  let firstFailure = null;
+
+  console.log(`prerender: routes = ${routes.length}, workers = ${workerCount}`);
+
+  const runWorker = async (workerId) => {
+    const page = await browser.newPage();
+    await configurePage(page);
+
+    try {
+      while (firstFailure === null) {
+        const routeIndex = nextRouteIndex;
+        nextRouteIndex += 1;
+        if (routeIndex >= routes.length) {
+          return;
+        }
+
+        const route = routes[routeIndex];
+        const startedAt = Date.now();
+        try {
+          await renderRoute(page, route);
+          completedRouteCount += 1;
+          console.log(
+            `[${completedRouteCount}/${routes.length}] prerendered ${route} ` +
+              `(${Date.now() - startedAt}ms, worker ${workerId})`,
+          );
+        } catch (error) {
+          firstFailure ??= { error, route };
+        }
+      }
+    } finally {
+      await page.close();
+    }
+  };
+
+  await Promise.all(Array.from({ length: workerCount }, (_, index) => runWorker(index + 1)));
+
+  if (firstFailure !== null) {
+    throw new Error(
+      `Failed to prerender ${firstFailure.route}: ${firstFailure.error?.message ?? String(firstFailure.error)}`,
+      { cause: firstFailure.error },
+    );
+  }
+
+  console.log(`prerender complete: ${completedRouteCount} routes`);
+} finally {
+  await browser?.close();
+  await closeServer();
 }
-
-await browser.close();
-server.close();
-
-console.log('prerender complete');

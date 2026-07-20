@@ -9,6 +9,8 @@ CF_PAGES_PROJECT_NAME="${CF_PAGES_PROJECT_NAME:-${CF_DOCS_PROJECT_NAME:-}}"
 CF_PAGES_BRANCH="${CF_PAGES_BRANCH:-${GITHUB_REF_NAME:-}}"
 REQUIRED_NODE_MAJOR="${REQUIRED_NODE_MAJOR:-22}"
 
+export DOCS_DIST
+
 ensure_node_version() {
   local node_version
   local node_major
