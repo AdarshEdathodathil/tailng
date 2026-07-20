@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateTngFlow } from './tng-flow-validation';
+import { analyzeTngFlow, validateTngFlow } from './tng-flow-validation';
 import type { TngFlowConnection, TngFlowNode } from '../types/tng-flow.types';
 
 const validNodes: readonly TngFlowNode[] = [
@@ -171,5 +171,26 @@ describe('validateTngFlow', () => {
         'duplicate-connection',
       ]),
     );
+  });
+
+  it('preserves valid port sides and ignores unsupported values', () => {
+    const analysis = analyzeTngFlow(
+      [
+        {
+          id: 'vertical',
+          type: 'agent',
+          name: 'Vertical',
+          position: { x: 0, y: 0 },
+          ports: [
+            { id: 'in', direction: 'input', kind: 'data', side: 'top' },
+            { id: 'out', direction: 'output', kind: 'data', side: 'diagonal' },
+          ],
+        },
+      ],
+      [],
+    );
+
+    expect(analysis.nodes[0].ports?.[0].side).toBe('top');
+    expect(analysis.nodes[0].ports?.[1].side).toBeUndefined();
   });
 });

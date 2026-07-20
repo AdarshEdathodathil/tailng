@@ -39,7 +39,7 @@
         </div>
 
         <div class="charts-demo-grid">
-          @for (preview of chartPreviews; track preview.slug) {
+          @for (preview of visibleChartPreviews(); track preview.slug) {
             <a
               class="charts-demo charts-demo--link"
               [routerLink]="docHref(preview.categorySlug, preview.docSlug)"
@@ -247,6 +247,15 @@
             </a>
           }
         </div>
+        @if (!showAllChartPreviews()) {
+          <button
+            type="button"
+            class="mx-auto inline-flex h-10 items-center rounded-md border border-tng-border-subtle bg-tng-bg-surface px-4 text-sm font-semibold text-tng-fg-primary transition-colors hover:bg-tng-bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tng-focus-ring"
+            (click)="showAllChartPreviews.set(true)"
+          >
+            Show all {{ chartPreviews.length }} chart previews
+          </button>
+        }
       </section>
     </section>
   </tng-card-content>

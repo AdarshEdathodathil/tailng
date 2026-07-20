@@ -1,7 +1,9 @@
+import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 import {
   TNG_BUILTIN_ICON_PACK_NAMES,
   TNG_DEFAULT_ICON_PACK,
+  TNG_ICON_RESOLVER,
   TngIconResolver,
   createTngIconPack,
   parseTngIconRef,
@@ -28,6 +30,23 @@ describe('resolveTngIconConfig defaults', () => {
     const iconSvg = await resolver.loadIcon('bell');
 
     expect(iconSvg).toContain('<svg');
+  });
+
+  it('preserves the root entry point fallback when no provider is installed', async () => {
+    const resolver = TestBed.inject(TNG_ICON_RESOLVER);
+
+    expect(await resolver.loadIcon('bell')).toContain('<svg');
+    TestBed.resetTestingModule();
+  });
+
+  it('accepts direct SVG definitions in custom packs', async () => {
+    const config = resolveTngIconConfig({
+      defaultPack: 'brand',
+      packs: [createTngIconPack('brand', { logo: '<svg id="brand"/>' })],
+    });
+    const resolver = new TngIconResolver(config);
+
+    expect(await resolver.loadIcon('logo')).toBe('<svg id="brand"/>');
   });
 
   it('accepts custom packs without requiring built-in pack registration', () => {

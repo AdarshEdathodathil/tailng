@@ -22,6 +22,7 @@ import type {
   TngFlowPort,
   TngFlowPortDirection,
   TngFlowPortKind,
+  TngFlowPortSide,
 } from '../types/tng-flow.types';
 
 /** @deprecated Use `TngFlowStructuralIssueCode`. */
@@ -50,6 +51,7 @@ const CONNECTION_TYPES: readonly TngFlowConnectionType[] = [
 ];
 const PORT_DIRECTIONS: readonly TngFlowPortDirection[] = ['input', 'output'];
 const PORT_KINDS: readonly TngFlowPortKind[] = ['control', 'data', 'error'];
+const PORT_SIDES: readonly TngFlowPortSide[] = ['bottom', 'left', 'right', 'top'];
 
 function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -147,6 +149,11 @@ function sanitizePort(
     typeof rawKind === 'string' && PORT_KINDS.includes(rawKind as TngFlowPortKind)
       ? (rawKind as TngFlowPortKind)
       : 'data';
+  const rawSide = rawPort['side'];
+  const side =
+    typeof rawSide === 'string' && PORT_SIDES.includes(rawSide as TngFlowPortSide)
+      ? (rawSide as TngFlowPortSide)
+      : undefined;
 
   return {
     id,
@@ -161,6 +168,7 @@ function sanitizePort(
     multiple: optionalBoolean(rawPort, 'multiple'),
     accepts: optionalStringArray(rawPort, 'accepts'),
     allowSelfConnection: optionalBoolean(rawPort, 'allowSelfConnection'),
+    side,
   };
 }
 

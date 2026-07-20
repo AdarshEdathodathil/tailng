@@ -1,5 +1,5 @@
 import { effect } from '@angular/core';
-import type { TngIconResolver } from './icons';
+import type { TngIconResolver } from './icons.core';
 import { normalizeIconRef } from './tng-icon.normalizers';
 
 type ReadIconRef = () => string;

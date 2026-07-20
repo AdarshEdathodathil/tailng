@@ -97,6 +97,7 @@ import type {
   TngFlowPoint,
   TngFlowPaletteItem,
   TngFlowPort,
+  TngFlowPortSide,
   TngFlowSelection,
   TngFlowSelectionChangedEvent,
   TngFlowViewport,
@@ -176,8 +177,8 @@ type MultiSelectEventLike = Readonly<{
   shiftKey: boolean;
 }>;
 type NodePortGroups = Readonly<{
-  inputs: readonly TngFlowPort[];
-  outputs: readonly TngFlowPort[];
+  ports: readonly TngFlowPort[];
+  bySide: Readonly<Record<TngFlowPortSide, readonly TngFlowPort[]>>;
 }>;
 type ValidatedConnection = Readonly<{
   validation: TngFlowConnectionValidation;
@@ -361,11 +362,18 @@ export class TngFlowEditorComponent<
   private readonly portGroupsByNodeId = computed<ReadonlyMap<string, NodePortGroups>>(() => {
     const entries = this.graphNodes().map((node) => {
       const ports = getTngFlowNodePorts(node);
+      const portsForSide = (side: TngFlowPortSide): readonly TngFlowPort[] =>
+        ports.filter((port) => this.portSide(port) === side);
       return [
         node.id,
         {
-          inputs: ports.filter((port) => port.direction === 'input'),
-          outputs: ports.filter((port) => port.direction === 'output'),
+          ports,
+          bySide: {
+            bottom: portsForSide('bottom'),
+            left: portsForSide('left'),
+            right: portsForSide('right'),
+            top: portsForSide('top'),
+          },
         },
       ] as const;
     });
@@ -536,17 +544,22 @@ export class TngFlowEditorComponent<
     return this.issueIndex().connectionIssues.get(connectionId) ?? EMPTY_ISSUES;
   }
 
-  protected inputPortsFor(nodeId: string): readonly TngFlowPort[] {
-    return this.portGroupsByNodeId().get(nodeId)?.inputs ?? [];
+  protected portsFor(nodeId: string): readonly TngFlowPort[] {
+    return this.portGroupsByNodeId().get(nodeId)?.ports ?? [];
   }
 
-  protected outputPortsFor(nodeId: string): readonly TngFlowPort[] {
-    return this.portGroupsByNodeId().get(nodeId)?.outputs ?? [];
+  protected portSide(port: TngFlowPort): TngFlowPortSide {
+    return port.side ?? (port.direction === 'input' ? 'left' : 'right');
+  }
+
+  protected portPositionFor(nodeId: string, port: TngFlowPort): number {
+    const ports = this.portGroupsByNodeId().get(nodeId)?.bySide[this.portSide(port)] ?? [];
+    return this.portPositionPercent(ports.indexOf(port), ports.length);
   }
 
   protected nodeMinHeight(nodeId: string): number {
     const groups = this.portGroupsByNodeId().get(nodeId);
-    const portCount = Math.max(groups?.inputs.length ?? 0, groups?.outputs.length ?? 0);
+    const portCount = Math.max(groups?.bySide.left.length ?? 0, groups?.bySide.right.length ?? 0);
     return Math.max(112, 56 + portCount * 30);
   }
 

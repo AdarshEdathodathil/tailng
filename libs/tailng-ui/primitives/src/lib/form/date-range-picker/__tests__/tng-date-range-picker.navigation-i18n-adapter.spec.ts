@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TngDateAdapter, TngDateRangeValue } from '../tng-date-range-picker';
+import type { TngDateAdapter, TngDateRangeValue } from '../date-range-picker.types';
 import { defaultDateRangePickerDateAdapter } from '../tng-date-range-picker';
 import {
   cleanupDom,

@@ -257,7 +257,13 @@ const branchWorkflowDefinition = Object.freeze({
       data: { detail: 'Automated assessment' },
       ports: [
         { id: 'request', name: 'Request', direction: 'input', kind: 'data' },
-        { id: 'result', name: 'Assessment', direction: 'output', kind: 'control' },
+        {
+          id: 'result',
+          name: 'Assessment',
+          direction: 'output',
+          kind: 'control',
+          side: 'bottom',
+        },
       ],
     },
     {
@@ -269,7 +275,7 @@ const branchWorkflowDefinition = Object.freeze({
       data: { detail: 'Manual risk assessment' },
       ports: [
         { id: 'request', name: 'Request', direction: 'input', kind: 'data' },
-        { id: 'result', name: 'Review', direction: 'output', kind: 'control' },
+        { id: 'result', name: 'Review', direction: 'output', kind: 'control', side: 'top' },
       ],
     },
     {
@@ -280,8 +286,14 @@ const branchWorkflowDefinition = Object.freeze({
       position: { x: 750, y: 220 },
       data: { detail: 'Combined decision' },
       ports: [
-        { id: 'automatic', name: 'Assessment', direction: 'input', kind: 'control' },
-        { id: 'review', name: 'Review', direction: 'input', kind: 'control' },
+        {
+          id: 'automatic',
+          name: 'Assessment',
+          direction: 'input',
+          kind: 'control',
+          side: 'top',
+        },
+        { id: 'review', name: 'Review', direction: 'input', kind: 'control', side: 'bottom' },
         { id: 'decision', name: 'Decision', direction: 'output', kind: 'data' },
       ],
     },

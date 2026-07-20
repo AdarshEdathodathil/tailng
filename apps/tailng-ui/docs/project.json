@@ -8,6 +8,7 @@
   "targets": {
     "build": {
       "executor": "@angular/build:application",
+      "dependsOn": [],
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/tailng-ui/docs",
@@ -73,6 +74,16 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "node apps/tailng-ui/docs/scripts/sync-charts-search-index.mjs"
+      }
+    },
+    "sync-docs-routes": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "node apps/tailng-ui/docs/scripts/sync-docs-routes.mjs",
+          "node apps/tailng-ui/docs/scripts/sync-charts-search-index.mjs"
+        ],
+        "parallel": false
       }
     },
     "vite:test": {

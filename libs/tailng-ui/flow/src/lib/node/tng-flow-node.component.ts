@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TngProgressBarComponent, TngCardComponent } from '@tailng-ui/components';
-import { TngIcon } from '@tailng-ui/icons';
+import { TngIcon } from '@tailng-ui/icons/core';
 import { resolveTngFlowValidationSeverity } from '../model/tng-flow-issue-index';
 import type {
   TngFlowValidationIssue,

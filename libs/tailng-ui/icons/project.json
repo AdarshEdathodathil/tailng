@@ -14,6 +14,7 @@
   "targets": {
     "build": {
       "executor": "nx:run-commands",
+      "cache": true,
       "dependsOn": ["generate"],
       "outputs": ["{workspaceRoot}/dist/libs/tailng-ui/icons"],
       "options": {
@@ -41,6 +42,7 @@
     },
     "generate": {
       "executor": "nx:run-commands",
+      "cache": true,
       "options": {
         "command": "node libs/tailng-ui/icons/tools/generate-icon-loaders.mjs"
       }

@@ -139,15 +139,39 @@
             }
           </div>
 
-          @for (port of inputPortsFor(node.id); track port.id; let portIndex = $index) {
+          @for (port of portsFor(node.id); track port.id) {
+            @let side = portSide(port);
+            @let position = portPositionFor(node.id, port);
             <span
-              class="tng-flow-editor__port tng-flow-editor__port--input"
-              [style.top.%]="portPositionPercent(portIndex, inputPortsFor(node.id).length)"
+              class="tng-flow-editor__port tng-flow-editor__port--{{
+                port.direction
+              }} tng-flow-editor__port--{{ side }}"
+              [attr.data-direction]="port.direction"
+              [attr.data-side]="side"
+              [style.bottom]="side === 'bottom' ? '-0.375rem' : null"
+              [style.left]="
+                side === 'left'
+                  ? '-0.375rem'
+                  : side === 'top' || side === 'bottom'
+                    ? position + '%'
+                    : null
+              "
+              [style.right]="side === 'right' ? '-0.375rem' : null"
+              [style.top]="
+                side === 'top'
+                  ? '-0.375rem'
+                  : side === 'left' || side === 'right'
+                    ? position + '%'
+                    : null
+              "
+              [style.transform]="
+                side === 'top' || side === 'bottom' ? 'translateX(-50%)' : 'translateY(-50%)'
+              "
             >
               <span
                 fConnector
                 fConnectorType="source-target"
-                fConnectorConnectableSide="left"
+                [fConnectorConnectableSide]="side"
                 class="tng-flow-editor__port-socket"
                 [fConnectorId]="connectorId(node.id, port.id)"
                 [fConnectorCategory]="port.category"
@@ -160,43 +184,11 @@
                 [attr.aria-label]="portAriaLabel(node, port)"
               >
                 <tng-flow-port
-                  direction="input"
+                  [direction]="port.direction"
                   [kind]="port.kind"
                   [label]="portLabel(port)"
                   [required]="port.required === true"
-                  [disabled]="!canEdit() || node.disabled === true || port.disabled === true"
-                  [validationIssues]="portIssues(node.id, port.id)"
-                  (issueActivated)="onValidationIssueActivated($event, 'port-badge')"
-                />
-              </span>
-            </span>
-          }
-
-          @for (port of outputPortsFor(node.id); track port.id; let portIndex = $index) {
-            <span
-              class="tng-flow-editor__port tng-flow-editor__port--output"
-              [style.top.%]="portPositionPercent(portIndex, outputPortsFor(node.id).length)"
-            >
-              <span
-                fConnector
-                fConnectorType="source-target"
-                fConnectorConnectableSide="right"
-                class="tng-flow-editor__port-socket"
-                [fConnectorId]="connectorId(node.id, port.id)"
-                [fConnectorCategory]="port.category"
-                [fConnectorMultiple]="port.multiple === true"
-                [fConnectorSelfConnectable]="port.allowSelfConnection === true"
-                [fCanBeConnectedTo]="acceptedTargets(node.id, port.id)"
-                [fConnectorDisabled]="
-                  !canEdit() || node.disabled === true || port.disabled === true
-                "
-                [attr.aria-label]="portAriaLabel(node, port)"
-              >
-                <tng-flow-port
-                  direction="output"
-                  [kind]="port.kind"
-                  [label]="portLabel(port)"
-                  [required]="port.required === true"
+                  [side]="side"
                   [disabled]="!canEdit() || node.disabled === true || port.disabled === true"
                   [validationIssues]="portIssues(node.id, port.id)"
                   (issueActivated)="onValidationIssueActivated($event, 'port-badge')"

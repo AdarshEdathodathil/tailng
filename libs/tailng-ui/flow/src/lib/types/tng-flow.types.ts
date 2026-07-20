@@ -19,6 +19,7 @@ export type TngFlowNodeStatus =
 export type TngFlowConnectionType = 'adaptive-curve' | 'bezier' | 'segment' | 'straight';
 export type TngFlowPortDirection = 'input' | 'output';
 export type TngFlowPortKind = 'control' | 'data' | 'error';
+export type TngFlowPortSide = 'bottom' | 'left' | 'right' | 'top';
 export type TngFlowEditorMode = 'edit' | 'inspect' | 'readonly';
 export type TngFlowDeleteRequestSource = 'api' | 'context-menu' | 'keyboard';
 export type TngFlowNodeCreateSource = 'api' | 'keyboard' | 'pointer';
@@ -34,6 +35,8 @@ type TngFlowPortBase = {
   multiple?: boolean;
   accepts?: readonly string[];
   allowSelfConnection?: boolean;
+  /** Node border used by the connector. Defaults to left for inputs and right for outputs. */
+  side?: TngFlowPortSide;
 };
 
 /** Canonical Milestone 2 port model. */

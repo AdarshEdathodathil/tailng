@@ -4,12 +4,32 @@ import {
   defaultTngDateAdapter,
   isDateInRange,
   normalizeDateSelectionInput,
+  resolveLocaleWeekStartsOn,
 } from './date';
 
 const adapter = defaultTngDateAdapter;
 
 function dateKey(date: Date): string {
   return adapter.format(date, 'input');
+}
+
+function withIntlLocale(localeConstructor: unknown, assertion: () => void): void {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(Intl, 'Locale');
+  Object.defineProperty(Intl, 'Locale', {
+    configurable: true,
+    value: localeConstructor,
+    writable: true,
+  });
+
+  try {
+    assertion();
+  } finally {
+    if (originalDescriptor === undefined) {
+      Reflect.deleteProperty(Intl, 'Locale');
+    } else {
+      Object.defineProperty(Intl, 'Locale', originalDescriptor);
+    }
+  }
 }
 
 describe('defaultTngDateAdapter', () => {
@@ -57,6 +77,38 @@ describe('normalizeDateSelectionInput', () => {
       '05-10-2026',
       '05-15-2026',
     ]);
+  });
+});
+
+describe('resolveLocaleWeekStartsOn', () => {
+  it('uses the standard getWeekInfo method when available', () => {
+    withIntlLocale(
+      class {
+        public getWeekInfo(): Readonly<{ firstDay: number }> {
+          return { firstDay: 1 };
+        }
+      },
+      () => {
+        expect(resolveLocaleWeekStartsOn('fr-FR')).toBe(1);
+      },
+    );
+  });
+
+  it('supports the legacy weekInfo property', () => {
+    withIntlLocale(
+      class {
+        public readonly weekInfo = { firstDay: 6 };
+      },
+      () => {
+        expect(resolveLocaleWeekStartsOn('ar-EG')).toBe(6);
+      },
+    );
+  });
+
+  it('falls back to Sunday when week information is unavailable', () => {
+    withIntlLocale(class {}, () => {
+      expect(resolveLocaleWeekStartsOn('fr-FR')).toBe(0);
+    });
   });
 });
 

@@ -1,5 +1,12 @@
 import { Component, computed, signal, type Signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import type { TngTableSortDirection } from '@tailng-ui/cdk';
+import {
+  TngBarChartComponent,
+  TngLineChartComponent,
+  type TngChartData,
+  type TngChartSeries,
+} from '@tailng-ui/charts';
 import {
   TngCardComponent,
   TngDatepickerComponent,
@@ -15,15 +22,8 @@ import {
   type TngTreeItem,
   type TngTreeTableColumn,
 } from '@tailng-ui/components';
-import type { TngTableSortChange, TngTreeTableKey } from '@tailng-ui/primitives';
-import type { TngTableSortDirection } from '@tailng-ui/cdk';
-import {
-  TngBarChartComponent,
-  TngLineChartComponent,
-  type TngChartData,
-  type TngChartSeries,
-} from '@tailng-ui/charts';
 import { TngIcon } from '@tailng-ui/icons';
+import type { TngTableSortChange, TngTreeTableKey } from '@tailng-ui/primitives';
 
 // ─── Showcase types & data ────────────────────────────────────────────────────
 
@@ -375,6 +375,7 @@ export class LandingPageComponent {
   protected readonly installOptions = installOptions;
   protected readonly themeHighlights = themeHighlights;
   protected readonly exploreLinks = exploreLinks;
+  protected readonly showComponentPreviews = signal(false);
 
   // ─── Showcase: autocomplete ─────────────────────────────────────────────────
   protected readonly countryQuery = signal('');

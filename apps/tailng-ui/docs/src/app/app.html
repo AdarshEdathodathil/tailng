@@ -13,7 +13,9 @@
           (click)="onPrimaryNavigationSelect('/')"
         >
           <img src="logo.svg" alt="TailNG logo" class="h-9 w-9" />
-          <span class="hidden truncate text-base font-semibold text-tng-fg-primary sm:inline">TailNG</span>
+          <span class="hidden truncate text-base font-semibold text-tng-fg-primary sm:inline"
+            >TailNG</span
+          >
         </tng-button>
 
         <nav class="hidden items-center gap-1 lg:flex">
@@ -62,6 +64,7 @@
           <kbd class="docs-global-search-trigger__shortcut">{{ searchShortcutHint() }}</kbd>
         </tng-button>
 
+        @if (searchOpen()) {
         <tng-command-palette
           class="docs-global-search-overlay"
           [open]="searchOpen()"
@@ -80,10 +83,9 @@
             <span class="docs-global-search-option">
               <span class="docs-global-search-option__title">{{ item.title }}</span>
               @if (item.description) {
-                <span class="docs-global-search-option__description">{{ item.description }}</span>
-              }
-              @if (item.section) {
-                <span class="docs-global-search-option__section">{{ item.section }}</span>
+              <span class="docs-global-search-option__description">{{ item.description }}</span>
+              } @if (item.section) {
+              <span class="docs-global-search-option__section">{{ item.section }}</span>
               }
             </span>
           </ng-template>
@@ -92,6 +94,7 @@
             Arrows move · Enter opens · Esc closes
           </ng-template>
         </tng-command-palette>
+        }
 
         <tng-button
           id="docs-theme-preset-trigger"
@@ -149,11 +152,13 @@
           (click)="toggleMode()"
         >
           @if (darkMode()) {
-            <tng-icon icon="moon" class="h-4 w-4" />
+          <tng-icon icon="moon" class="h-4 w-4" />
           } @else {
-            <tng-icon icon="sun" class="h-4 w-4" />
+          <tng-icon icon="sun" class="h-4 w-4" />
           }
-          <span class="sr-only">{{ darkMode() ? 'Switch to light mode' : 'Switch to dark mode' }}</span>
+          <span class="sr-only"
+            >{{ darkMode() ? 'Switch to light mode' : 'Switch to dark mode' }}</span
+          >
         </tng-button>
 
         <tng-button
@@ -225,9 +230,9 @@
           (click)="toggleMobileMenu()"
         >
           @if (mobileMenuOpen()) {
-            <tng-icon icon="x" class="h-5 w-5" />
+          <tng-icon icon="x" class="h-5 w-5" />
           } @else {
-            <tng-icon icon="menu" class="h-5 w-5" />
+          <tng-icon icon="menu" class="h-5 w-5" />
           }
         </tng-button>
       </div>
@@ -236,11 +241,7 @@
 
   <!-- Mobile menu backdrop -->
   @if (mobileMenuOpen()) {
-    <div
-      class="docs-mobile-backdrop lg:hidden"
-      aria-hidden="true"
-      (click)="closeMobileMenu()"
-    ></div>
+  <div class="docs-mobile-backdrop lg:hidden" aria-hidden="true" (click)="closeMobileMenu()"></div>
   }
 
   <!-- Mobile drawer -->
@@ -254,19 +255,18 @@
       <section class="docs-mobile-drawer__section">
         <p class="docs-mobile-drawer__section-label">Navigation</p>
         @for (item of primaryNavigation; track item.label) {
-          <tng-button
-            type="button"
-            appearance="ghost"
-            tone="neutral"
-            size="sm"
-            class="docs-mobile-drawer__nav-item"
-            (click)="onPrimaryNavigationSelect(item.route)"
-          >
-            {{ item.label }}
-          </tng-button>
+        <tng-button
+          type="button"
+          appearance="ghost"
+          tone="neutral"
+          size="sm"
+          class="docs-mobile-drawer__nav-item"
+          (click)="onPrimaryNavigationSelect(item.route)"
+        >
+          {{ item.label }}
+        </tng-button>
         }
       </section>
-
     </div>
   </nav>
 
@@ -297,9 +297,7 @@
     </section>
   </div>
 
-  <footer
-    class="border-t border-tng-border-subtle bg-tng-bg-canvas"
-  >
+  <footer class="border-t border-tng-border-subtle bg-tng-bg-canvas">
     <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
       <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
         <section class="space-y-3">
@@ -373,5 +371,4 @@
       </div>
     </div>
   </footer>
-
 </main>

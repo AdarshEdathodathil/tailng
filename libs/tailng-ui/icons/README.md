@@ -82,6 +82,45 @@ export class ExampleComponent {}
 
 With zero config, `icon="bell"` resolves to `lucide:bell`.
 
+## Tree-shakable core entry point
+
+Use `@tailng-ui/icons/core` when the application should bundle only explicitly registered
+icons. The core entry point contains the component, resolver, tokens, and pack utilities, but
+does not import the built-in Lucide registry.
+
+```ts
+import { ApplicationConfig } from '@angular/core';
+import { createTngIconPack, provideTngIcons } from '@tailng-ui/icons/core';
+import {
+  lucideBuilding,
+  lucideLoaderCircle,
+  lucideRefreshCw,
+  lucideSave,
+  lucideSearch,
+} from '@ng-icons/lucide';
+
+const adminIcons = createTngIconPack('lucide', {
+  building: lucideBuilding,
+  'loader-circle': lucideLoaderCircle,
+  'refresh-cw': lucideRefreshCw,
+  save: lucideSave,
+  search: lucideSearch,
+});
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideTngIcons({
+      defaultPack: 'lucide',
+      packs: [adminIcons],
+    }),
+  ],
+};
+```
+
+`packs` is required when importing `provideTngIcons` from the core entry point. Static SVG
+strings and async SVG loaders can be mixed in the same pack. Avoid importing anything from the
+package root in a bundle that must exclude the built-in registry.
+
 ## Sizing icons
 
 Use the `size` input for one-off sizing:

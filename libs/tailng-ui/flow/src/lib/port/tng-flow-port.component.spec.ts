@@ -18,5 +18,15 @@ describe('TngFlowPortComponent', () => {
     expect(host.hasAttribute('data-disabled')).toBe(true);
     expect(host.querySelector('.tng-flow-port__label')?.textContent).toContain('Failure');
     expect(host.querySelector('.tng-flow-port__required')).not.toBeNull();
+    expect(host.getAttribute('data-side')).toBe('left');
+  });
+
+  it('supports an explicit top or bottom connector side', () => {
+    const fixture = TestBed.createComponent(TngFlowPortComponent);
+    fixture.componentRef.setInput('direction', 'output');
+    fixture.componentRef.setInput('side', 'bottom');
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).getAttribute('data-side')).toBe('bottom');
   });
 });

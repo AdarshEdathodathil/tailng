@@ -329,6 +329,42 @@ describe('TngFlowEditorComponent', () => {
     ]).toEqual([25, 50, 75]);
   });
 
+  it('places ports on explicitly selected top and bottom borders', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'vertical',
+        type: 'step',
+        name: 'Vertical step',
+        position: { x: 40, y: 80 },
+        ports: [
+          { id: 'first-in', direction: 'input', kind: 'data', side: 'top' },
+          { id: 'second-in', direction: 'input', kind: 'data', side: 'top' },
+          { id: 'out', direction: 'output', kind: 'data', side: 'bottom' },
+        ],
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const topPorts = host.querySelectorAll<HTMLElement>(
+      '[data-node-id="vertical"] > [data-side="top"]',
+    );
+    const bottomPort = host.querySelector<HTMLElement>(
+      '[data-node-id="vertical"] > [data-side="bottom"]',
+    );
+
+    expect(topPorts).toHaveLength(2);
+    expect(Number.parseFloat(topPorts[0].style.left)).toBeCloseTo(100 / 3);
+    expect(Number.parseFloat(topPorts[1].style.left)).toBeCloseTo(200 / 3);
+    expect(topPorts[0].style.top).toBe('-0.375rem');
+    expect(Number.parseFloat(bottomPort?.style.left ?? '')).toBe(50);
+    expect(bottomPort?.style.top).toBe('');
+    expect(bottomPort?.style.bottom).toBe('-0.375rem');
+    expect(bottomPort?.querySelector('tng-flow-port')?.getAttribute('data-side')).toBe('bottom');
+  });
+
   it('uses the same minimum height for port positioning and the visible default node', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('nodes', [

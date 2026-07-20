@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { NgIcon } from '@ng-icons/core';
-import { TNG_ICON_RESOLVER, type TngIconResolver } from './icons';
+import { TNG_ICON_RESOLVER, type TngIconResolver } from './icons.core';
 import { bindIconSvgEffect } from './tng-icon.loader-effect';
 import { normalizeIconSize, normalizeOptionalString } from './tng-icon.normalizers';
 

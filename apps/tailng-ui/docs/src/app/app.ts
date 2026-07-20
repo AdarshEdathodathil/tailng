@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, HostListener, computed, effect, inject, signal } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import {
   TngBreadcrumbComponent,
@@ -35,7 +35,11 @@ import {
 } from '@tailng-ui/theme';
 import { filter } from 'rxjs/operators';
 import { DocsRouteLoadingOutletComponent } from './shared/route-loading/docs-route-loading-outlet.component';
-import { DocsSearchIndexService, type DocsSearchEntry } from './shared/search/docs-search-index.service';
+import {
+  DocsSearchIndexService,
+  type DocsSearchEntry,
+  type DocsSearchIndex,
+} from './shared/search/docs-search-index.service';
 
 type ThemePresetId =
   | 'default'
@@ -89,19 +93,22 @@ const presetOptions: readonly ThemePresetOption[] = [
     id: 'slate',
     icon: 'square',
     label: 'Slate',
-    description: 'Clean and understated, ideal for a polished interface with timeless neutral character.',
+    description:
+      'Clean and understated, ideal for a polished interface with timeless neutral character.',
   },
   {
     id: 'nexus',
     icon: 'palette',
     label: 'Nexus',
-    description: 'Modern and dynamic, perfect for a connected design language across product experiences.',
+    description:
+      'Modern and dynamic, perfect for a connected design language across product experiences.',
   },
   {
     id: 'prism',
     icon: 'swatch-book',
     label: 'Prism',
-    description: 'Crisp and expressive, suited for a theme that balances clarity with visual sophistication.',
+    description:
+      'Crisp and expressive, suited for a theme that balances clarity with visual sophistication.',
   },
   {
     id: 'atlas',
@@ -113,7 +120,8 @@ const presetOptions: readonly ThemePresetOption[] = [
     id: 'sterling',
     icon: 'palette',
     label: 'Sterling',
-    description: 'Sophisticated and premium, great for a theme that emphasizes excellence and trust.',
+    description:
+      'Sophisticated and premium, great for a theme that emphasizes excellence and trust.',
   },
   {
     id: 'daybook-classic',
@@ -208,7 +216,9 @@ const footerResourceLinks: readonly LinkItem[] = [
 export class App {
   private readonly documentRef = inject(DOCUMENT);
   private readonly router = inject(Router);
-  private readonly searchIndex = toSignal(inject(DocsSearchIndexService).index$);
+  private readonly searchIndexService = inject(DocsSearchIndexService);
+  private readonly searchIndex = signal<DocsSearchIndex | undefined>(undefined);
+  private searchIndexLoadStarted = false;
   private readonly localStorageRef = getStorage(this.documentRef.defaultView);
 
   public readonly darkMode = signal(this.readStoredThemeMode() === 'dark');
@@ -222,17 +232,16 @@ export class App {
   public readonly breadcrumbs = signal<readonly BreadcrumbItem[]>(
     this.buildBreadcrumbs(this.router.url),
   );
-  public readonly componentsDocsLayout = computed<boolean>(() =>
-    this.currentUrl().startsWith('/components') ||
-    this.currentUrl().startsWith('/charts') ||
-    this.currentUrl().startsWith('/ownable') ||
-    this.currentUrl().startsWith('/headless') ||
-    this.currentUrl().startsWith('/theme'),
+  public readonly componentsDocsLayout = computed<boolean>(
+    () =>
+      this.currentUrl().startsWith('/components') ||
+      this.currentUrl().startsWith('/charts') ||
+      this.currentUrl().startsWith('/ownable') ||
+      this.currentUrl().startsWith('/headless') ||
+      this.currentUrl().startsWith('/theme'),
   );
 
-  public readonly effectiveMode = computed<ThemeModeId>(() =>
-    this.darkMode() ? 'dark' : 'light',
-  );
+  public readonly effectiveMode = computed<ThemeModeId>(() => (this.darkMode() ? 'dark' : 'light'));
   public readonly searchOpen = signal(false);
   public readonly searchInitialValue = signal('');
   public readonly searchQuery = signal('');
@@ -258,22 +267,7 @@ export class App {
       writeStorageValue(this.localStorageRef, themePresetStorageKey, this.selectedPreset());
       writeStorageValue(this.localStorageRef, themeModeStorageKey, this.effectiveMode());
     });
-    effect((): void => {
-      const index = this.searchIndex();
-      const query = this.searchQuery().trim();
-
-      if (index === undefined) {
-        this.searchOptions.set([]);
-        return;
-      }
-
-      if (query.length === 0) {
-        this.searchOptions.set(index.entries.slice(0, 8));
-        return;
-      }
-
-      this.searchOptions.set(index.fuse.search(query).slice(0, 10).map((result) => result.item));
-    });
+    effect((): void => this.updateSearchOptions());
     effect((): void => {
       if (!this.searchOpen()) {
         return;
@@ -363,6 +357,7 @@ export class App {
   }
 
   public openSearch(initialValue = ''): void {
+    this.loadSearchIndex();
     this.searchInitialValue.set(initialValue);
     this.searchOpen.set(true);
   }
@@ -393,10 +388,43 @@ export class App {
     void this.router.navigateByUrl(event.option.url);
   }
 
-  private getPresetByMode(
-    preset: ThemePresetId,
-    mode: ThemeModeId,
-  ): ThemeDefinition {
+  private loadSearchIndex(): void {
+    if (this.searchIndexLoadStarted) {
+      return;
+    }
+
+    this.searchIndexLoadStarted = true;
+    void this.searchIndexService
+      .load()
+      .then((index) => this.searchIndex.set(index))
+      .catch(() => {
+        this.searchIndexLoadStarted = false;
+      });
+  }
+
+  private updateSearchOptions(): void {
+    const index = this.searchIndex();
+    const query = this.searchQuery().trim();
+
+    if (index === undefined) {
+      this.searchOptions.set([]);
+      return;
+    }
+
+    if (query.length === 0) {
+      this.searchOptions.set(index.entries.slice(0, 8));
+      return;
+    }
+
+    this.searchOptions.set(
+      index.fuse
+        .search(query)
+        .slice(0, 10)
+        .map((result) => result.item),
+    );
+  }
+
+  private getPresetByMode(preset: ThemePresetId, mode: ThemeModeId): ThemeDefinition {
     const presets: Partial<
       Record<ThemePresetId, { light: ThemeDefinition; dark: ThemeDefinition }>
     > = {
@@ -429,9 +457,10 @@ export class App {
         dark: daybookClassicDarkThemePreset,
       },
     };
-  
-    return presets[preset]?.[mode]
-      ?? (mode === 'dark' ? defaultDarkThemePreset : defaultThemePreset);
+
+    return (
+      presets[preset]?.[mode] ?? (mode === 'dark' ? defaultDarkThemePreset : defaultThemePreset)
+    );
   }
 
   private readStoredThemePreset(): ThemePresetId {

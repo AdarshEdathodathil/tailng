@@ -76,6 +76,7 @@
         ARIA-compliant, and theme-aware out of the box.
       </p>
 
+      @if (showComponentPreviews()) {
       <!-- Row 1: Date Picker · Date Range Picker · Autocomplete -->
       <div class="grid gap-4 md:grid-cols-3">
         <tng-card variant="outline" padding="md" class="space-y-3">
@@ -235,6 +236,15 @@
           smooth
         />
       </tng-card>
+      } @else {
+        <button
+          type="button"
+          class="flex min-h-72 w-full items-center justify-center rounded-lg border border-dashed border-tng-border-subtle bg-tng-bg-surface text-sm font-semibold text-tng-accent-brand transition-colors hover:bg-tng-bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tng-focus-ring"
+          (click)="showComponentPreviews.set(true)"
+        >
+          Load interactive component previews
+        </button>
+      }
     </section>
 
     <section id="packages" class="space-y-4 border-b border-tng-border-subtle py-12">

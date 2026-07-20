@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
@@ -194,6 +194,10 @@ export class ChartsOverviewPageComponent {
     { slug: 'lines', categorySlug: 'lines', docSlug: 'geo-lines', title: 'Lines', description: 'Curved geo connection lines on a map.' },
     { slug: 'geo-map', categorySlug: 'geo-map', docSlug: 'geo-map', title: 'GEO / Map', description: 'Geographic choropleth and overlay maps.' },
   ];
+  protected readonly showAllChartPreviews = signal(false);
+  protected readonly visibleChartPreviews = computed(() =>
+    this.showAllChartPreviews() ? this.chartPreviews : this.chartPreviews.slice(0, 6),
+  );
 
   protected docHref(categorySlug: string, docSlug: string): readonly string[] {
     return ['/charts', categorySlug, docSlug, 'overview'];

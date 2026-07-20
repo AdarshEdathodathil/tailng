@@ -301,11 +301,15 @@ export function resolveLocaleWeekStartsOn(locale?: string): TngWeekdayIndex {
   }
 
   try {
-    const weekInfo = (
-      new Intl.Locale(locale) as Intl.Locale & {
-        weekInfo?: Readonly<{ firstDay: number }>;
-      }
-    ).weekInfo;
+    const localeWithWeekInfo = new Intl.Locale(locale) as Intl.Locale & {
+      getWeekInfo?: () => Readonly<{ firstDay: number }>;
+      weekInfo?: Readonly<{ firstDay: number }>;
+    };
+    const getWeekInfo = localeWithWeekInfo.getWeekInfo;
+    const weekInfo =
+      typeof getWeekInfo === 'function'
+        ? getWeekInfo.call(localeWithWeekInfo)
+        : localeWithWeekInfo.weekInfo;
     if (weekInfo === undefined) {
       return 0;
     }

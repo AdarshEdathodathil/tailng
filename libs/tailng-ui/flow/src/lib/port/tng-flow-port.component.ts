@@ -4,7 +4,11 @@ import type {
   TngFlowValidationIssue,
   TngFlowValidationSeverity,
 } from '../types/tng-flow-validation.types';
-import type { TngFlowPortDirection, TngFlowPortKind } from '../types/tng-flow.types';
+import type {
+  TngFlowPortDirection,
+  TngFlowPortKind,
+  TngFlowPortSide,
+} from '../types/tng-flow.types';
 import { TngFlowValidationBadgeComponent } from '../validation-badge/tng-flow-validation-badge.component';
 
 @Component({
@@ -17,6 +21,7 @@ import { TngFlowValidationBadgeComponent } from '../validation-badge/tng-flow-va
     '[attr.data-direction]': 'direction()',
     '[attr.data-disabled]': "disabled() ? '' : null",
     '[attr.data-kind]': 'kind()',
+    '[attr.data-side]': 'resolvedSide()',
     '[attr.data-validation]': 'resolvedValidationSeverity()',
     '[attr.aria-invalid]': "resolvedValidationSeverity() === 'error' ? 'true' : null",
     '[attr.aria-disabled]': "disabled() ? 'true' : null",
@@ -25,6 +30,7 @@ import { TngFlowValidationBadgeComponent } from '../validation-badge/tng-flow-va
 export class TngFlowPortComponent {
   public readonly direction = input.required<TngFlowPortDirection>();
   public readonly kind = input<TngFlowPortKind>('data');
+  public readonly side = input<TngFlowPortSide | null>(null);
   public readonly label = input<string | null>(null);
   public readonly required = input(false);
   public readonly disabled = input(false);
@@ -34,6 +40,9 @@ export class TngFlowPortComponent {
 
   protected readonly resolvedValidationSeverity = computed(() =>
     resolveTngFlowValidationSeverity(this.validationIssues()) ?? this.validationSeverity(),
+  );
+  protected readonly resolvedSide = computed<TngFlowPortSide>(
+    () => this.side() ?? (this.direction() === 'input' ? 'left' : 'right'),
   );
 
   protected activateIssue(issue: TngFlowValidationIssue): void {

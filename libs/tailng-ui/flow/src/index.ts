@@ -54,6 +54,7 @@ export type {
   TngFlowPort,
   TngFlowPortDirection,
   TngFlowPortKind,
+  TngFlowPortSide,
   TngFlowSelection,
   TngFlowSelectionChangedEvent,
   TngFlowViewport,

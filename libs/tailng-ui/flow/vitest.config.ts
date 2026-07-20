@@ -39,7 +39,8 @@ export default defineConfig({
         find: '@tailng-ui/components',
         replacement: resolve(projectRoot, '../components/src/index.ts'),
       },
-      { find: '@tailng-ui/icons', replacement: resolve(projectRoot, '../icons/src/index.ts') },
+      { find: '@tailng-ui/icons/core', replacement: resolve(projectRoot, '../icons/src/core.ts') },
+      { find: /^@tailng-ui\/icons$/, replacement: resolve(projectRoot, '../icons/src/index.ts') },
       { find: '@tailng-ui/cdk', replacement: resolve(projectRoot, '../cdk/src/index.ts') },
       {
         find: '@tailng-ui/primitives',

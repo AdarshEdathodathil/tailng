@@ -128,6 +128,21 @@ export class AgentWorkflowComponent {
 
 The editor never mutates `definition` or creates node or connection IDs. Event handlers update the application signal or store and pass a new snapshot back.
 
+## Port sides
+
+Ports default to the horizontal layout: inputs on `left` and outputs on `right`. Set `side` on
+individual ports when a workflow runs vertically or mixes layout directions:
+
+```ts
+ports: [
+  { id: 'input', direction: 'input', kind: 'data', side: 'top' },
+  { id: 'output', direction: 'output', kind: 'data', side: 'bottom' },
+];
+```
+
+The supported sides are `top`, `right`, `bottom`, and `left`. Ports sharing a side are distributed
+evenly along that border.
+
 ## Palette and node creation
 
 Use the headless `TngFlowPaletteItemDirective` on native buttons. A drag emits a controlled

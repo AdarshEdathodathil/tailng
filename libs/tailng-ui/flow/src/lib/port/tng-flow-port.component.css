@@ -63,7 +63,6 @@
 
 .tng-flow-port__label {
   position: absolute;
-  top: 50%;
   max-width: 6.5rem;
   overflow: hidden;
   color: var(--tng-flow-port-label-color, var(--tng-semantic-foreground-secondary, #475569));
@@ -73,16 +72,34 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: none;
+}
+
+:host([data-side='left']) .tng-flow-port__label {
+  top: 50%;
+  left: 1.125rem;
   transform: translateY(-50%);
 }
 
-:host([data-direction='input']) .tng-flow-port__label {
-  left: 1.125rem;
-}
-
-:host([data-direction='output']) .tng-flow-port__label {
+:host([data-side='right']) .tng-flow-port__label {
+  top: 50%;
   right: 1.125rem;
   text-align: right;
+  transform: translateY(-50%);
+}
+
+:host([data-side='top']) .tng-flow-port__label,
+:host([data-side='bottom']) .tng-flow-port__label {
+  left: 50%;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+:host([data-side='top']) .tng-flow-port__label {
+  top: 1.125rem;
+}
+
+:host([data-side='bottom']) .tng-flow-port__label {
+  bottom: 1.125rem;
 }
 
 .tng-flow-port__required {
@@ -92,15 +109,26 @@
 .tng-flow-port__validation {
   position: absolute;
   z-index: 6;
-  top: -1.55rem;
   transform: scale(0.85);
   transform-origin: center;
 }
 
-:host([data-direction='input']) .tng-flow-port__validation {
+:host([data-side='left']) .tng-flow-port__validation {
+  top: -1.55rem;
   left: -0.35rem;
 }
 
-:host([data-direction='output']) .tng-flow-port__validation {
+:host([data-side='right']) .tng-flow-port__validation {
+  top: -1.55rem;
   right: -0.35rem;
+}
+
+:host([data-side='top']) .tng-flow-port__validation {
+  bottom: 1.05rem;
+  left: -0.35rem;
+}
+
+:host([data-side='bottom']) .tng-flow-port__validation {
+  top: 1.05rem;
+  left: -0.35rem;
 }

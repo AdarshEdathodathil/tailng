@@ -7,7 +7,7 @@ import type {
   TngDateRangeValue,
   TngDateSelectionInput,
   TngDateValue,
-} from '../tng-date-range-picker';
+} from '../date-range-picker.types';
 import { cleanupDom, collectEvents, createController, dateKey } from './tng-date-range-picker.test-helpers';
 
 function asRange(value: unknown): TngDateRangeValue<Date> {
