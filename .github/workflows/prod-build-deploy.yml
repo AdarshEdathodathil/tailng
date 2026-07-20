@@ -157,6 +157,9 @@ jobs:
       - name: npm pack dry-run (selected targets)
         run: node tools/release/npm-pack-dry-run.mjs "${{ inputs.targets }}"
 
+      - name: Packed Angular consumer smoke test
+        run: node tools/release/angular-package-smoke-test.mjs "${{ inputs.targets }}"
+
       # ------------------------------------
       # PUBLISH (npm Trusted Publishing via OIDC)
       # ------------------------------------

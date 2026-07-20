@@ -24,6 +24,22 @@ const TAILNG_UI_LIBS = new Set([
   'flow',
 ]);
 
+const ESM_PACKAGES = new Set(['cdk', 'primitives', 'components', 'icons', 'theme']);
+
+const COMMONJS_MARKERS = [
+  ['require(', /\brequire\s*\(/],
+  ['module.exports', /\bmodule\.exports\b/],
+  ['exports.', /\bexports\./],
+];
+
+const EXPECTED_SIDE_EFFECTS = new Map([
+  ['cdk', false],
+  ['primitives', false],
+  ['components', false],
+  ['icons', ['./src/lib/icons.js']],
+  ['theme', ['**/*.css']],
+]);
+
 const libDist = (name) => {
   if (TAILNG_UI_LIBS.has(name)) {
     return path.join(DIST, 'libs', 'tailng-ui', name);
@@ -115,25 +131,119 @@ function collectManifestTargets(value) {
   return Object.values(value).flatMap((entry) => collectManifestTargets(entry));
 }
 
-function assertManifestTargetExists(root, target, label) {
+function wildcardTargetMatches(root, relativeTarget) {
+  const pattern = relativeTarget
+    .split('*')
+    .map((part) => part.replace(/[|\\{}()[\]^$+?.]/g, '\\$&'))
+    .join('[^/]+');
+  const matcher = new RegExp(`^${pattern}$`);
+
+  return listFiles(root).some((file) =>
+    matcher.test(path.relative(root, file).split(path.sep).join('/')),
+  );
+}
+
+function assertManifestTargetExists(root, target, label, packageName = 'theme') {
+  if (typeof target !== 'string' || !target.startsWith('./')) {
+    fail(`${packageName}: ${label} must use a package-relative target, received '${target}'`);
+  }
+
   const relativeTarget = target.replace(/^\.\//, '');
   const wildcardIndex = relativeTarget.indexOf('*');
 
   if (wildcardIndex === -1) {
     const candidate = path.join(root, relativeTarget);
     if (!exists(candidate)) {
-      fail(`theme: ${label} points to missing path '${target}'`);
+      fail(`${packageName}: ${label} points to missing path '${target}'`);
     }
     return;
   }
 
-  const prefix = relativeTarget.slice(0, wildcardIndex);
-  const candidate = path.join(root, prefix);
-  const directory = candidate.endsWith(path.sep) ? candidate.slice(0, -1) : path.dirname(candidate);
-
-  if (!exists(candidate) && !exists(directory)) {
-    fail(`theme: ${label} points to missing wildcard base '${target}'`);
+  if (!wildcardTargetMatches(root, relativeTarget)) {
+    fail(`${packageName}: ${label} wildcard does not match any published file '${target}'`);
   }
+}
+
+function assertJavaScriptExport(name, subpath, value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+
+  const defaultTarget = value.default;
+  const importTarget = value.import;
+  const hasJavaScriptDefault =
+    typeof defaultTarget === 'string' && /\.(?:m?js)$/.test(defaultTarget);
+  const hasJavaScriptImport = typeof importTarget === 'string' && /\.(?:m?js)$/.test(importTarget);
+
+  if (!hasJavaScriptDefault && !hasJavaScriptImport) return;
+
+  if (!hasJavaScriptDefault) {
+    fail(`${name}: package.json#exports['${subpath}'] must retain a JavaScript 'default' target`);
+  }
+
+  if (typeof importTarget !== 'string' || importTarget.length === 0) {
+    fail(`${name}: package.json#exports['${subpath}'] must declare an 'import' target`);
+  }
+
+  if (!hasJavaScriptImport) {
+    fail(
+      `${name}: package.json#exports['${subpath}'].import must point to JavaScript, received '${importTarget}'`,
+    );
+  }
+}
+
+function assertNoCommonJsMarkers(name, root) {
+  const javascriptFiles = listFiles(root, (file) => file.endsWith('.js'));
+
+  for (const file of javascriptFiles) {
+    const source = readFileSafe(file) ?? '';
+    for (const [label, marker] of COMMONJS_MARKERS) {
+      const match = marker.exec(source);
+      if (match) {
+        const line = source.slice(0, match.index).split('\n').length;
+        fail(
+          `${name}: emitted JavaScript contains CommonJS marker '${label}' in ${path.relative(root, file)}:${line}`,
+        );
+      }
+    }
+  }
+}
+
+function assertEsmPackage(name) {
+  const root = libDist(name);
+  if (!exists(root)) fail(`Missing dist folder: ${root}`);
+
+  const pkgJson = path.join(root, 'package.json');
+  if (!exists(pkgJson)) fail(`${name}: missing package.json in dist: ${pkgJson}`);
+  const pkg = readJsonSafe(pkgJson);
+
+  if (pkg.type !== 'module') {
+    fail(`${name}: package.json must declare "type": "module"`);
+  }
+
+  const expectedSideEffects = EXPECTED_SIDE_EFFECTS.get(name);
+  if (JSON.stringify(pkg.sideEffects) !== JSON.stringify(expectedSideEffects)) {
+    fail(
+      `${name}: package.json#sideEffects must be ${JSON.stringify(expectedSideEffects)}, received ${JSON.stringify(pkg.sideEffects)}`,
+    );
+  }
+
+  if (!pkg.exports || typeof pkg.exports !== 'object' || Array.isArray(pkg.exports)) {
+    fail(`${name}: package.json is missing exports`);
+  }
+
+  const rootExport = pkg.exports['.'];
+  if (!rootExport || typeof rootExport !== 'object' || typeof rootExport.import !== 'string') {
+    fail(`${name}: package.json root export must declare an 'import' target`);
+  }
+
+  for (const [subpath, value] of Object.entries(pkg.exports)) {
+    assertJavaScriptExport(name, subpath, value);
+
+    for (const target of collectManifestTargets(value)) {
+      assertManifestTargetExists(root, target, `package.json#exports['${subpath}']`, name);
+    }
+  }
+
+  assertNoCommonJsMarkers(name, root);
 }
 
 /**
@@ -464,6 +574,10 @@ function assertCdkPackage() {
 }
 
 const wants = (t) => selected.has(t);
+
+for (const name of ESM_PACKAGES) {
+  if (wants(name)) assertEsmPackage(name);
+}
 
 if (wants('cdk')) assertCdkPackage();
 if (wants('icons')) assertAngularPackage('icons', THRESHOLDS.icons);

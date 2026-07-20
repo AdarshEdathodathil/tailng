@@ -6,16 +6,18 @@
     "type": "git",
     "url": "https://github.com/tailng/tailng-ui"
   },
-  "type": "commonjs",
+  "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
+      "import": "./src/index.js",
       "default": "./src/index.js"
     },
     "./core": {
       "types": "./src/core.d.ts",
+      "import": "./src/core.js",
       "default": "./src/core.js"
     }
   },
