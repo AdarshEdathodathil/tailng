@@ -8,7 +8,7 @@ import puppeteer from 'puppeteer';
 const DIST_DIR = process.env.DOCS_DIST ?? 'dist/apps/tailng-ui/docs/browser';
 const ROUTES_FILE =
   process.env.DOCS_PRERENDER_ROUTES_FILE ?? 'apps/tailng-ui/docs/prerender-routes.txt';
-const PORT = Number(process.env.PUPPETEER_PRERENDER_PORT ?? 4173);
+const REQUESTED_PORT = Number(process.env.PUPPETEER_PRERENDER_PORT ?? 0);
 const HOST = '127.0.0.1';
 const NAVIGATION_TIMEOUT_MS = Number(process.env.PUPPETEER_PRERENDER_NAV_TIMEOUT_MS ?? 120000);
 const LAUNCH_TIMEOUT_MS = Number(process.env.PUPPETEER_PRERENDER_LAUNCH_TIMEOUT_MS ?? 120000);
@@ -29,7 +29,11 @@ const assertPositiveInteger = (name, value) => {
   }
 };
 
-assertPositiveInteger('PUPPETEER_PRERENDER_PORT', PORT);
+if (!Number.isInteger(REQUESTED_PORT) || REQUESTED_PORT < 0 || REQUESTED_PORT > 65535) {
+  throw new Error(
+    `PUPPETEER_PRERENDER_PORT must be an integer between 0 and 65535. Received: ${REQUESTED_PORT}`,
+  );
+}
 assertPositiveInteger('PUPPETEER_PRERENDER_NAV_TIMEOUT_MS', NAVIGATION_TIMEOUT_MS);
 assertPositiveInteger('PUPPETEER_PRERENDER_LAUNCH_TIMEOUT_MS', LAUNCH_TIMEOUT_MS);
 assertPositiveInteger('PUPPETEER_PRERENDER_READY_TIMEOUT_MS', READY_TIMEOUT_MS);
@@ -159,11 +163,18 @@ const server = http.createServer((req, res) => {
 await new Promise((resolve, reject) => {
   const handleError = (error) => reject(error);
   server.once('error', handleError);
-  server.listen(PORT, HOST, () => {
+  server.listen(REQUESTED_PORT, HOST, () => {
     server.off('error', handleError);
     resolve();
   });
 });
+
+const serverAddress = server.address();
+if (serverAddress === null || typeof serverAddress === 'string') {
+  throw new Error('Unable to resolve the prerender server address.');
+}
+const serverPort = serverAddress.port;
+console.log(`prerender: server = http://${HOST}:${serverPort}`);
 
 const chromeExecutablePath = resolveChromeExecutablePath() ?? undefined;
 console.log(
@@ -226,7 +237,7 @@ const waitForRenderReady = async (page) => {
 };
 
 const renderRoute = async (page, route) => {
-  const url = `http://${HOST}:${PORT}${route}`;
+  const url = `http://${HOST}:${serverPort}${route}`;
   const response = await page.goto(url, {
     waitUntil: 'domcontentloaded',
     timeout: NAVIGATION_TIMEOUT_MS,
