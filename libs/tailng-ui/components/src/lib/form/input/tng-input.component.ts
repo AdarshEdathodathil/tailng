@@ -19,6 +19,11 @@ import {
 
 type NullableBooleanInput = boolean | null | string | undefined;
 type NumberTextMode = 'complete' | 'partial';
+type NumberRange = { readonly end: number; readonly start: number };
+
+type ClipboardDataLike = {
+  getData: (type: string) => string;
+};
 
 function normalizeAttr(value: unknown): string | null {
   if (value === undefined || value === null) return null;
@@ -61,14 +66,14 @@ function normalizePatternInput(value: unknown): readonly RegExp[] {
 
   if (value instanceof RegExp) return [value];
 
-  if (Array.isArray(value) && value.every((item) => item instanceof RegExp)) {
-    return value;
+  if (Array.isArray(value) && value.every((item: unknown) => item instanceof RegExp)) {
+    return value as readonly RegExp[];
   }
 
   return [];
 }
 
-function formatPatternAttr(patterns: readonly RegExp[]): string | null {
+function formatPatternAttr(patterns: readonly Readonly<RegExp>[]): string | null {
   return patterns[0]?.source ?? null;
 }
 
@@ -91,7 +96,7 @@ function isDigit(value: string): boolean {
   return value >= '0' && value <= '9';
 }
 
-function sanitizeNumberText(value: string, mode: NumberTextMode): string {
+function extractNumberChars(value: string): { sanitized: string; hasDigit: boolean } {
   let sanitized = '';
   let hasDecimal = false;
   let hasDigit = false;
@@ -116,27 +121,37 @@ function sanitizeNumberText(value: string, mode: NumberTextMode): string {
     }
   }
 
+  return { sanitized, hasDigit };
+}
+
+function sanitizeNumberText(value: string, mode: NumberTextMode): string {
+  const { sanitized, hasDigit } = extractNumberChars(value);
   if (mode === 'partial') return sanitized;
+  return formatCompleteNumberText(sanitized, hasDigit);
+}
+
+function formatCompleteNumberText(sanitized: string, hasDigit: boolean): string {
   if (!hasDigit) return '';
 
-  if (sanitized.startsWith('-.')) {
-    sanitized = `-0.${sanitized.slice(2)}`;
-  } else if (sanitized.startsWith('.')) {
-    sanitized = `0${sanitized}`;
+  let result = sanitized;
+  if (result.startsWith('-.')) {
+    result = `-0.${result.slice(2)}`;
+  } else if (result.startsWith('.')) {
+    result = `0${result}`;
   }
 
-  if (sanitized.endsWith('.')) {
-    sanitized = sanitized.slice(0, -1);
+  if (result.endsWith('.')) {
+    result = result.slice(0, -1);
   }
 
-  return sanitized === '-' ? '' : sanitized;
+  return result === '-' ? '' : result;
 }
 
 function isValidPartialNumberText(value: string): boolean {
   return sanitizeNumberText(value, 'partial') === value;
 }
 
-function createInputEvent(inputElement: HTMLInputElement): Event {
+function createInputEvent(inputElement: Readonly<HTMLInputElement>): Event {
   const event = new Event('input', { bubbles: true });
   Object.defineProperty(event, 'target', {
     configurable: true,
@@ -145,34 +160,31 @@ function createInputEvent(inputElement: HTMLInputElement): Event {
   return event;
 }
 
-function readBeforeInputText(event: Event): string | null {
-  const data = (event as Event & { data?: unknown }).data;
+function readBeforeInputText(event: Readonly<Event>): string | null {
+  const data = (event as Readonly<Event> & { data?: unknown }).data;
   return typeof data === 'string' ? data : null;
 }
 
-function readClipboardText(event: Event): string | null {
-  const clipboardData = (event as Event & { clipboardData?: unknown }).clipboardData;
+function readClipboardText(event: Readonly<Event>): string | null {
+  const clipboardData = (event as Readonly<Event> & { clipboardData?: unknown }).clipboardData;
   if (
     clipboardData === null ||
     typeof clipboardData !== 'object' ||
     !('getData' in clipboardData) ||
-    typeof clipboardData.getData !== 'function'
+    typeof (clipboardData as ClipboardDataLike).getData !== 'function'
   ) {
     return null;
   }
 
-  const textPlain = clipboardData.getData('text/plain');
-  return textPlain.length > 0 ? textPlain : clipboardData.getData('text');
+  const textPlain = (clipboardData as ClipboardDataLike).getData('text/plain');
+  return textPlain.length > 0 ? textPlain : (clipboardData as ClipboardDataLike).getData('text');
 }
 
 function clampSelectionIndex(value: number, max: number): number {
   return Math.min(Math.max(value, 0), max);
 }
 
-function clampSelectionRange(
-  range: { end: number; start: number },
-  max: number,
-): { end: number; start: number } {
+function clampSelectionRange(range: Readonly<NumberRange>, max: number): NumberRange {
   return {
     start: clampSelectionIndex(range.start, max),
     end: clampSelectionIndex(range.end, max),
@@ -180,9 +192,8 @@ function clampSelectionRange(
 }
 
 function readSelectionRange(
-  inputElement: HTMLInputElement,
-  fallbackRange: { end: number; start: number } | null = null,
-): { end: number; start: number } {
+  inputElement: Readonly<HTMLInputElement>,
+  fallbackRange: Readonly<NumberRange> | null = null,): NumberRange {
   const fallback = inputElement.value.length;
 
   try {
@@ -211,14 +222,14 @@ function readSelectionRange(
 function replaceNumberTextRange(
   currentValue: string,
   insertion: string,
-  range: { end: number; start: number },
+  range: Readonly<NumberRange>,
 ): string {
   const start = Math.min(range.start, range.end);
   const end = Math.max(range.start, range.end);
   return `${currentValue.slice(0, start)}${insertion}${currentValue.slice(end)}`;
 }
 
-function restoreCaret(inputElement: HTMLInputElement, index: number): void {
+function restoreCaret(inputElement: Readonly<HTMLInputElement>, index: number): void {
   try {
     inputElement.setSelectionRange(index, index);
   } catch {
@@ -226,11 +237,11 @@ function restoreCaret(inputElement: HTMLInputElement, index: number): void {
   }
 }
 
-function isSelectAllShortcut(event: KeyboardEvent): boolean {
+function isSelectAllShortcut(event: Readonly<KeyboardEvent>): boolean {
   return event.key.toLowerCase() === 'a' && (event.ctrlKey || event.metaKey) && !event.altKey;
 }
 
-function isClipboardShortcut(event: KeyboardEvent): boolean {
+function isClipboardShortcut(event: Readonly<KeyboardEvent>): boolean {
   const key = event.key.toLowerCase();
   return (
     (event.ctrlKey || event.metaKey) && !event.altKey && (key === 'c' || key === 'v' || key === 'x')
@@ -339,7 +350,7 @@ export class TngInputComponent implements FormValueControl<string | null> {
   private readonly inputControl: ElementRef<HTMLInputElement> | undefined;
 
   private readonly formDisabled = signal(false);
-  private numberSelectionRange: { end: number; start: number } | null = null;
+  private numberSelectionRange: NumberRange | null = null;
   private numberPointerFocusPending = false;
 
   // ---- Host attrs (optional, useful for styling/debug) ----
@@ -475,13 +486,21 @@ export class TngInputComponent implements FormValueControl<string | null> {
 
     if (!this.isNumberInput || this.effectiveDisabled) return;
 
+    this.updateNumberSelectionRange(event);
+
+    this.handleNumberKeydown(event);
+  }
+
+  private updateNumberSelectionRange(event: Readonly<KeyboardEvent>): void {
     const inputElement = readInputElement(event);
     if (inputElement !== null && this.isEditableNumberInput && isSelectAllShortcut(event)) {
       this.numberSelectionRange = { start: 0, end: inputElement.value.length };
     } else if (this.isEditableNumberInput && !isClipboardShortcut(event)) {
       this.numberSelectionRange = null;
     }
+  }
 
+  private handleNumberKeydown(event: Readonly<KeyboardEvent>): void {
     switch (event.key) {
       case 'ArrowUp':
         this.stepNumberFromKey(event, 1);
@@ -520,6 +539,18 @@ export class TngInputComponent implements FormValueControl<string | null> {
     this.numberSelectionRange = null;
     inputElement.focus();
 
+    this.applyStepToInputElement(inputElement, delta, stepCount);
+
+    this.numberSelectionRange = null;
+    this.numberPointerFocusPending = false;
+    this.commitValue(inputElement.value, createInputEvent(inputElement));
+  }
+
+  private applyStepToInputElement(
+    inputElement: Readonly<HTMLInputElement>,
+    delta: -1 | 1,
+    stepCount: number,
+  ): void {
     try {
       if (delta > 0) {
         inputElement.stepUp(stepCount);
@@ -527,20 +558,20 @@ export class TngInputComponent implements FormValueControl<string | null> {
         inputElement.stepDown(stepCount);
       }
     } catch {
-      inputElement.value = this.nextSteppedValue(inputElement.value, delta, stepCount);
+      (inputElement as HTMLInputElement).value = this.nextSteppedValue(
+        inputElement.value,
+        delta,
+        stepCount,
+      );
     }
-
-    this.numberSelectionRange = null;
-    this.numberPointerFocusPending = false;
-    this.commitValue(inputElement.value, createInputEvent(inputElement));
   }
 
-  private stepNumberFromKey(event: KeyboardEvent, delta: -1 | 1, stepCount = 1): void {
+  private stepNumberFromKey(event: Readonly<KeyboardEvent>, delta: -1 | 1, stepCount = 1): void {
     event.preventDefault();
     this.stepNumber(delta, stepCount);
   }
 
-  private setNumberBoundaryFromKey(event: KeyboardEvent, boundary: 'max' | 'min'): void {
+  private setNumberBoundaryFromKey(event: Readonly<KeyboardEvent>, boundary: 'max' | 'min'): void {
     const boundaryValue = readFiniteNumber(boundary === 'min' ? this.minValue() : this.maxValue());
     if (boundaryValue === null) return;
 
@@ -638,7 +669,7 @@ export class TngInputComponent implements FormValueControl<string | null> {
     return normalizeNumberAttr(value);
   }
 
-  protected formatPatternAttrValue(value: readonly RegExp[]): string | null {
+  protected formatPatternAttrValue(value: readonly Readonly<RegExp>[]): string | null {
     return formatPatternAttr(value);
   }
 

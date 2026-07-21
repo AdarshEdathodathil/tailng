@@ -57,7 +57,7 @@ class InputHostComponent {
     <tng-input class="host-styled-input" placeholder="Search docs" ariaLabel="Search docs" />
   `,
 })
-class HostStyledInputComponent {}
+class HostStyledInputComponent { }
 
 @Component({
   imports: [TngInputComponent],
@@ -514,7 +514,7 @@ describe('<tng-input> component', () => {
     fixture.detectChanges();
 
     const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
-    const blockedCases: ReadonlyArray<{ current: string; data: string }> = [
+    const blockedCases: readonly { current: string; data: string }[] = [
       { current: '1', data: 'e' },
       { current: '1', data: 'E' },
       { current: '1', data: '+' },
@@ -539,7 +539,7 @@ describe('<tng-input> component', () => {
     fixture.detectChanges();
 
     const inputEl = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
-    const allowedCases: ReadonlyArray<{ current: string; data: string }> = [
+    const allowedCases: readonly { current: string; data: string }[] = [
       { current: '', data: '-' },
       { current: '', data: '.' },
       { current: '1', data: '.' },
@@ -625,19 +625,19 @@ describe('<tng-input> component', () => {
       imports: [NumberInputHostComponent],
     }).compileComponents();
 
-    const cases: ReadonlyArray<{
+    const cases: readonly {
       current?: string;
       expected: string;
       pasted: string;
       selection?: readonly [number, number];
-    }> = [
-      { pasted: '.5', expected: '0.5' },
-      { pasted: '-.5', expected: '-0.5' },
-      { pasted: '12.', expected: '12' },
-      { pasted: '12.3.4x', expected: '12.34' },
-      { pasted: '1-2', expected: '12' },
-      { current: '1', pasted: 'abc', expected: '', selection: [0, 1] },
-    ];
+    }[] = [
+        { pasted: '.5', expected: '0.5' },
+        { pasted: '-.5', expected: '-0.5' },
+        { pasted: '12.', expected: '12' },
+        { pasted: '12.3.4x', expected: '12.34' },
+        { pasted: '1-2', expected: '12' },
+        { current: '1', pasted: 'abc', expected: '', selection: [0, 1] },
+      ];
 
     for (const { current = '', pasted, expected, selection } of cases) {
       const fixture = TestBed.createComponent(NumberInputHostComponent);
@@ -683,7 +683,7 @@ describe('<tng-input> component', () => {
       imports: [NumberInputHostComponent],
     }).compileComponents();
 
-    const cases: ReadonlyArray<{ current: string; expected: string; pasted: string }> = [
+    const cases: readonly { current: string; expected: string; pasted: string }[] = [
       { current: '42', pasted: '100', expected: '100' },
       { current: '12.5', pasted: '-98.75', expected: '-98.75' },
       { current: '-10', pasted: '.25', expected: '0.25' },
@@ -789,10 +789,10 @@ describe('<tng-input> component', () => {
       expected: string;
       selection: readonly [number, number];
     }[] = [
-      { current: '100', selection: [0, 3], expected: '50' },
-      { current: '100.987', selection: [0, 3], expected: '50.987' },
-      { current: '100.987', selection: [4, 7], expected: '100.50' },
-    ];
+        { current: '100', selection: [0, 3], expected: '50' },
+        { current: '100.987', selection: [0, 3], expected: '50.987' },
+        { current: '100.987', selection: [4, 7], expected: '100.50' },
+      ];
 
     for (const { current, expected, selection } of cases) {
       const fixture = TestBed.createComponent(NumberInputHostComponent);
@@ -820,35 +820,35 @@ describe('<tng-input> component', () => {
       imports: [NumberInputHostComponent],
     }).compileComponents();
 
-    const cases: ReadonlyArray<{
+    const cases: readonly {
       current: string;
       emittedValue: string | null;
       expected: string;
       pasted: string;
       shortcut: KeyboardEventInit;
-    }> = [
-      {
-        current: '34',
-        pasted: '34',
-        expected: '34',
-        emittedValue: null,
-        shortcut: { ctrlKey: true },
-      },
-      {
-        current: '34',
-        pasted: '56',
-        expected: '56',
-        emittedValue: '56',
-        shortcut: { ctrlKey: true },
-      },
-      {
-        current: '-12.5',
-        pasted: '$98.00x',
-        expected: '98.00',
-        emittedValue: '98.00',
-        shortcut: { metaKey: true },
-      },
-    ];
+    }[] = [
+        {
+          current: '34',
+          pasted: '34',
+          expected: '34',
+          emittedValue: null,
+          shortcut: { ctrlKey: true },
+        },
+        {
+          current: '34',
+          pasted: '56',
+          expected: '56',
+          emittedValue: '56',
+          shortcut: { ctrlKey: true },
+        },
+        {
+          current: '-12.5',
+          pasted: '$98.00x',
+          expected: '98.00',
+          emittedValue: '98.00',
+          shortcut: { metaKey: true },
+        },
+      ];
 
     for (const { current, pasted, expected, emittedValue, shortcut } of cases) {
       const fixture = TestBed.createComponent(NumberInputHostComponent);
