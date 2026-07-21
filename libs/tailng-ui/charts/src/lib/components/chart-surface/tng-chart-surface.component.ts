@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import type { AfterViewInit, ElementRef, OnDestroy } from '@angular/core';
-import { TNG_CHART_CONTEXT } from '../../core/chart-context';
+import { TNG_CHART_CONTEXT, TNG_CHART_RENDERING_ENABLED } from '../../core/chart-context';
 import { resolveTngChartTheme } from '../../core/chart-theme';
 import { TNG_CHART_THEME_CHANGE_EVENT } from '../../core/chart-theme-events';
 import type {
@@ -87,6 +87,7 @@ export class TngChartSurfaceComponent implements AfterViewInit, OnDestroy {
   public readonly runtimeError = output<string>();
 
   private readonly chartContext = inject(TNG_CHART_CONTEXT, { optional: true });
+  private readonly chartRenderingEnabled = inject(TNG_CHART_RENDERING_ENABLED);
   private readonly hostRef = viewChild<ElementRef<HTMLElement>>('hostRef');
   private chart: TngChartInstance | null = null;
   private clickHandler: ((event: unknown) => void) | null = null;
@@ -130,7 +131,9 @@ export class TngChartSurfaceComponent implements AfterViewInit, OnDestroy {
   protected readonly resolvedTheme = computed<TngChartTheme>(
     () => this.theme() ?? this.chartContext?.theme() ?? null,
   );
-  protected readonly heightStyle = computed<string>(() => resolveTngChartHeight(this.resolvedHeight()));
+  protected readonly heightStyle = computed<string>(() =>
+    resolveTngChartHeight(this.resolvedHeight()),
+  );
 
   private readonly syncOptionEffect = effect((): void => {
     const option = this.resolvedOption();
@@ -155,6 +158,11 @@ export class TngChartSurfaceComponent implements AfterViewInit, OnDestroy {
   });
 
   public ngAfterViewInit(): void {
+    if (!this.chartRenderingEnabled) {
+      this.ready.emit();
+      return;
+    }
+
     this.listenForThemeChanges();
     void this.initializeChart();
   }
@@ -169,11 +177,7 @@ export class TngChartSurfaceComponent implements AfterViewInit, OnDestroy {
     this.disposeChart();
   }
 
-  private applyOption(
-    option: TngChartOption | null,
-    merge: boolean,
-    lazyUpdate: boolean,
-  ): void {
+  private applyOption(option: TngChartOption | null, merge: boolean, lazyUpdate: boolean): void {
     if (this.chart === null || option === null) {
       return;
     }
@@ -280,10 +284,7 @@ export class TngChartSurfaceComponent implements AfterViewInit, OnDestroy {
   }
 
   private listenForThemeChanges(): void {
-    if (
-      this.themeChangeHandler !== null ||
-      typeof globalThis.addEventListener !== 'function'
-    ) {
+    if (this.themeChangeHandler !== null || typeof globalThis.addEventListener !== 'function') {
       return;
     }
 
@@ -352,10 +353,7 @@ export class TngChartSurfaceComponent implements AfterViewInit, OnDestroy {
   }
 
   private stopListeningForThemeChanges(): void {
-    if (
-      this.themeChangeHandler === null ||
-      typeof globalThis.removeEventListener !== 'function'
-    ) {
+    if (this.themeChangeHandler === null || typeof globalThis.removeEventListener !== 'function') {
       this.themeChangeHandler = null;
       return;
     }

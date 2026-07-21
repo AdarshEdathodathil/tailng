@@ -31,3 +31,10 @@ export type TngChartContext = Readonly<{
 }>;
 
 export const TNG_CHART_CONTEXT = new InjectionToken<TngChartContext>('TNG_CHART_CONTEXT');
+
+export const TNG_CHART_RENDERING_ENABLED = new InjectionToken<boolean>(
+  'TNG_CHART_RENDERING_ENABLED',
+  {
+    factory: () => true,
+  },
+);

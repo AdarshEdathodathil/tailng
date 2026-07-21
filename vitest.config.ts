@@ -12,6 +12,11 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
+  // Vitest resolves dependencies from test imports on demand. Disable Vite's
+  // HTML entry discovery so stale prerendered pages under dist are never scanned.
+  optimizeDeps: {
+    noDiscovery: true,
+  },
   resolve: {
     alias: [
       {

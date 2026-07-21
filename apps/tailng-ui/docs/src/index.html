@@ -33,10 +33,10 @@
         };
 
         var preset = 'default';
-        var mode = 'dark';
+        var mode = 'light';
         try {
           preset = localStorage.getItem(PRESET_KEY) || 'default';
-          mode   = localStorage.getItem(MODE_KEY)   || 'dark';
+          mode   = localStorage.getItem(MODE_KEY)   || 'light';
         } catch (_) {}
 
         var map = mode === 'dark' ? darkCanvas : lightCanvas;

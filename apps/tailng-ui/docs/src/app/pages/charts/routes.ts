@@ -1,9 +1,19 @@
 import type { Routes } from '@angular/router';
+import { TNG_CHART_RENDERING_ENABLED } from '@tailng-ui/charts';
 import { DEFAULT_CHARTS_DOCS_SEGMENT } from './chart-docs.data';
+
+type DocsPrerenderGlobal = typeof globalThis & {
+  readonly __TAILNG_DOCS_PRERENDER__?: boolean;
+};
+
+function shouldRenderDocsCharts(): boolean {
+  return (globalThis as DocsPrerenderGlobal).__TAILNG_DOCS_PRERENDER__ !== true;
+}
 
 export const CHARTS_ROUTES: Routes = [
   {
     path: '',
+    providers: [{ provide: TNG_CHART_RENDERING_ENABLED, useFactory: shouldRenderDocsCharts }],
     loadComponent: () =>
       import('./landing/charts-page.component').then((module) => module.ChartsPageComponent),
     children: [
@@ -121,7 +131,8 @@ export const CHARTS_ROUTES: Routes = [
       },
       {
         path: 'treemap',
-        loadChildren: () => import('./treemap/routes').then((module) => module.CHARTS_TREEMAP_ROUTES),
+        loadChildren: () =>
+          import('./treemap/routes').then((module) => module.CHARTS_TREEMAP_ROUTES),
       },
       {
         path: 'composition',

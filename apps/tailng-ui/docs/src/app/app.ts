@@ -13,26 +13,7 @@ import {
 } from '@tailng-ui/components';
 import { TngIcon } from '@tailng-ui/icons';
 import { TngMenuItem, type TngMenuSelectEvent } from '@tailng-ui/primitives';
-import {
-  applyTailngTheme,
-  atlasDarkThemePreset,
-  atlasThemePreset,
-  daybookClassicDarkThemePreset,
-  daybookClassicThemePreset,
-  defaultDarkThemePreset,
-  defaultThemePreset,
-  minimalDarkThemePreset,
-  minimalThemePreset,
-  nexusDarkThemePreset,
-  nexusThemePreset,
-  prismDarkThemePreset,
-  prismThemePreset,
-  slateDarkThemePreset,
-  slateThemePreset,
-  sterlingDarkThemePreset,
-  sterlingThemePreset,
-  type ThemeDefinition,
-} from '@tailng-ui/theme';
+import { applyTailngTheme, type ThemeDefinition } from '@tailng-ui/theme';
 import { filter } from 'rxjs/operators';
 import { DocsRouteLoadingOutletComponent } from './shared/route-loading/docs-route-loading-outlet.component';
 import {
@@ -40,21 +21,18 @@ import {
   type DocsSearchEntry,
   type DocsSearchIndex,
 } from './shared/search/docs-search-index.service';
-
-type ThemePresetId =
-  | 'default'
-  | 'minimal'
-  | 'slate'
-  | 'nexus'
-  | 'prism'
-  | 'atlas'
-  | 'sterling'
-  | 'daybook-classic';
-
-type ThemeModeId = 'light' | 'dark';
+import {
+  isDocsThemePresetId,
+  readDocsThemeMode,
+  readDocsThemePreset,
+  resolveDocsTheme,
+  writeDocsThemePreference,
+  type DocsThemeModeId,
+  type DocsThemePresetId,
+} from './shared/theme/docs-theme-preference';
 
 type ThemePresetOption = Readonly<{
-  id: ThemePresetId;
+  id: DocsThemePresetId;
   icon: string;
   label: string;
   description: string;
@@ -131,41 +109,6 @@ const presetOptions: readonly ThemePresetOption[] = [
   },
 ];
 
-function isThemePresetId(value: unknown): value is ThemePresetId {
-  return typeof value === 'string' && presetOptions.some((preset) => preset.id === value);
-}
-
-function isThemeModeId(value: unknown): value is ThemeModeId {
-  return value === 'light' || value === 'dark';
-}
-
-const themePresetStorageKey = 'tailng.docs.themePreset';
-const themeModeStorageKey = 'tailng.docs.themeMode';
-
-function getStorage(windowRef: Window | null | undefined): Storage | null {
-  try {
-    return windowRef?.localStorage ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function readStorageValue(storage: Storage | null, key: string): string | null {
-  try {
-    return storage?.getItem(key) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStorageValue(storage: Storage | null, key: string, value: string): void {
-  try {
-    storage?.setItem(key, value);
-  } catch {
-    // Local storage can be unavailable in private or restricted browser contexts.
-  }
-}
-
 const primaryNavigation: readonly NavItem[] = [
   { label: 'Components', route: '/components' },
   { label: 'Charts', route: '/charts' },
@@ -219,11 +162,10 @@ export class App {
   private readonly searchIndexService = inject(DocsSearchIndexService);
   private readonly searchIndex = signal<DocsSearchIndex | undefined>(undefined);
   private searchIndexLoadStarted = false;
-  private readonly localStorageRef = getStorage(this.documentRef.defaultView);
 
-  public readonly darkMode = signal(this.readStoredThemeMode() === 'dark');
+  public readonly darkMode = signal(readDocsThemeMode() === 'dark');
   public readonly presetOptions = presetOptions;
-  public readonly selectedPreset = signal<ThemePresetId>(this.readStoredThemePreset());
+  public readonly selectedPreset = signal<DocsThemePresetId>(readDocsThemePreset());
   public readonly primaryNavigation = primaryNavigation;
   public readonly npmPackageLinks = npmPackageLinks;
   public readonly footerResourceLinks = footerResourceLinks;
@@ -241,7 +183,9 @@ export class App {
       this.currentUrl().startsWith('/theme'),
   );
 
-  public readonly effectiveMode = computed<ThemeModeId>(() => (this.darkMode() ? 'dark' : 'light'));
+  public readonly effectiveMode = computed<DocsThemeModeId>(() =>
+    this.darkMode() ? 'dark' : 'light',
+  );
   public readonly searchOpen = signal(false);
   public readonly searchInitialValue = signal('');
   public readonly searchQuery = signal('');
@@ -256,7 +200,7 @@ export class App {
     item.description ?? item.section ?? '';
 
   private readonly activeTheme = computed<ThemeDefinition>(() => {
-    return this.getPresetByMode(this.selectedPreset(), this.effectiveMode());
+    return resolveDocsTheme(this.selectedPreset(), this.effectiveMode());
   });
 
   public constructor() {
@@ -264,8 +208,10 @@ export class App {
       applyTailngTheme(this.activeTheme());
     });
     effect((): void => {
-      writeStorageValue(this.localStorageRef, themePresetStorageKey, this.selectedPreset());
-      writeStorageValue(this.localStorageRef, themeModeStorageKey, this.effectiveMode());
+      writeDocsThemePreference({
+        mode: this.effectiveMode(),
+        preset: this.selectedPreset(),
+      });
     });
     effect((): void => this.updateSearchOptions());
     effect((): void => {
@@ -284,15 +230,19 @@ export class App {
       .subscribe((event) => {
         this.currentUrl.set(event.urlAfterRedirects);
         this.breadcrumbs.set(this.buildBreadcrumbs(event.urlAfterRedirects));
+        this.documentRef.documentElement.dataset['docsRouteReady'] =
+          this.documentRef.defaultView?.location.pathname ??
+          event.urlAfterRedirects.split(/[?#]/, 1)[0] ??
+          '/';
       });
   }
 
-  public onPresetSelect(preset: ThemePresetId): void {
+  public onPresetSelect(preset: DocsThemePresetId): void {
     this.selectedPreset.set(preset);
   }
 
   public onThemePresetMenuSelect(event: TngMenuSelectEvent): void {
-    if (isThemePresetId(event.value)) {
+    if (isDocsThemePresetId(event.value)) {
       this.onPresetSelect(event.value);
     }
   }
@@ -352,7 +302,7 @@ export class App {
     this.documentRef.defaultView?.open(selectedPackage.href, '_blank', 'noopener,noreferrer');
   }
 
-  public isPresetSelected(preset: ThemePresetId): boolean {
+  public isPresetSelected(preset: DocsThemePresetId): boolean {
     return this.selectedPreset() === preset;
   }
 
@@ -422,55 +372,6 @@ export class App {
         .slice(0, 10)
         .map((result) => result.item),
     );
-  }
-
-  private getPresetByMode(preset: ThemePresetId, mode: ThemeModeId): ThemeDefinition {
-    const presets: Partial<
-      Record<ThemePresetId, { light: ThemeDefinition; dark: ThemeDefinition }>
-    > = {
-      minimal: {
-        light: minimalThemePreset,
-        dark: minimalDarkThemePreset,
-      },
-      slate: {
-        light: slateThemePreset,
-        dark: slateDarkThemePreset,
-      },
-      nexus: {
-        light: nexusThemePreset,
-        dark: nexusDarkThemePreset,
-      },
-      prism: {
-        light: prismThemePreset,
-        dark: prismDarkThemePreset,
-      },
-      atlas: {
-        light: atlasThemePreset,
-        dark: atlasDarkThemePreset,
-      },
-      sterling: {
-        light: sterlingThemePreset,
-        dark: sterlingDarkThemePreset,
-      },
-      'daybook-classic': {
-        light: daybookClassicThemePreset,
-        dark: daybookClassicDarkThemePreset,
-      },
-    };
-
-    return (
-      presets[preset]?.[mode] ?? (mode === 'dark' ? defaultDarkThemePreset : defaultThemePreset)
-    );
-  }
-
-  private readStoredThemePreset(): ThemePresetId {
-    const storedPreset = readStorageValue(this.localStorageRef, themePresetStorageKey);
-    return isThemePresetId(storedPreset) ? storedPreset : 'default';
-  }
-
-  private readStoredThemeMode(): ThemeModeId {
-    const storedMode = readStorageValue(this.localStorageRef, themeModeStorageKey);
-    return isThemeModeId(storedMode) ? storedMode : 'dark';
   }
 
   private isMacPlatform(): boolean {

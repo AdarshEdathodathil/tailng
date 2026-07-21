@@ -21,6 +21,11 @@ permissions:
   contents: write
   id-token: write
 
+# Only one production release may calculate and push versions at a time.
+concurrency:
+  group: production-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -133,8 +138,29 @@ jobs:
       - name: Commit and push version changes
         run: |
           git add package.json libs/**/package.json || true
-          git commit -m "chore(release): ${{ inputs.release_type }} (${{ inputs.targets }}) [skip ci]" || echo "Nothing to commit"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+          else
+            git commit -m "chore(release): ${{ inputs.release_type }} (${{ inputs.targets }}) [skip ci]"
+          fi
+
+          # main may advance while tests are running. Replay the release commit
+          # on the latest remote tip instead of force-pushing over newer work.
+          for attempt in 1 2 3; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git rebase "origin/${GITHUB_REF_NAME}"
+
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+
+            if [ "${attempt}" -eq 3 ]; then
+              echo "Unable to push after ${attempt} attempts"
+              exit 1
+            fi
+
+            echo "main advanced during push; retrying (${attempt}/3)"
+          done
 
       # ------------------------------------
       # BUILD PACKAGES
@@ -156,6 +182,9 @@ jobs:
       # ------------------------------------
       - name: npm pack dry-run (selected targets)
         run: node tools/release/npm-pack-dry-run.mjs "${{ inputs.targets }}"
+
+      - name: Packed Angular consumer smoke test
+        run: node tools/release/angular-package-smoke-test.mjs "${{ inputs.targets }}"
 
       # ------------------------------------
       # PUBLISH (npm Trusted Publishing via OIDC)

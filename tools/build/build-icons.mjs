@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { resolve } from 'node:path';
 
 const workspaceRoot = process.cwd();
@@ -29,14 +37,15 @@ if (ngcResult.status !== 0) {
   process.exit(ngcResult.status ?? 1);
 }
 
-cpSync(
-  resolve(workspaceRoot, 'libs/tailng-ui/icons/package.json'),
+const sourcePackagePath = resolve(workspaceRoot, 'libs/tailng-ui/icons/package.json');
+const publishedPackage = JSON.parse(readFileSync(sourcePackagePath, 'utf8'));
+publishedPackage.sideEffects = ['./src/lib/icons.js'];
+writeFileSync(
   resolve(distRoot, 'package.json'),
+  `${JSON.stringify(publishedPackage, null, 2)}\n`,
+  'utf8',
 );
-cpSync(
-  resolve(workspaceRoot, 'libs/tailng-ui/icons/README.md'),
-  resolve(distRoot, 'README.md'),
-);
+cpSync(resolve(workspaceRoot, 'libs/tailng-ui/icons/README.md'), resolve(distRoot, 'README.md'));
 
 function resolvePnpmCompilerCliCandidates(root) {
   const pnpmRoot = resolve(root, 'node_modules/.pnpm');
@@ -47,10 +56,6 @@ function resolvePnpmCompilerCliCandidates(root) {
   );
 
   return compilerCliPackages.map((entry) =>
-    resolve(
-      pnpmRoot,
-      entry,
-      'node_modules/@angular/compiler-cli/bundles/src/bin/ngc.js',
-    ),
+    resolve(pnpmRoot, entry, 'node_modules/@angular/compiler-cli/bundles/src/bin/ngc.js'),
   );
 }

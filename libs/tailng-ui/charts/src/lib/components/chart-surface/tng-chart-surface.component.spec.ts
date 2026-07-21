@@ -9,6 +9,7 @@ import {
   TngChartSurfaceComponent,
 } from './tng-chart-surface.component';
 import type { TngChartOptionFactory } from '../../core/chart-context';
+import { TNG_CHART_RENDERING_ENABLED } from '../../core/chart-context';
 import type { TngChartLegendItem } from '../../core/chart-series.types';
 import { TNG_CHART_THEME_CHANGE_EVENT } from '../../core/chart-theme-events';
 import type { TngChartInstance, TngChartOption } from '../../core/chart.types';
@@ -51,9 +52,11 @@ class ChartSurfaceContextHostComponent {
       },
     ],
   });
-  public readonly runtimeLoader = vi.fn(() => Promise.resolve({
-    init: this.init,
-  }));
+  public readonly runtimeLoader = vi.fn(() =>
+    Promise.resolve({
+      init: this.init,
+    }),
+  );
 }
 
 async function flushChartSurfaceEffects(): Promise<void> {
@@ -116,6 +119,20 @@ describe('tng-chart-surface component', () => {
     expect(fixture.componentInstance.init).toHaveBeenCalledTimes(1);
     expect(setOption).toHaveBeenCalledTimes(2);
     expect(lastOption['hiddenSeries']).toEqual(['revenue']);
+  });
+
+  it('skips runtime initialization when chart rendering is disabled', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ChartSurfaceContextHostComponent],
+      providers: [{ provide: TNG_CHART_RENDERING_ENABLED, useValue: false }],
+    }).createComponent(ChartSurfaceContextHostComponent);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await flushChartSurfaceEffects();
+
+    expect(fixture.componentInstance.runtimeLoader).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.init).not.toHaveBeenCalled();
   });
 
   it('refreshes TailNG theme colors without recreating the ECharts instance', async () => {
