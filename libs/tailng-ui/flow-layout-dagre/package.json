@@ -1,0 +1,28 @@
+{
+  "name": "@tailng-ui/flow-layout-dagre",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tailng/tailng-ui"
+  },
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "dependencies": {
+    "@dagrejs/dagre": "^3.0.0"
+  },
+  "peerDependencies": {
+    "@tailng-ui/flow": ">=0.9.0 <1.0.0"
+  },
+  "devDependencies": {
+    "@tailng-ui/flow": "workspace:^"
+  },
+  "sideEffects": false
+}

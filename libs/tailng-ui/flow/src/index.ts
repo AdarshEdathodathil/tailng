@@ -6,6 +6,10 @@ export { TngFlowValidationBadgeComponent } from './lib/validation-badge/tng-flow
 export { TngFlowNodeTemplateDirective } from './lib/node-template/tng-flow-node-template.directive';
 export type { TngFlowNodeTemplateContext } from './lib/node-template/tng-flow-node-template.directive';
 export { TngFlowPaletteItemDirective } from './lib/palette-item/tng-flow-palette-item.directive';
+export {
+  provideTngFlowLayoutEngine,
+  TNG_FLOW_LAYOUT_ENGINE,
+} from './lib/layout/tng-flow-layout.provider';
 export { EMPTY_TNG_FLOW_SELECTION } from './lib/types/tng-flow.types';
 export { resolveTngFlowCapabilities } from './lib/model/tng-flow-capabilities';
 export type { TngFlowCapabilities } from './lib/model/tng-flow-capabilities';
@@ -65,6 +69,45 @@ export type {
   TngFlowValidationIssueActivatedEvent,
   TngFlowValidationIssueActivationSource,
 } from './lib/types/tng-flow-events.types';
+export type {
+  TngFlowArrangementOperation,
+  TngFlowArrangementOptions,
+  TngFlowArrangementRequestSource,
+  TngFlowDistributionAxis,
+  TngFlowLockedNodeArrangement,
+  TngFlowNodeAlignment,
+  TngFlowNodesArrangementRequest,
+  TngFlowSmartGuideModifier,
+  TngFlowSmartGuidesOptions,
+} from './lib/types/tng-flow-arrangement.types';
+export type {
+  TngFlowEditorCommand,
+  TngFlowEditorCommandRequest,
+  TngFlowEditorCommandShortcuts,
+  TngFlowEditorCommandSource,
+} from './lib/types/tng-flow-command.types';
+export type { TngFlowConnectionTemplateContext } from './lib/types/tng-flow-connection-template.types';
+export type {
+  TngFlowContextMenuRequest,
+  TngFlowContextMenuSource,
+  TngFlowContextMenuTarget,
+} from './lib/types/tng-flow-context-menu.types';
+export type { TngFlowNodeBounds, TngFlowSize } from './lib/types/tng-flow-geometry.types';
+export type { TngFlowKeyboardOptions } from './lib/types/tng-flow-keyboard.types';
+export type {
+  TngFlowAutoLayoutOptions,
+  TngFlowLayoutConnection,
+  TngFlowLayoutDirection,
+  TngFlowLayoutEngine,
+  TngFlowLayoutGraph,
+  TngFlowLayoutNode,
+  TngFlowLayoutOptions,
+  TngFlowLayoutRequestSource,
+  TngFlowLayoutViewportOptions,
+  TngFlowNodesLayoutRequest,
+  TngResolvedFlowLayoutOptions,
+  TngResolvedFlowLayoutViewportOptions,
+} from './lib/types/tng-flow-layout.types';
 export type { TngFlowRevealOptions } from './lib/types/tng-flow-navigation.types';
 export type {
   TngFlowMinimapOptions,

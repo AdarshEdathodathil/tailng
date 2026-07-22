@@ -1,0 +1,130 @@
+import { describe, expect, expectTypeOf, it } from 'vitest';
+import type {
+  TngFlowArrangementOperation,
+  TngFlowConnection,
+  TngFlowConnectionTemplateContext,
+  TngFlowContextMenuRequest,
+  TngFlowEditorCommandRequest,
+  TngFlowLayoutEngine,
+  TngFlowLayoutGraph,
+  TngFlowNodeMove,
+  TngFlowNodesArrangementRequest,
+  TngFlowNodesLayoutRequest,
+  TngFlowSmartGuidesOptions,
+  TngResolvedFlowLayoutOptions,
+} from '../../index';
+
+const resolvedLayoutOptions: TngResolvedFlowLayoutOptions = {
+  direction: 'left-to-right',
+  nodeSpacing: 48,
+  levelSpacing: 120,
+  componentSpacing: 64,
+  preserveLockedNodes: true,
+  includeDisconnectedNodes: true,
+};
+
+describe('Flow production public contracts', () => {
+  it('keeps layout engines renderer-neutral and position-only', async () => {
+    const graph: TngFlowLayoutGraph = {
+      nodes: [
+        {
+          node: {
+            id: 'start',
+            type: 'start',
+            name: 'Start',
+            position: { x: 0, y: 0 },
+          },
+          bounds: {
+            id: 'start',
+            position: { x: 0, y: 0 },
+            size: { width: 280, height: 112 },
+          },
+        },
+      ],
+      connections: [],
+    };
+    const engine: TngFlowLayoutEngine = {
+      calculate: () => Promise.resolve([{ id: 'start', position: { x: 48, y: 120 } }]),
+    };
+
+    const moves = await engine.calculate(graph, resolvedLayoutOptions);
+
+    expect(moves).toEqual([{ id: 'start', position: { x: 48, y: 120 } }]);
+    expectTypeOf(moves).toEqualTypeOf<readonly TngFlowNodeMove[]>();
+  });
+
+  it('groups a complete automatic layout into one controlled request', () => {
+    const request: TngFlowNodesLayoutRequest = {
+      nodes: [{ id: 'start', position: { x: 48, y: 120 } }],
+      options: resolvedLayoutOptions,
+      viewport: { fit: true, animated: false, padding: 48 },
+      source: 'controls',
+    };
+
+    expect(request.nodes).toHaveLength(1);
+    expect(request.options.direction).toBe('left-to-right');
+    expectTypeOf(request.nodes).toEqualTypeOf<readonly TngFlowNodeMove[]>();
+  });
+
+  it('exports application-owned command and context-menu request shapes', () => {
+    const selection = {
+      nodeIds: new Set(['review']),
+      connectionIds: new Set<string>(),
+    };
+    const command: TngFlowEditorCommandRequest = {
+      command: 'duplicate',
+      selection,
+      source: 'keyboard',
+      canvasPosition: { x: 320, y: 180 },
+    };
+    const contextMenu: TngFlowContextMenuRequest = {
+      target: { kind: 'node', nodeId: 'review' },
+      source: 'pointer',
+      clientPosition: { x: 640, y: 360 },
+      canvasPosition: { x: 320, y: 180 },
+      selection,
+    };
+
+    expect(command.command).toBe('duplicate');
+    expect(contextMenu.target).toEqual({ kind: 'node', nodeId: 'review' });
+    expectTypeOf(contextMenu.clientPosition).toEqualTypeOf<Readonly<{ x: number; y: number }>>();
+  });
+
+  it('uses measured bounds for arrangement contracts', () => {
+    const operation: TngFlowArrangementOperation = {
+      kind: 'align',
+      alignment: 'horizontal-center',
+    };
+    const request: TngFlowNodesArrangementRequest = {
+      nodes: [{ id: 'review', position: { x: 240, y: 120 } }],
+      operation,
+      source: 'context-menu',
+    };
+    const guides: TngFlowSmartGuidesOptions = {
+      enabled: true,
+      alignmentThreshold: 10,
+      spacingThreshold: 16,
+      disableModifier: 'alt',
+    };
+
+    expect(request.operation).toEqual(operation);
+    expect(guides.disableModifier).toBe('alt');
+  });
+
+  it('adds label metadata without changing connection identity or endpoints', () => {
+    const connection: TngFlowConnection<{ condition: string }> = {
+      id: 'approved-route',
+      source: { nodeId: 'review', portId: 'approved' },
+      target: { nodeId: 'publish', portId: 'input' },
+      label: 'Approved',
+      description: 'Continue when the review is approved.',
+      data: { condition: 'approved === true' },
+    };
+
+    expect(connection.label).toBe('Approved');
+    expect(connection.source.nodeId).toBe('review');
+    expectTypeOf<
+      TngFlowConnectionTemplateContext<{ condition: string }>['connection']
+    >().toEqualTypeOf<TngFlowConnection<{ condition: string }>>();
+  });
+});

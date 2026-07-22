@@ -15,6 +15,7 @@ import { TngFlowEditorComponent } from './tng-flow-editor.component';
 import { TngFlowNodeTemplateDirective } from '../node-template/tng-flow-node-template.directive';
 import { createTngFlowPaletteItemEnvelope } from '../palette-item/tng-flow-palette-item.directive';
 import type { TngFlowValidationIssueActivatedEvent } from '../types/tng-flow-events.types';
+import type { TngFlowLayoutEngine } from '../types/tng-flow-layout.types';
 import type { TngFlowPresentation } from '../types/tng-flow-presentation.types';
 import type { TngFlowValidation } from '../types/tng-flow-validation.types';
 import type {
@@ -151,6 +152,58 @@ type EditorEventHarness = Readonly<{
 }>;
 
 describe('TngFlowEditorComponent', () => {
+  it.each(['inspect', 'readonly'] as const)(
+    'rejects automatic layout requests in %s mode',
+    async (mode) => {
+      const calculate = vi.fn<TngFlowLayoutEngine['calculate']>(() => Promise.resolve([]));
+      const fixture = TestBed.createComponent(TngFlowEditorComponent);
+      fixture.componentRef.setInput('definition', definition);
+      fixture.componentRef.setInput('layoutEngine', { calculate });
+      fixture.componentRef.setInput('mode', mode);
+      fixture.componentRef.setInput('fitOnInit', false);
+      fixture.detectChanges();
+      const harness = fixture.componentInstance as unknown as EditorEventHarness;
+      harness.onReady();
+
+      await expect(fixture.componentInstance.requestAutoLayout()).resolves.toBe(false);
+      expect(calculate).not.toHaveBeenCalled();
+    },
+  );
+
+  it('renders and emits controlled intents without mutating a deeply frozen definition', () => {
+    const frozenDefinition = structuredClone(definition);
+    const freezeRecursively = (value: unknown): void => {
+      if (typeof value !== 'object' || value === null || Object.isFrozen(value)) {
+        return;
+      }
+      for (const nested of Object.values(value)) {
+        freezeRecursively(nested);
+      }
+      Object.freeze(value);
+    };
+    freezeRecursively(frozenDefinition);
+    const before = JSON.stringify(frozenDefinition);
+
+    const fixture = TestBed.createComponent(TngFlowEditorComponent<{ summary: string }>);
+    fixture.componentRef.setInput('definition', frozenDefinition);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const moved = vi.fn<(event: TngFlowNodesMovedEvent) => void>();
+    fixture.componentInstance.nodesMoved.subscribe(moved);
+    const harness = fixture.componentInstance as unknown as EditorEventHarness;
+    harness.onMoveNodes(new FMoveNodesEvent([{ id: 'custom', position: { x: 160, y: 192 } }]));
+
+    expect(moved).toHaveBeenCalledWith({
+      nodes: [{ id: 'custom', position: { x: 160, y: 192 } }],
+    });
+    expect(JSON.stringify(frozenDefinition)).toBe(before);
+    expect(frozenDefinition.nodes[0].position).toEqual({ x: 40, y: 80 });
+    expect(Object.isFrozen(frozenDefinition)).toBe(true);
+    expect(Object.isFrozen(frozenDefinition.nodes)).toBe(true);
+    expect(Object.isFrozen(frozenDefinition.connections[0].source)).toBe(true);
+  });
+
   it('renders default nodes, consumer templates, and editor-owned ports', () => {
     const fixture = TestBed.createComponent(FlowEditorHost);
     fixture.detectChanges();

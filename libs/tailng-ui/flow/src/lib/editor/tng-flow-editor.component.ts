@@ -1,4 +1,3 @@
- 
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -12,6 +11,7 @@ import {
   inject,
   input,
   output,
+  signal,
   type TemplateRef,
   viewChild,
 } from '@angular/core';
@@ -24,6 +24,11 @@ import {
   withA11y,
 } from '@foblex/flow';
 import { TngButtonComponent } from '@tailng-ui/components';
+import {
+  calculateTngFlowLayout,
+  type TngFlowLayoutCalculation,
+} from '../layout/tng-flow-layout-coordinator';
+import { TNG_FLOW_LAYOUT_ENGINE } from '../layout/tng-flow-layout.provider';
 import { resolveTngFlowCapabilities } from '../model/tng-flow-capabilities';
 import { createTngFlowConnectorId } from '../model/tng-flow-connector-id';
 import {
@@ -55,6 +60,15 @@ import type {
   TngFlowValidationIssueActivatedEvent,
   TngFlowValidationIssueActivationSource,
 } from '../types/tng-flow-events.types';
+import type {
+  TngFlowAutoLayoutOptions,
+  TngFlowLayoutEngine,
+  TngFlowLayoutGraph,
+  TngFlowLayoutNode,
+  TngFlowLayoutRequestSource,
+  TngFlowNodesLayoutRequest,
+  TngResolvedFlowLayoutViewportOptions,
+} from '../types/tng-flow-layout.types';
 import type {
   TngFlowMinimapOptions,
   TngFlowMinimapPosition,
@@ -211,6 +225,18 @@ type PendingReveal = Readonly<{
   target: TngFlowValidationTarget;
   options: TngFlowRevealOptions;
 }>;
+type PendingLayoutViewport = Readonly<{
+  positions: ReadonlyMap<string, TngFlowPoint>;
+  viewport: TngResolvedFlowLayoutViewportOptions;
+}>;
+type MeasuredLayoutGraph<TNodeData, TConnectionData> = Readonly<{
+  graph: TngFlowLayoutGraph<TNodeData, TConnectionData>;
+  signature: string;
+}>;
+type MeasurableLayoutElement = Readonly<{
+  dataset: Readonly<DOMStringMap>;
+  getBoundingClientRect: () => DOMRect;
+}>;
 
 @Component({
   selector: 'tng-flow-editor',
@@ -241,9 +267,14 @@ export class TngFlowEditorComponent<
   private readonly documentRef = inject(DOCUMENT);
   private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly ngZone = inject(NgZone);
+  private readonly providedLayoutEngine = inject(TNG_FLOW_LAYOUT_ENGINE, {
+    optional: true,
+  }) as TngFlowLayoutEngine<TData, TConnectionData> | null;
   private hasFittedInitialNodes = false;
   private isFullyRendered = false;
+  private layoutRequestSequence = 0;
   private pendingReveal: PendingReveal | null = null;
+  private readonly pendingLayoutViewport = signal<PendingLayoutViewport | null>(null);
 
   public readonly definition = input<TngFlowDefinition<TData, TConnectionData> | null>(null);
   public readonly nodes = input<readonly TngFlowNode<TData>[] | null>(null);
@@ -258,6 +289,8 @@ export class TngFlowEditorComponent<
   public readonly selection = input<TngFlowSelection>(EMPTY_TNG_FLOW_SELECTION);
   public readonly viewport = input<TngFlowViewport | null>(null);
   public readonly connectionValidator = input<TngFlowConnectionValidator<TData> | null>(null);
+  /** Overrides an engine configured with `provideTngFlowLayoutEngine` for this editor. */
+  public readonly layoutEngine = input<TngFlowLayoutEngine<TData, TConnectionData> | null>(null);
   /** @deprecated Use `mode="readonly"`. When true, this input takes precedence over `mode`. */
   public readonly readonly = input<boolean, boolean | string>(false, {
     transform: booleanAttribute,
@@ -295,6 +328,7 @@ export class TngFlowEditorComponent<
   public readonly connectionReconnectRequested = output<TngFlowConnectionReconnectRequest>();
   public readonly connectionsDeleteRequested = output<TngFlowConnectionsDeleteRequest>();
   public readonly nodesDeleteRequested = output<TngFlowNodesDeleteRequest>();
+  public readonly nodesLayoutRequested = output<TngFlowNodesLayoutRequest>();
   public readonly selectionChange = output<TngFlowSelection>();
   public readonly connectionRejected = output<TngFlowConnectionRejectedEvent>();
   public readonly nodeActivated = output<TngFlowNodeActivatedEvent>();
@@ -459,6 +493,10 @@ export class TngFlowEditorComponent<
     this.resolvedMinimapOptions();
     this.canvas().redraw();
   });
+  private readonly layoutViewportSyncEffect = afterRenderEffect(() => {
+    this.graphNodes();
+    this.syncPendingLayoutViewport();
+  });
 
   public connectorId(nodeId: string, portId: string): string {
     return createTngFlowConnectorId(nodeId, portId);
@@ -552,6 +590,43 @@ export class TngFlowEditorComponent<
     if (normalized !== undefined) {
       this.emitNodeCreateRequest(item, normalized, source);
     }
+  }
+
+  public async requestAutoLayout(
+    options: TngFlowAutoLayoutOptions = {},
+    source: TngFlowLayoutRequestSource = 'api',
+  ): Promise<boolean> {
+    const sequence = ++this.layoutRequestSequence;
+    this.pendingLayoutViewport.set(null);
+    const engine = this.layoutEngineForRequest();
+    if (!this.canStartLayoutRequest(engine)) {
+      return false;
+    }
+    const measured = this.measureLayoutGraph();
+    if (measured === null) {
+      return false;
+    }
+    const calculation = await calculateTngFlowLayout({
+      engine,
+      graph: measured.graph,
+      autoLayout: options,
+      policy: { snapToGrid: this.snapToGrid(), gridSize: this.gridSize() },
+    });
+    if (!this.canApplyLayoutCalculation(sequence, measured.signature)) {
+      return false;
+    }
+    this.emitLayoutCalculation(calculation, source);
+    return true;
+  }
+
+  private layoutEngineForRequest(): TngFlowLayoutEngine<TData, TConnectionData> | null {
+    return this.layoutEngine() ?? this.providedLayoutEngine;
+  }
+
+  private canStartLayoutRequest(
+    engine: TngFlowLayoutEngine<TData, TConnectionData> | null,
+  ): engine is TngFlowLayoutEngine<TData, TConnectionData> {
+    return this.canEdit() && this.isFullyRendered && engine !== null;
   }
 
   protected templateFor(
@@ -1209,6 +1284,166 @@ export class TngFlowEditorComponent<
     return (
       selectedConnectionId !== undefined &&
       this.emitConnectionActivated(selectedConnectionId, 'keyboard')
+    );
+  }
+
+  private measureLayoutGraph(): MeasuredLayoutGraph<TData, TConnectionData> | null {
+    const nodes = [...this.graphNodes()].sort((left, right) => left.id.localeCompare(right.id));
+    if (nodes.length === 0) {
+      return null;
+    }
+    const elements = this.layoutNodeElements();
+    const scale = this.canvas().getScale();
+    const normalizedScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    const layoutNodes: TngFlowLayoutNode<TData>[] = [];
+    for (const node of nodes) {
+      const measured = this.measureLayoutNode(node, elements.get(node.id), normalizedScale);
+      if (measured === null) {
+        return null;
+      }
+      layoutNodes.push(measured);
+    }
+    const nodeIds = new Set(nodes.map((node) => node.id));
+    const connections = this.completeLayoutConnections(nodeIds);
+    const graph = Object.freeze({
+      nodes: Object.freeze(layoutNodes),
+      connections: Object.freeze(connections.map((connection) => Object.freeze({ connection }))),
+    });
+    return {
+      graph,
+      signature: this.layoutGraphSignature(graph),
+    };
+  }
+
+  private layoutNodeElements(): ReadonlyMap<string, MeasurableLayoutElement> {
+    const elements = this.hostElement.nativeElement.querySelectorAll<HTMLElement>(
+      '.tng-flow-editor__node[data-node-id]',
+    );
+    return new Map(
+      Array.from(elements).flatMap((element: MeasurableLayoutElement) => {
+        const id = element.dataset['nodeId'];
+        return id === undefined ? [] : [[id, element] as const];
+      }),
+    );
+  }
+
+  private measureLayoutNode(
+    node: TngFlowNode<TData>,
+    element: MeasurableLayoutElement | undefined,
+    scale: number,
+  ): TngFlowLayoutNode<TData> | null {
+    if (element === undefined) {
+      return null;
+    }
+    const rect = element.getBoundingClientRect();
+    const width = rect.width / scale;
+    const height = rect.height / scale;
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      return null;
+    }
+    return Object.freeze({
+      node,
+      bounds: Object.freeze({
+        id: node.id,
+        position: this.toPoint(node.position),
+        size: Object.freeze({ width, height }),
+        disabled: node.disabled,
+        locked: node.locked,
+      }),
+    });
+  }
+
+  private completeLayoutConnections(
+    nodeIds: Readonly<ReadonlySet<string>>,
+  ): readonly TngFlowConnection<TConnectionData>[] {
+    return [...this.graphConnections()]
+      .filter(
+        (connection) =>
+          nodeIds.has(connection.source.nodeId) && nodeIds.has(connection.target.nodeId),
+      )
+      .sort((left, right) => left.id.localeCompare(right.id));
+  }
+
+  private layoutGraphSignature(graph: TngFlowLayoutGraph<TData, TConnectionData>): string {
+    return JSON.stringify({
+      nodes: graph.nodes.map((entry) => [
+        entry.node.id,
+        entry.node.position.x,
+        entry.node.position.y,
+        entry.bounds.size.width,
+        entry.bounds.size.height,
+        entry.node.locked === true,
+      ]),
+      connections: graph.connections.map((entry) => [
+        entry.connection.id,
+        entry.connection.source.nodeId,
+        entry.connection.target.nodeId,
+      ]),
+    });
+  }
+
+  private canApplyLayoutCalculation(sequence: number, signature: string): boolean {
+    const current = this.measureLayoutGraph();
+    return (
+      sequence === this.layoutRequestSequence &&
+      this.canEdit() &&
+      current !== null &&
+      signature === current.signature
+    );
+  }
+
+  private emitLayoutCalculation(
+    calculation: TngFlowLayoutCalculation,
+    source: TngFlowLayoutRequestSource,
+  ): void {
+    const request: TngFlowNodesLayoutRequest = {
+      nodes: calculation.nodes,
+      options: calculation.options,
+      viewport: calculation.viewport,
+      source,
+    };
+    this.pendingLayoutViewport.set(
+      calculation.viewport.fit
+        ? {
+            positions: new Map(calculation.nodes.map((move) => [move.id, move.position] as const)),
+            viewport: calculation.viewport,
+          }
+        : null,
+    );
+    this.runInAngular(() => this.nodesLayoutRequested.emit(request));
+  }
+
+  private syncPendingLayoutViewport(): void {
+    const pending = this.pendingLayoutViewport();
+    if (pending === null || !this.layoutPositionsApplied(pending.positions)) {
+      return;
+    }
+    this.pendingLayoutViewport.set(null);
+    this.fitToScreen(
+      this.layoutAnimationAllowed(pending.viewport.animated),
+      pending.viewport.padding,
+    );
+  }
+
+  private layoutPositionsApplied(positions: Readonly<ReadonlyMap<string, TngFlowPoint>>): boolean {
+    const nodesById = new Map(this.graphNodes().map((node) => [node.id, node]));
+    for (const [id, position] of positions) {
+      const current = nodesById.get(id)?.position;
+      if (
+        current === undefined ||
+        Math.abs(current.x - position.x) > 0.5 ||
+        Math.abs(current.y - position.y) > 0.5
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private layoutAnimationAllowed(requested: boolean): boolean {
+    return (
+      requested &&
+      this.documentRef.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches !== true
     );
   }
 

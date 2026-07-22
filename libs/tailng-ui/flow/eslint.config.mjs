@@ -17,17 +17,20 @@ export default [
         {
           ignoredDependencies: [
             '@angular/platform-browser-dynamic',
+            '@angular/platform-browser',
+            '@vitest/browser-playwright',
             '@foblex/2d',
             '@foblex/mediator',
             '@foblex/platform',
             '@foblex/utils',
             'tslib',
+            'puppeteer',
             'vitest',
             'zone.js',
           ],
           ignoredFiles: [
             '{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}',
-            '{projectRoot}/vitest.config.ts',
+            '{projectRoot}/vitest*.config.ts',
             '{projectRoot}/**/*.spec.ts',
             '{projectRoot}/**/*.test.ts',
           ],

@@ -1,11 +1,17 @@
-/// <reference types="vitest" />
 import angular from '@analogjs/vite-plugin-angular';
+import { playwright } from '@vitest/browser-playwright';
+import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import puppeteer from 'puppeteer';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
+const chromeExecutable = puppeteer.executablePath();
+const browserProvider = existsSync(chromeExecutable)
+  ? playwright({ launchOptions: { executablePath: chromeExecutable } })
+  : playwright();
 
 export default defineConfig({
   plugins: [
@@ -49,11 +55,16 @@ export default defineConfig({
     ],
   },
   test: {
-    name: 'flow',
-    include: ['src/**/*.spec.ts'],
-    exclude: ['src/**/*.browser.spec.ts'],
-    environment: 'jsdom',
-    setupFiles: [resolve(projectRoot, './src/test-setup.ts')],
+    name: 'flow-browser',
+    include: ['src/**/*.browser.spec.ts'],
+    setupFiles: [resolve(projectRoot, './src/browser-test-setup.ts')],
+    browser: {
+      enabled: true,
+      headless: true,
+      provider: browserProvider,
+      instances: [{ browser: 'chromium' }],
+      viewport: { width: 1280, height: 800 },
+    },
     server: {
       deps: {
         inline: [
@@ -64,11 +75,6 @@ export default defineConfig({
           '@foblex/utils',
         ],
       },
-    },
-    coverage: {
-      provider: 'v8',
-      reportsDirectory: '../../../coverage/libs/tailng-ui/flow',
-      reporter: ['text', 'lcov'],
     },
   },
 });

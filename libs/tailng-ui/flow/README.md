@@ -210,6 +210,61 @@ directive supports disabled state plus optional preview and placeholder `Templat
 
 Use `[mode]="'inspect'"` for an interactive execution view and `[mode]="'readonly'"` for a non-selectable viewer.
 
+## Automatic layout
+
+Automatic layout is engine-neutral and opt-in. Install the official Dagre adapter when needed;
+`@tailng-ui/flow` does not depend on it.
+
+```bash
+pnpm add @tailng-ui/flow-layout-dagre
+```
+
+```ts
+import { provideTngFlowLayoutEngine, type TngFlowNodesLayoutRequest } from '@tailng-ui/flow';
+import { TNG_FLOW_DAGRE_LAYOUT_ENGINE } from '@tailng-ui/flow-layout-dagre';
+
+bootstrapApplication(AppComponent, {
+  providers: [provideTngFlowLayoutEngine(TNG_FLOW_DAGRE_LAYOUT_ENGINE)],
+});
+
+applyLayout(request: TngFlowNodesLayoutRequest): void {
+  const positions = new Map(request.nodes.map((move) => [move.id, move.position]));
+  this.workflow.update((workflow) => ({
+    ...workflow,
+    nodes: workflow.nodes.map((node) => {
+      const position = positions.get(node.id);
+      return position === undefined ? node : { ...node, position };
+    }),
+  }));
+}
+```
+
+```html
+<button type="button" (click)="editor.requestAutoLayout({ direction: 'left-to-right' })">
+  Arrange workflow
+</button>
+
+<tng-flow-editor
+  #editor="tngFlowEditor"
+  [definition]="workflow()"
+  (nodesLayoutRequested)="applyLayout($event)"
+/>
+```
+
+The editor measures the rendered custom nodes, invokes the configured engine once, and emits one
+complete controlled request. Locked nodes remain fixed by default. Optional viewport fitting is a
+separate presentation effect and runs only after the application supplies the requested positions:
+
+```ts
+editor.requestAutoLayout({
+  direction: 'top-to-bottom',
+  viewport: { fit: true, animated: true, padding: 48 },
+});
+```
+
+`requestAutoLayout()` resolves to `false` outside edit mode, before the editor is ready, when node
+geometry is unusable, or if the graph changes while an asynchronous engine is calculating.
+
 ## Connection validation
 
 The editor validates direction, disabled state, self-connections, port kind, duplicates, and port multiplicity before calling the optional consumer validator.

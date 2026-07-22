@@ -80,6 +80,8 @@ export type TngFlowConnection<TData = unknown> = Readonly<{
   id: string;
   source: TngFlowEndpoint;
   target: TngFlowEndpoint;
+  label?: string;
+  description?: string;
   data?: TData;
   disabled?: boolean;
   reassignable?: boolean;
