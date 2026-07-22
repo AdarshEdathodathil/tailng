@@ -43,9 +43,9 @@ export const COMPONENTS_LAYOUT_FLOW_EDITOR_ROUTES: Routes = [
       {
         path: 'examples',
         loadComponent: () =>
-          import('./sections/examples/flow-editor-examples-page.component').then(
-            (module) => module.FlowEditorExamplesPageComponent,
-          ),
+          import(
+            './sections/examples/flow-editor-examples-page/flow-editor-examples-page.component'
+          ).then((module) => module.FlowEditorExamplesPageComponent),
       },
       {
         path: '**',

@@ -1,0 +1,837 @@
+import { Component, computed, signal } from '@angular/core';
+import { TngButtonComponent } from '@tailng-ui/components';
+import {
+  TngFlowEditorComponent,
+  TngFlowPaletteItemDirective,
+  type TngFlowConnectionCandidate,
+  type TngFlowConnectionCreateRequest,
+  type TngFlowConnectionReconnectRequest,
+  type TngFlowConnectionRejectedEvent,
+  type TngFlowConnectionsDeleteRequest,
+  type TngFlowConnectionValidation,
+  type TngFlowDefinition,
+  type TngFlowEndpoint,
+  type TngFlowNode,
+  type TngFlowNodeCreateRequest,
+  type TngFlowNodePositionChange,
+  type TngFlowNodesDeleteRequest,
+  type TngFlowPaletteItem,
+  type TngFlowPoint,
+  type TngFlowPort,
+  type TngFlowSelection,
+} from '@tailng-ui/flow';
+
+type BuilderCategory = 'Actions' | 'Data' | 'Logic' | 'Outputs' | 'Triggers';
+
+type BuilderNodeData = Readonly<{
+  blueprintId: string;
+  category: BuilderCategory;
+  acceptsInput: boolean;
+  outputs: readonly Readonly<{ id: string; name: string }>[];
+}>;
+
+type BuilderDefinition = TngFlowDefinition<BuilderNodeData>;
+type BuilderPaletteItem = TngFlowPaletteItem<BuilderNodeData> & Readonly<{ data: BuilderNodeData }>;
+type MaterializedEndpoint = Readonly<{
+  endpoint: TngFlowEndpoint;
+  nodes: readonly TngFlowNode<BuilderNodeData>[];
+}>;
+
+const createInputPortId = '__builder-create-input__';
+const createOutputPortId = '__builder-create-output__';
+const connectionPortPrefix = 'connection-';
+
+const emptySelection = (): TngFlowSelection => ({
+  nodeIds: new Set<string>(),
+  connectionIds: new Set<string>(),
+});
+
+const paletteItems: readonly BuilderPaletteItem[] = Object.freeze([
+  {
+    id: 'webhook-trigger',
+    type: 'trigger',
+    name: 'Webhook',
+    description: 'Start when an HTTP event arrives.',
+    icon: 'webhook',
+    data: {
+      blueprintId: 'webhook',
+      category: 'Triggers',
+      acceptsInput: false,
+      outputs: [{ id: 'next', name: 'Event' }],
+    },
+  },
+  {
+    id: 'schedule-trigger',
+    type: 'trigger',
+    name: 'Schedule',
+    description: 'Run on a recurring schedule.',
+    icon: 'calendar-clock',
+    data: {
+      blueprintId: 'schedule',
+      category: 'Triggers',
+      acceptsInput: false,
+      outputs: [{ id: 'next', name: 'Run' }],
+    },
+  },
+  {
+    id: 'http-request-action',
+    type: 'action',
+    name: 'HTTP request',
+    description: 'Call an external API endpoint.',
+    icon: 'send',
+    data: {
+      blueprintId: 'http-request',
+      category: 'Actions',
+      acceptsInput: true,
+      outputs: [{ id: 'next', name: 'Response' }],
+    },
+  },
+  {
+    id: 'send-email-action',
+    type: 'action',
+    name: 'Send email',
+    description: 'Deliver a transactional message.',
+    icon: 'mail',
+    data: {
+      blueprintId: 'send-email',
+      category: 'Actions',
+      acceptsInput: true,
+      outputs: [{ id: 'next', name: 'Sent' }],
+    },
+  },
+  {
+    id: 'transform-data',
+    type: 'data',
+    name: 'Transform data',
+    description: 'Map fields into a new payload.',
+    icon: 'braces',
+    data: {
+      blueprintId: 'transform',
+      category: 'Data',
+      acceptsInput: true,
+      outputs: [{ id: 'next', name: 'Result' }],
+    },
+  },
+  {
+    id: 'database-query',
+    type: 'data',
+    name: 'Database query',
+    description: 'Read or update application data.',
+    icon: 'database',
+    data: {
+      blueprintId: 'database',
+      category: 'Data',
+      acceptsInput: true,
+      outputs: [{ id: 'next', name: 'Rows' }],
+    },
+  },
+  {
+    id: 'condition-logic',
+    type: 'logic',
+    name: 'Condition',
+    description: 'Route the flow using a rule.',
+    icon: 'git-branch',
+    data: {
+      blueprintId: 'condition',
+      category: 'Logic',
+      acceptsInput: true,
+      outputs: [
+        { id: 'true', name: 'Yes' },
+        { id: 'false', name: 'No' },
+      ],
+    },
+  },
+  {
+    id: 'delay-logic',
+    type: 'logic',
+    name: 'Delay',
+    description: 'Wait before continuing execution.',
+    icon: 'timer',
+    data: {
+      blueprintId: 'delay',
+      category: 'Logic',
+      acceptsInput: true,
+      outputs: [{ id: 'next', name: 'Continue' }],
+    },
+  },
+  {
+    id: 'notification-output',
+    type: 'output',
+    name: 'Notification',
+    description: 'Notify a person or a channel.',
+    icon: 'bell-ring',
+    data: {
+      blueprintId: 'notification',
+      category: 'Outputs',
+      acceptsInput: true,
+      outputs: [],
+    },
+  },
+  {
+    id: 'archive-output',
+    type: 'output',
+    name: 'Archive record',
+    description: 'Store the completed result.',
+    icon: 'archive',
+    data: {
+      blueprintId: 'archive',
+      category: 'Outputs',
+      acceptsInput: true,
+      outputs: [],
+    },
+  },
+]);
+
+function paletteItem(blueprintId: string): BuilderPaletteItem {
+  const item = paletteItems.find((candidate) => candidate.data?.blueprintId === blueprintId);
+  if (item === undefined) {
+    throw new Error(`Unknown professional flow builder blueprint: ${blueprintId}`);
+  }
+  return item;
+}
+
+function connectionCreatorPortsFor(data: BuilderNodeData): readonly TngFlowPort[] {
+  const inputCreator: readonly TngFlowPort[] = data.acceptsInput
+    ? [
+        {
+          id: createInputPortId,
+          name: 'Connect to this step',
+          direction: 'input',
+          kind: 'data',
+          dataType: 'workflow-payload',
+          multiple: true,
+        },
+      ]
+    : [];
+  const outputCreator: readonly TngFlowPort[] =
+    data.outputs.length > 0
+      ? [
+          {
+            id: createOutputPortId,
+            name: 'Create connection',
+            direction: 'output',
+            kind: 'data',
+            dataType: 'workflow-payload',
+            multiple: true,
+          },
+        ]
+      : [];
+  return [...inputCreator, ...outputCreator];
+}
+
+function isConnectionCreatorPort(port: TngFlowPort): boolean {
+  return port.id === createInputPortId || port.id === createOutputPortId;
+}
+
+function connectedPort(id: string, name: string, direction: 'input' | 'output'): TngFlowPort {
+  return {
+    id,
+    name,
+    direction,
+    kind: 'data',
+    dataType: 'workflow-payload',
+  };
+}
+
+function withConnectedPorts(
+  node: TngFlowNode<BuilderNodeData>,
+  ports: readonly TngFlowPort[],
+): TngFlowNode<BuilderNodeData> {
+  return { ...node, ports: [...ports, ...(node.ports ?? [])] };
+}
+
+function createNode(
+  id: string,
+  item: TngFlowPaletteItem<BuilderNodeData>,
+  position: TngFlowPoint,
+): TngFlowNode<BuilderNodeData> {
+  const data = item.data;
+  if (data === undefined) {
+    throw new Error(`Palette item ${item.id} is missing builder data.`);
+  }
+  return {
+    id,
+    type: item.type,
+    name: item.name,
+    description: item.description,
+    icon: item.icon,
+    position,
+    ports: connectionCreatorPortsFor(data),
+    data,
+  };
+}
+
+const starterDefinition = Object.freeze({
+  id: 'professional-customer-onboarding-flow',
+  name: 'Customer onboarding automation',
+  nodes: [
+    withConnectedPorts(createNode('incoming-webhook', paletteItem('webhook'), { x: 70, y: 220 }), [
+      connectedPort('connection-output-1', 'Event', 'output'),
+    ]),
+    withConnectedPorts(
+      createNode('normalize-profile', paletteItem('transform'), { x: 380, y: 220 }),
+      [
+        connectedPort('connection-input-1', 'Input', 'input'),
+        connectedPort('connection-output-1', 'Result', 'output'),
+      ],
+    ),
+    withConnectedPorts(
+      createNode('check-eligibility', paletteItem('condition'), { x: 690, y: 220 }),
+      [
+        connectedPort('connection-input-1', 'Input', 'input'),
+        connectedPort('connection-output-1', 'Yes', 'output'),
+        connectedPort('connection-output-2', 'No', 'output'),
+      ],
+    ),
+    withConnectedPorts(createNode('welcome-email', paletteItem('send-email'), { x: 1010, y: 70 }), [
+      connectedPort('connection-input-1', 'Input', 'input'),
+    ]),
+    withConnectedPorts(
+      createNode('manual-review-notification', paletteItem('notification'), {
+        x: 1010,
+        y: 370,
+      }),
+      [connectedPort('connection-input-1', 'Input', 'input')],
+    ),
+  ],
+  connections: [
+    {
+      id: 'webhook-to-transform',
+      source: { nodeId: 'incoming-webhook', portId: 'connection-output-1' },
+      target: { nodeId: 'normalize-profile', portId: 'connection-input-1' },
+      type: 'bezier',
+    },
+    {
+      id: 'transform-to-condition',
+      source: { nodeId: 'normalize-profile', portId: 'connection-output-1' },
+      target: { nodeId: 'check-eligibility', portId: 'connection-input-1' },
+      type: 'bezier',
+    },
+    {
+      id: 'eligible-to-email',
+      source: { nodeId: 'check-eligibility', portId: 'connection-output-1' },
+      target: { nodeId: 'welcome-email', portId: 'connection-input-1' },
+      type: 'bezier',
+    },
+    {
+      id: 'review-to-notification',
+      source: { nodeId: 'check-eligibility', portId: 'connection-output-2' },
+      target: { nodeId: 'manual-review-notification', portId: 'connection-input-1' },
+      type: 'bezier',
+    },
+  ],
+} satisfies BuilderDefinition);
+
+function mapNumber(index: ReadonlyMap<string, number>, key: string, fallback = 0): number {
+  return index.get(key) ?? fallback;
+}
+
+function outgoingIndex(definition: BuilderDefinition): Map<string, string[]> {
+  const outgoing = new Map(definition.nodes.map((node) => [node.id, [] as string[]]));
+  for (const connection of definition.connections) {
+    const targets = outgoing.get(connection.source.nodeId);
+    if (targets !== undefined) {
+      targets.push(connection.target.nodeId);
+    }
+  }
+  return outgoing;
+}
+
+function layoutLevels(
+  definition: BuilderDefinition,
+  outgoing: ReadonlyMap<string, readonly string[]>,
+): Readonly<{ levels: ReadonlyMap<string, number>; visited: ReadonlySet<string> }> {
+  const indegree = new Map(definition.nodes.map((node) => [node.id, 0]));
+  for (const connection of definition.connections) {
+    indegree.set(connection.target.nodeId, mapNumber(indegree, connection.target.nodeId) + 1);
+  }
+  const levels = new Map(definition.nodes.map((node) => [node.id, 0]));
+  const queue = definition.nodes
+    .filter((node) => indegree.get(node.id) === 0)
+    .map((node) => node.id);
+  const visited = new Set<string>();
+  while (queue.length > 0) {
+    const nodeId = queue.shift();
+    if (nodeId === undefined) {
+      continue;
+    }
+    visited.add(nodeId);
+    for (const targetId of outgoing.get(nodeId) ?? []) {
+      levels.set(targetId, Math.max(mapNumber(levels, targetId), mapNumber(levels, nodeId) + 1));
+      const nextIndegree = mapNumber(indegree, targetId, 1) - 1;
+      indegree.set(targetId, nextIndegree);
+      if (nextIndegree === 0) {
+        queue.push(targetId);
+      }
+    }
+  }
+  return { levels, visited };
+}
+
+function autoLayoutNodes(definition: BuilderDefinition): readonly TngFlowNode<BuilderNodeData>[] {
+  const outgoing = outgoingIndex(definition);
+  const { levels, visited } = layoutLevels(definition, outgoing);
+  const fallbackLevel = Math.max(0, ...levels.values()) + 1;
+  const rowsByLevel = new Map<number, number>();
+  return definition.nodes.map((node) => {
+    const level = visited.has(node.id) ? mapNumber(levels, node.id) : fallbackLevel;
+    const row = rowsByLevel.get(level) ?? 0;
+    rowsByLevel.set(level, row + 1);
+    return { ...node, position: { x: 72 + level * 320, y: 72 + row * 230 } };
+  });
+}
+
+function reachableNodes(
+  startNodeId: string,
+  outgoing: ReadonlyMap<string, readonly string[]>,
+): ReadonlySet<string> {
+  const pending = [startNodeId];
+  const visited = new Set<string>();
+  while (pending.length > 0) {
+    const nodeId = pending.pop();
+    if (nodeId === undefined) {
+      continue;
+    }
+    if (visited.has(nodeId)) {
+      continue;
+    }
+    visited.add(nodeId);
+    pending.push(...(outgoing.get(nodeId) ?? []));
+  }
+  return visited;
+}
+
+@Component({
+  selector: 'app-professional-flow-builder-demo',
+  imports: [TngButtonComponent, TngFlowEditorComponent, TngFlowPaletteItemDirective],
+  templateUrl: './professional-flow-builder-demo.component.html',
+  styleUrl: './professional-flow-builder-demo.component.css',
+})
+export class ProfessionalFlowBuilderDemoComponent {
+  protected readonly definition = signal<BuilderDefinition>(starterDefinition);
+  protected readonly selection = signal<TngFlowSelection>(emptySelection());
+  protected readonly workflowName = signal(starterDefinition.name ?? 'Untitled workflow');
+  protected readonly paletteQuery = signal('');
+  protected readonly snapToGrid = signal(true);
+  protected readonly published = signal(false);
+  protected readonly eventMessage = signal(
+    'Ready — drag from the + handle to a node; connection ports are created automatically.',
+  );
+  protected readonly undoDepth = signal(0);
+  protected readonly redoDepth = signal(0);
+  protected readonly paletteItems = paletteItems;
+
+  private undoStack: BuilderDefinition[] = [];
+  private redoStack: BuilderDefinition[] = [];
+  private nextNodeId = 1;
+  private nextConnectionId = 1;
+
+  protected readonly filteredPaletteItems = computed(() => {
+    const query = this.paletteQuery().trim().toLowerCase();
+    return query === ''
+      ? this.paletteItems
+      : this.paletteItems.filter((item) =>
+          [item.name, item.description, item.data?.category]
+            .filter((value): value is string => value !== undefined)
+            .some((value) => value.toLowerCase().includes(query)),
+        );
+  });
+
+  protected readonly selectedNode = computed<TngFlowNode<BuilderNodeData> | null>(() => {
+    const id = this.selection().nodeIds.values().next().value;
+    return this.definition().nodes.find((node) => node.id === id) ?? null;
+  });
+
+  protected readonly selectedConnection = computed(() => {
+    const id = this.selection().connectionIds.values().next().value;
+    return this.definition().connections.find((connection) => connection.id === id) ?? null;
+  });
+
+  protected readonly validateConnection = (
+    candidate: TngFlowConnectionCandidate<BuilderNodeData>,
+  ): TngFlowConnectionValidation => {
+    if (candidate.sourcePort.direction !== 'output' || candidate.targetPort.direction !== 'input') {
+      return {
+        valid: false,
+        code: 'invalid-direction',
+        reason: 'Connect an output port to an input port.',
+      };
+    }
+    if (this.wouldCreateCycle(candidate.source.nodeId, candidate.target.nodeId)) {
+      return {
+        valid: false,
+        code: 'cycle-detected',
+        reason: 'This connection would create a cycle in the workflow.',
+      };
+    }
+    return { valid: true };
+  };
+
+  protected createFlowNode(request: TngFlowNodeCreateRequest<BuilderNodeData>): void {
+    const blueprint = request.item.data?.blueprintId ?? request.item.type;
+    const id = `${blueprint}-${this.nextNodeId++}`;
+    const node = createNode(id, request.item, request.position);
+    this.commit(
+      { ...this.definition(), nodes: [...this.definition().nodes, node] },
+      `Added ${node.name} to the workflow.`,
+    );
+    this.selection.set({ nodeIds: new Set([id]), connectionIds: new Set() });
+  }
+
+  protected moveNode(event: TngFlowNodePositionChange): void {
+    this.commit(
+      {
+        ...this.definition(),
+        nodes: this.definition().nodes.map((node) =>
+          node.id === event.nodeId ? { ...node, position: event.position } : node,
+        ),
+      },
+      `Moved ${this.nodeName(event.nodeId)} and saved its position.`,
+    );
+  }
+
+  protected createConnection(request: TngFlowConnectionCreateRequest): void {
+    const definition = this.definition();
+    const source = this.materializeEndpoint(definition.nodes, request.source, 'output');
+    const target = this.materializeEndpoint(source.nodes, request.target, 'input');
+    const id = `builder-connection-${this.nextConnectionId++}`;
+    this.commit(
+      {
+        ...definition,
+        nodes: target.nodes,
+        connections: [
+          ...definition.connections,
+          { id, source: source.endpoint, target: target.endpoint, type: 'bezier' },
+        ],
+      },
+      `Connected ${this.nodeName(request.source.nodeId)} to ${this.nodeName(request.target.nodeId)}.`,
+    );
+  }
+
+  protected reconnectConnection(request: TngFlowConnectionReconnectRequest): void {
+    const definition = this.definition();
+    const source = this.materializeEndpoint(definition.nodes, request.source, 'output');
+    const target = this.materializeEndpoint(source.nodes, request.target, 'input');
+    const connections = definition.connections.map((connection) =>
+      connection.id === request.connectionId
+        ? { ...connection, source: source.endpoint, target: target.endpoint }
+        : connection,
+    );
+    this.commit(
+      this.pruneUnusedConnectionPorts({ ...definition, nodes: target.nodes, connections }),
+      `Updated the ${request.changedEndpoint} endpoint of the connection.`,
+    );
+  }
+
+  protected deleteNodes(request: TngFlowNodesDeleteRequest): void {
+    this.removeItems(
+      new Set(request.nodeIds),
+      new Set(),
+      `Removed ${request.nodeIds.length} step(s).`,
+    );
+  }
+
+  protected deleteConnections(request: TngFlowConnectionsDeleteRequest): void {
+    this.removeItems(
+      new Set(),
+      new Set(request.connectionIds),
+      `Removed ${request.connectionIds.length} connection(s).`,
+    );
+  }
+
+  protected deleteSelection(): void {
+    const selected = this.selection();
+    this.removeItems(
+      new Set(selected.nodeIds),
+      new Set(selected.connectionIds),
+      'Removed the selected workflow items.',
+    );
+  }
+
+  protected duplicateSelectedNode(): void {
+    const selected = this.selectedNode();
+    if (selected === null) {
+      return;
+    }
+    const id = `${selected.data?.blueprintId ?? selected.type}-${this.nextNodeId++}`;
+    const copy: TngFlowNode<BuilderNodeData> = {
+      ...selected,
+      id,
+      name: `${selected.name} copy`,
+      position: { x: selected.position.x + 48, y: selected.position.y + 48 },
+      ports: selected.data === undefined ? [] : connectionCreatorPortsFor(selected.data),
+    };
+    this.commit(
+      { ...this.definition(), nodes: [...this.definition().nodes, copy] },
+      `Duplicated ${selected.name}.`,
+    );
+    this.selection.set({ nodeIds: new Set([id]), connectionIds: new Set() });
+  }
+
+  protected updateSelectedNode(field: 'description' | 'name', event: Event): void {
+    const selected = this.selectedNode();
+    if (selected === null) {
+      return;
+    }
+    const rawValue = this.eventValue(event).trim();
+    const value = field === 'name' && rawValue === '' ? 'Untitled step' : rawValue;
+    if ((selected[field] ?? '') === value) {
+      return;
+    }
+    this.commit(
+      {
+        ...this.definition(),
+        nodes: this.definition().nodes.map((node) =>
+          node.id === selected.id ? { ...node, [field]: value } : node,
+        ),
+      },
+      `Updated ${field === 'name' ? 'the step name' : 'the step description'}.`,
+    );
+  }
+
+  protected updateWorkflowName(event: Event): void {
+    const nextName = this.eventValue(event).trim() || 'Untitled workflow';
+    if (nextName === this.workflowName()) {
+      return;
+    }
+    this.workflowName.set(nextName);
+    this.commit({ ...this.definition(), name: nextName }, 'Renamed the workflow.');
+  }
+
+  protected updatePaletteQuery(event: Event): void {
+    this.paletteQuery.set(this.eventValue(event));
+  }
+
+  protected updateSelection(nextSelection: TngFlowSelection): void {
+    this.selection.set(nextSelection);
+  }
+
+  protected rejectConnection(event: TngFlowConnectionRejectedEvent): void {
+    this.eventMessage.set(`Connection rejected — ${event.reason}`);
+  }
+
+  protected toggleSnapToGrid(): void {
+    this.snapToGrid.update((value) => !value);
+    this.eventMessage.set(`Snap to grid ${this.snapToGrid() ? 'enabled' : 'disabled'}.`);
+  }
+
+  protected autoLayout(): void {
+    const definition = this.definition();
+    if (definition.nodes.length === 0) {
+      this.eventMessage.set('Add at least one step before arranging the workflow.');
+      return;
+    }
+    this.commit(
+      { ...definition, nodes: autoLayoutNodes(definition) },
+      'Auto-arranged the workflow from left to right.',
+    );
+  }
+
+  protected clearCanvas(): void {
+    if (this.definition().nodes.length === 0) {
+      return;
+    }
+    this.commit({ ...this.definition(), nodes: [], connections: [] }, 'Cleared the canvas.');
+    this.selection.set(emptySelection());
+  }
+
+  protected resetWorkflow(): void {
+    this.commit(starterDefinition, 'Restored the customer onboarding starter flow.');
+    this.workflowName.set(starterDefinition.name ?? 'Customer onboarding automation');
+    this.selection.set(emptySelection());
+  }
+
+  protected undo(): void {
+    const previous = this.undoStack.pop();
+    if (previous === undefined) {
+      return;
+    }
+    this.redoStack.push(this.definition());
+    this.definition.set(previous);
+    this.workflowName.set(previous.name ?? 'Untitled workflow');
+    this.selection.set(emptySelection());
+    this.syncHistoryDepths();
+    this.markDraft('Undid the last workflow change.');
+  }
+
+  protected redo(): void {
+    const next = this.redoStack.pop();
+    if (next === undefined) {
+      return;
+    }
+    this.undoStack.push(this.definition());
+    this.definition.set(next);
+    this.workflowName.set(next.name ?? 'Untitled workflow');
+    this.selection.set(emptySelection());
+    this.syncHistoryDepths();
+    this.markDraft('Redid the workflow change.');
+  }
+
+  protected togglePublished(): void {
+    this.published.update((value) => !value);
+    this.eventMessage.set(
+      this.published()
+        ? 'Workflow published — the current version is ready to run.'
+        : 'Workflow returned to draft mode.',
+    );
+  }
+
+  protected nodeCategory(node: TngFlowNode<BuilderNodeData>): string {
+    return node.data?.category ?? 'Workflow step';
+  }
+
+  protected portSummary(port: TngFlowPort): string {
+    return `${port.direction} · ${port.name ?? port.id}`;
+  }
+
+  protected connectedPorts(node: TngFlowNode<BuilderNodeData>): readonly TngFlowPort[] {
+    return (node.ports ?? []).filter((port) => !isConnectionCreatorPort(port));
+  }
+
+  private commit(next: BuilderDefinition, message: string): void {
+    this.undoStack.push(this.definition());
+    if (this.undoStack.length > 40) {
+      this.undoStack.shift();
+    }
+    this.redoStack = [];
+    this.definition.set(next);
+    this.syncHistoryDepths();
+    this.markDraft(message);
+  }
+
+  private markDraft(message: string): void {
+    this.published.set(false);
+    this.eventMessage.set(message);
+  }
+
+  private removeItems(
+    nodeIds: ReadonlySet<string>,
+    connectionIds: ReadonlySet<string>,
+    message: string,
+  ): void {
+    if (nodeIds.size === 0 && connectionIds.size === 0) {
+      return;
+    }
+    const definition = this.definition();
+    this.commit(
+      this.pruneUnusedConnectionPorts({
+        ...definition,
+        nodes: definition.nodes.filter((node) => !nodeIds.has(node.id)),
+        connections: definition.connections.filter(
+          (connection) =>
+            !connectionIds.has(connection.id) &&
+            !nodeIds.has(connection.source.nodeId) &&
+            !nodeIds.has(connection.target.nodeId),
+        ),
+      }),
+      message,
+    );
+    this.selection.set(emptySelection());
+  }
+
+  private wouldCreateCycle(sourceNodeId: string, targetNodeId: string): boolean {
+    return (
+      sourceNodeId === targetNodeId ||
+      reachableNodes(targetNodeId, outgoingIndex(this.definition())).has(sourceNodeId)
+    );
+  }
+
+  private materializeEndpoint(
+    nodes: readonly TngFlowNode<BuilderNodeData>[],
+    endpoint: TngFlowEndpoint,
+    direction: 'input' | 'output',
+  ): MaterializedEndpoint {
+    const creatorId = direction === 'input' ? createInputPortId : createOutputPortId;
+    if (endpoint.portId !== creatorId) {
+      return { endpoint, nodes };
+    }
+    const node = nodes.find((candidate) => candidate.id === endpoint.nodeId);
+    if (node === undefined) {
+      return { endpoint, nodes };
+    }
+    const portNumber = this.nextConnectionPortNumber(node, direction);
+    const portId = `${connectionPortPrefix}${direction}-${portNumber}`;
+    const portName = this.connectionPortName(node, direction, portNumber);
+    const port = connectedPort(portId, portName, direction);
+    return {
+      endpoint: { nodeId: endpoint.nodeId, portId },
+      nodes: nodes.map((candidate) =>
+        candidate.id === endpoint.nodeId
+          ? { ...candidate, ports: this.insertBeforeCreator(candidate.ports ?? [], port) }
+          : candidate,
+      ),
+    };
+  }
+
+  private insertBeforeCreator(
+    ports: readonly TngFlowPort[],
+    port: TngFlowPort,
+  ): readonly TngFlowPort[] {
+    const creatorIndex = ports.findIndex(
+      (candidate) =>
+        candidate.id === (port.direction === 'input' ? createInputPortId : createOutputPortId),
+    );
+    if (creatorIndex < 0) {
+      return [...ports, port];
+    }
+    return [...ports.slice(0, creatorIndex), port, ...ports.slice(creatorIndex)];
+  }
+
+  private nextConnectionPortNumber(
+    node: TngFlowNode<BuilderNodeData>,
+    direction: 'input' | 'output',
+  ): number {
+    const prefix = `${connectionPortPrefix}${direction}-`;
+    const numbers = (node.ports ?? [])
+      .filter((port) => port.id.startsWith(prefix))
+      .map((port) => Number(port.id.slice(prefix.length)))
+      .filter(Number.isFinite);
+    return Math.max(0, ...numbers) + 1;
+  }
+
+  private connectionPortName(
+    node: TngFlowNode<BuilderNodeData>,
+    direction: 'input' | 'output',
+    portNumber: number,
+  ): string {
+    if (direction === 'input') {
+      return portNumber === 1 ? 'Input' : `Input ${portNumber}`;
+    }
+    return node.data?.outputs[portNumber - 1]?.name ?? `Output ${portNumber}`;
+  }
+
+  private pruneUnusedConnectionPorts(definition: BuilderDefinition): BuilderDefinition {
+    const usedPorts = new Set(
+      definition.connections.flatMap((connection) => [
+        `${connection.source.nodeId}:${connection.source.portId}`,
+        `${connection.target.nodeId}:${connection.target.portId}`,
+      ]),
+    );
+    return {
+      ...definition,
+      nodes: definition.nodes.map((node) => ({
+        ...node,
+        ports: (node.ports ?? []).filter(
+          (port) =>
+            !port.id.startsWith(connectionPortPrefix) || usedPorts.has(`${node.id}:${port.id}`),
+        ),
+      })),
+    };
+  }
+
+  private syncHistoryDepths(): void {
+    this.undoDepth.set(this.undoStack.length);
+    this.redoDepth.set(this.redoStack.length);
+  }
+
+  private eventValue(event: Event): string {
+    const target = event.target;
+    return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+      ? target.value
+      : '';
+  }
+
+  private nodeName(nodeId: string): string {
+    return this.definition().nodes.find((node) => node.id === nodeId)?.name ?? nodeId;
+  }
+}

@@ -24,8 +24,8 @@ class TimedExecutionTestResizeObserver implements ResizeObserver {
 globalThis.ResizeObserver ??= TimedExecutionTestResizeObserver;
 
 function buttonWithText(host: HTMLElement, text: string): HTMLButtonElement {
-  const button = Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find(
-    (candidate) => candidate.textContent?.includes(text),
+  const button = Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find((candidate) =>
+    candidate.textContent?.includes(text),
   );
   if (button === undefined) {
     throw new Error(`Could not find a button containing "${text}".`);

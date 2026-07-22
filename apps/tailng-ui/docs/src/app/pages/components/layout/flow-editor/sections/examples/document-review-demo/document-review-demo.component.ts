@@ -50,7 +50,7 @@ function formatConfigurationValue(value: unknown): string {
   if (typeof value === 'string') {
     return value;
   }
-  return JSON.stringify(value) ?? String(value);
+  return JSON.stringify(value) ?? 'Unsupported value';
 }
 
 function executionNodeView(

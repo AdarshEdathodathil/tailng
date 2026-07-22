@@ -1,4 +1,4 @@
-import type { DocsExampleCodeTab } from '../../../../../../shared/example-panel/docs-example-panel.component';
+import type { DocsExampleCodeTab } from '../../../../../../../shared/example-panel/docs-example-panel.component';
 
 const customNodeComponentCode = [
   "import { Component, signal } from '@angular/core';",
@@ -474,7 +474,7 @@ const connectionEditingComponentCode = [
   '    return sourceType === undefined || targetType === undefined || sourceType === targetType',
   '      ? { valid: true }',
   '      : {',
-  "          valid: false,",
+  '          valid: false,',
   "          code: 'incompatible-data-type',",
   '          reason: `Cannot connect ${sourceType} data to ${targetType} data.`,',
   '        };',

@@ -147,6 +147,7 @@
                 port.direction
               }} tng-flow-editor__port--{{ side }}"
               [attr.data-direction]="port.direction"
+              [attr.data-port-id]="port.id"
               [attr.data-side]="side"
               [style.bottom]="side === 'bottom' ? '-0.375rem' : null"
               [style.left]="

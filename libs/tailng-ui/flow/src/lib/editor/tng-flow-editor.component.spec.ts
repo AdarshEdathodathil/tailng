@@ -227,11 +227,13 @@ describe('TngFlowEditorComponent', () => {
     const host = fixture.nativeElement as HTMLElement;
     const visibleNode = host.querySelector('[data-node-id="default"] tng-flow-node');
     const port = host.querySelector('[data-node-id="default"] tng-flow-port');
+    const portFrame = host.querySelector('[data-port-id="default-input"]');
     expect(visibleNode?.getAttribute('data-status')).toBe('running');
     expect(visibleNode?.getAttribute('data-validation')).toBe('warning');
     expect(visibleNode?.hasAttribute('aria-invalid')).toBe(false);
     expect(port?.getAttribute('data-validation')).toBe('error');
     expect(port?.getAttribute('aria-invalid')).toBe('true');
+    expect(portFrame?.getAttribute('data-direction')).toBe('input');
   });
 
   it('renders a complete definition with exact connections and locked nodes', () => {

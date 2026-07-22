@@ -2,10 +2,32 @@
   <section class="docs-overview-block">
     <h2 class="docs-overview-title">Flow Editor examples</h2>
     <p class="docs-overview-lead">
-      Explore timed execution, connection editing and validation, controlled selection and
-      deletion, editor modes, node movement, custom node composition, and read-only monitoring.
-      Give each editor a unique <code>flowId</code> when multiple canvases share a page.
+      Explore a professional workflow builder, timed execution, connection editing and validation,
+      controlled selection and deletion, editor modes, node movement, custom node composition, and
+      read-only monitoring. Give each editor a unique <code>flowId</code> when multiple canvases
+      share a page.
     </p>
+  </section>
+
+  <section id="professional-flow-builder" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Professional flow creator"
+      description="Build a complete automation from an unlimited step palette. Drag from a node's + handle and drop anywhere on another node to create both connection ports automatically, then reconnect, edit, arrange, undo, and publish the workflow."
+      ariaLabel="Professional flow creator demo"
+      tabListAriaLabel="Professional flow creator"
+      defaultValue="interactive"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="interactive"
+        label="Interactive builder"
+        panelTitle="Professional automation flow builder"
+        [codeTabs]="professionalFlowBuilderDemoCodeTabs"
+      >
+        <app-professional-flow-builder-demo />
+      </ng-template>
+    </app-docs-example-tabs-section>
   </section>
 
   <section id="document-review-workflow" class="docs-overview-block">
@@ -489,10 +511,7 @@
               </tng-card-header>
               <tng-card-content>
                 <p>{{ nodeDetail(node.data) }}</p>
-                <span
-                  class="flow-editor-examples__status"
-                  [attr.data-status]="view.status"
-                >
+                <span class="flow-editor-examples__status" [attr.data-status]="view.status">
                   {{ view.status }} · {{ view.progress ?? 0 }}%
                 </span>
               </tng-card-content>

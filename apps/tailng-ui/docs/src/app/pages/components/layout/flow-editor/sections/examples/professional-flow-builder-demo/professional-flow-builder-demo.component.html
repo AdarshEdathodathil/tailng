@@ -1,0 +1,314 @@
+<article class="professional-flow-builder">
+  <header class="professional-flow-builder__header">
+    <div class="professional-flow-builder__identity">
+      <span class="professional-flow-builder__logo" aria-hidden="true">⌁</span>
+      <div>
+        <span class="professional-flow-builder__eyebrow">Automation workspace</span>
+        <input
+          class="professional-flow-builder__name"
+          aria-label="Workflow name"
+          [value]="workflowName()"
+          (change)="updateWorkflowName($event)"
+        />
+      </div>
+      <span
+        class="professional-flow-builder__state"
+        [attr.data-published]="published() ? '' : null"
+      >
+        <i aria-hidden="true"></i>
+        {{ published() ? 'Published' : 'Draft' }}
+      </span>
+    </div>
+
+    <div class="professional-flow-builder__header-actions" aria-label="Workflow actions">
+      <tng-button
+        type="button"
+        appearance="ghost"
+        size="sm"
+        title="Undo"
+        [disabled]="undoDepth() === 0"
+        (click)="undo()"
+      >
+        ↶ Undo
+      </tng-button>
+      <tng-button
+        type="button"
+        appearance="ghost"
+        size="sm"
+        title="Redo"
+        [disabled]="redoDepth() === 0"
+        (click)="redo()"
+      >
+        ↷ Redo
+      </tng-button>
+      <tng-button type="button" appearance="outline" size="sm" (click)="resetWorkflow()">
+        Reset
+      </tng-button>
+      <tng-button
+        type="button"
+        size="sm"
+        [appearance]="published() ? 'outline' : 'solid'"
+        [tone]="published() ? 'neutral' : 'primary'"
+        (click)="togglePublished()"
+      >
+        {{ published() ? 'Return to draft' : 'Publish flow' }}
+      </tng-button>
+    </div>
+  </header>
+
+  <div class="professional-flow-builder__workspace">
+    <aside class="professional-flow-builder__palette" aria-label="Workflow step library">
+      <header>
+        <div>
+          <span class="professional-flow-builder__eyebrow">Build</span>
+          <h5>Step library</h5>
+        </div>
+        <span>{{ filteredPaletteItems().length }}</span>
+      </header>
+
+      <label class="professional-flow-builder__search">
+        <span aria-hidden="true">⌕</span>
+        <input
+          type="search"
+          aria-label="Search workflow steps"
+          placeholder="Search steps…"
+          [value]="paletteQuery()"
+          (input)="updatePaletteQuery($event)"
+        />
+      </label>
+
+      <div class="professional-flow-builder__palette-list">
+        @for (item of filteredPaletteItems(); track item.id) {
+          <button
+            type="button"
+            class="professional-flow-builder__palette-item"
+            [attr.data-category]="item.data.category"
+            [tngFlowPaletteItem]="item"
+            (tngFlowPaletteItemActivate)="
+              editor.requestNodeCreate($event.item, undefined, $event.source)
+            "
+          >
+            <span class="professional-flow-builder__palette-icon" aria-hidden="true">
+              {{ item.data.category.slice(0, 1) }}
+            </span>
+            <span>
+              <strong>{{ item.name }}</strong>
+              <small>{{ item.description }}</small>
+            </span>
+            <i aria-hidden="true">＋</i>
+          </button>
+        } @empty {
+          <div class="professional-flow-builder__empty-search">
+            <strong>No steps found</strong>
+            <span>Try a different name or category.</span>
+          </div>
+        }
+      </div>
+
+      <footer>
+        <strong>Quick add</strong>
+        <span>Drag a step to place it precisely, or select it to add at the canvas center.</span>
+      </footer>
+    </aside>
+
+    <main class="professional-flow-builder__canvas-panel">
+      <header class="professional-flow-builder__canvas-toolbar">
+        <div class="professional-flow-builder__metrics" aria-label="Workflow metrics">
+          <span
+            ><strong>{{ definition().nodes.length }}</strong> steps</span
+          >
+          <span
+            ><strong>{{ definition().connections.length }}</strong> connections</span
+          >
+        </div>
+        <p class="professional-flow-builder__connection-hint">
+          Hover a step, drag its <strong>+</strong> handle, and drop anywhere on another step.
+        </p>
+        <div class="professional-flow-builder__canvas-actions">
+          <button
+            type="button"
+            class="professional-flow-builder__tool-button"
+            [attr.data-active]="snapToGrid() ? '' : null"
+            [attr.aria-pressed]="snapToGrid()"
+            (click)="toggleSnapToGrid()"
+          >
+            <span aria-hidden="true">▦</span>
+            Snap
+          </button>
+          <button
+            type="button"
+            class="professional-flow-builder__tool-button"
+            (click)="autoLayout()"
+          >
+            <span aria-hidden="true">⇥</span>
+            Auto layout
+          </button>
+          <button
+            type="button"
+            class="professional-flow-builder__tool-button"
+            (click)="editor.fitToScreen()"
+          >
+            <span aria-hidden="true">⌗</span>
+            Fit
+          </button>
+          <button
+            type="button"
+            class="professional-flow-builder__tool-button professional-flow-builder__tool-button--danger"
+            [disabled]="definition().nodes.length === 0"
+            (click)="clearCanvas()"
+          >
+            Clear
+          </button>
+        </div>
+      </header>
+
+      <div class="professional-flow-builder__canvas-shell">
+        <tng-flow-editor
+          #editor="tngFlowEditor"
+          flowId="docs-professional-flow-builder"
+          class="professional-flow-builder__canvas"
+          ariaLabel="Professional workflow creation canvas"
+          [definition]="definition()"
+          [selection]="selection()"
+          [snapToGrid]="snapToGrid()"
+          [gridSize]="16"
+          [zoomMinimum]="0.18"
+          [connectionValidator]="validateConnection"
+          (nodeCreateRequested)="createFlowNode($event)"
+          (nodePositionChange)="moveNode($event)"
+          (connectionCreateRequested)="createConnection($event)"
+          (connectionReconnectRequested)="reconnectConnection($event)"
+          (nodesDeleteRequested)="deleteNodes($event)"
+          (connectionsDeleteRequested)="deleteConnections($event)"
+          (selectionChange)="updateSelection($event)"
+          (connectionRejected)="rejectConnection($event)"
+        />
+
+        @if (definition().nodes.length === 0) {
+          <div class="professional-flow-builder__empty-canvas">
+            <span aria-hidden="true">⌁</span>
+            <strong>Build your first workflow</strong>
+            <p>Drag any trigger from the step library onto the canvas.</p>
+          </div>
+        }
+      </div>
+
+      <footer class="professional-flow-builder__statusbar" aria-live="polite">
+        <span><i aria-hidden="true"></i>{{ eventMessage() }}</span>
+        <span>Changes are kept in this demo session</span>
+      </footer>
+    </main>
+
+    <aside class="professional-flow-builder__inspector" aria-label="Workflow inspector">
+      <header>
+        <div>
+          <span class="professional-flow-builder__eyebrow">Configure</span>
+          <h5>Inspector</h5>
+        </div>
+        @if (selectedNode() || selectedConnection()) {
+          <button
+            type="button"
+            aria-label="Delete selection"
+            title="Delete selection"
+            (click)="deleteSelection()"
+          >
+            ×
+          </button>
+        }
+      </header>
+
+      @if (selectedNode(); as node) {
+        <section class="professional-flow-builder__selected-summary">
+          <span class="professional-flow-builder__selected-icon" aria-hidden="true">
+            {{ nodeCategory(node).slice(0, 1) }}
+          </span>
+          <div>
+            <strong>{{ node.name }}</strong>
+            <span>{{ nodeCategory(node) }}</span>
+          </div>
+        </section>
+
+        <section class="professional-flow-builder__form">
+          <label>
+            <span>Step name</span>
+            <input [value]="node.name" (change)="updateSelectedNode('name', $event)" />
+          </label>
+          <label>
+            <span>Description</span>
+            <textarea
+              rows="3"
+              [value]="node.description ?? ''"
+              (change)="updateSelectedNode('description', $event)"
+            ></textarea>
+          </label>
+        </section>
+
+        <section class="professional-flow-builder__inspector-section">
+          <header>
+            <h6>Dynamic connection ports</h6>
+            <span>{{ connectedPorts(node).length }}</span>
+          </header>
+          <ul class="professional-flow-builder__ports">
+            @for (port of connectedPorts(node); track port.id) {
+              <li [attr.data-direction]="port.direction">
+                <i aria-hidden="true"></i>
+                <span>{{ portSummary(port) }}</span>
+              </li>
+            } @empty {
+              <li class="professional-flow-builder__ports-empty">
+                Ports appear here after you connect this step.
+              </li>
+            }
+          </ul>
+        </section>
+
+        <div class="professional-flow-builder__inspector-actions">
+          <tng-button
+            type="button"
+            appearance="outline"
+            size="sm"
+            (click)="duplicateSelectedNode()"
+          >
+            Duplicate
+          </tng-button>
+          <tng-button
+            type="button"
+            appearance="outline"
+            tone="danger"
+            size="sm"
+            (click)="deleteSelection()"
+          >
+            Delete
+          </tng-button>
+        </div>
+      } @else if (selectedConnection(); as connection) {
+        <section class="professional-flow-builder__connection-summary">
+          <span aria-hidden="true">↗</span>
+          <strong>Connection selected</strong>
+          <p>{{ connection.source.nodeId }} → {{ connection.target.nodeId }}</p>
+          <small>Drag either endpoint to reconnect it to another compatible port.</small>
+        </section>
+        <tng-button
+          type="button"
+          appearance="outline"
+          tone="danger"
+          size="sm"
+          (click)="deleteSelection()"
+        >
+          Delete connection
+        </tng-button>
+      } @else {
+        <div class="professional-flow-builder__empty-inspector">
+          <span aria-hidden="true">◇</span>
+          <strong>Nothing selected</strong>
+          <p>Select a step to edit its details, duplicate it, or inspect its ports.</p>
+          <ul>
+            <li><kbd>Shift</kbd> + click to multi-select</li>
+            <li><kbd>Delete</kbd> to remove selected items</li>
+            <li>Drag from a node's + handle and drop on another node</li>
+          </ul>
+        </div>
+      }
+    </aside>
+  </div>
+</article>
