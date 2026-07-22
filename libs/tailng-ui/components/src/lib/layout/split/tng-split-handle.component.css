@@ -1,0 +1,90 @@
+:host {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 0 0 var(--tng-split-handle-width, 1px);
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: var(--tng-split-separator-color, var(--tng-semantic-border-default, #d1d5db));
+  color: var(--tng-split-handle-indicator-color, var(--tng-semantic-foreground-muted, #6b7280));
+  outline: none;
+  touch-action: none;
+}
+
+:host::before {
+  position: absolute;
+  z-index: -1;
+  content: '';
+  background: transparent;
+}
+
+:host([data-orientation='vertical']) {
+  width: var(--tng-split-handle-width, 1px);
+  height: 100%;
+  cursor: col-resize;
+}
+
+:host([data-orientation='vertical'])::before {
+  inset: 0 calc((var(--tng-split-handle-hit-area, 10px) - var(--tng-split-handle-width, 1px)) / -2);
+}
+
+:host([data-orientation='horizontal']) {
+  width: 100%;
+  height: var(--tng-split-handle-width, 1px);
+  cursor: row-resize;
+}
+
+:host([data-orientation='horizontal'])::before {
+  inset: calc((var(--tng-split-handle-hit-area, 10px) - var(--tng-split-handle-width, 1px)) / -2) 0;
+}
+
+:host(:hover:not([data-disabled])) {
+  background: var(--tng-split-separator-hover-color, var(--tng-semantic-accent-brand, #2563eb));
+}
+
+:host([data-active-resize]:not([data-disabled])) {
+  background: var(--tng-split-separator-active-color, var(--tng-semantic-accent-brand, #2563eb));
+}
+
+:host(:focus-visible:not([data-disabled])) {
+  z-index: 3;
+  box-shadow: var(
+    --tng-split-focus-ring,
+    0 0 0 3px color-mix(in srgb, var(--tng-semantic-focus-ring, #2563eb) 38%, transparent)
+  );
+}
+
+:host([data-disabled]) {
+  cursor: default;
+}
+
+.tng-split-handle__indicator {
+  position: absolute;
+  display: var(--tng-split-handle-indicator-display, block);
+  border-radius: 999px;
+  background: currentColor;
+  pointer-events: none;
+}
+
+:host([data-orientation='vertical']) .tng-split-handle__indicator {
+  width: 3px;
+  height: 2rem;
+}
+
+:host([data-orientation='horizontal']) .tng-split-handle__indicator {
+  width: 2rem;
+  height: 3px;
+}
+
+@media (forced-colors: active) {
+  :host {
+    background: CanvasText;
+  }
+
+  :host(:focus-visible) {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}

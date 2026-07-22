@@ -1,0 +1,388 @@
+<article class="split-examples">
+  <h2 class="split-examples__title">Examples</h2>
+  <p class="split-examples__lead">
+    Production split-layout patterns with copy-ready Plain CSS and Tailwind implementations.
+  </p>
+
+  <app-docs-example-tabs-section
+    id="vertical-json-panel"
+    class="split-examples__block"
+    heading="Vertical JSON panel"
+    description="A flexible editor above a constrained preview that can collapse from its resize handle."
+    ariaLabel="Vertical JSON split variants"
+    tabListAriaLabel="Vertical JSON split style tabs"
+    defaultValue="plain-css"
+    [codeBlockTheme]="codeBlockTheme()"
+  >
+    <ng-template
+      appDocsExampleVariant
+      value="plain-css"
+      label="Plain CSS"
+      panelTitle="Vertical JSON panel (Plain CSS)"
+      [codeTabs]="verticalPlainCodeTabs"
+    >
+      <tng-split-group
+        class="split-example-vertical"
+        orientation="vertical"
+        (resizeEnd)="plainLastResize.set($event)"
+      >
+        <section
+          tngSplitPane
+          paneId="plain-editor"
+          [grow]="1"
+          [minSize]="180"
+          class="split-example-vertical__editor"
+        >
+          <strong>Workflow editor</strong>
+          <span>Build and connect automation steps.</span>
+        </section>
+
+        <tng-split-handle ariaLabel="Resize JSON preview" primaryPane="next" />
+
+        <section
+          tngSplitPane
+          paneId="plain-json"
+          [defaultSize]="180"
+          [minSize]="120"
+          [maxSize]="260"
+          collapsible
+          [collapsed]="plainJsonCollapsed()"
+          (collapsedChange)="plainJsonCollapsed.set($event)"
+          class="split-example-vertical__json"
+        >
+          <strong>JSON preview</strong>
+          <code>{{ '{ "nodes": 4, "connections": 3 }' }}</code>
+        </section>
+      </tng-split-group>
+      @if (plainLastResize(); as event) {
+        <p class="split-example-status" role="status">
+          {{ event.previousPaneId }}: {{ event.previousPaneSize }}px · {{ event.nextPaneId }}:
+          {{ event.nextPaneSize }}px
+        </p>
+      }
+    </ng-template>
+
+    <ng-template
+      appDocsExampleVariant
+      value="tailwind-css"
+      label="Tailwind CSS"
+      panelTitle="Vertical JSON panel (Tailwind CSS)"
+      [codeTabs]="verticalTailwindCodeTabs"
+    >
+      <tng-split-group
+        class="h-[28rem] overflow-hidden rounded-xl border border-tng-border-subtle bg-tng-bg-base"
+        orientation="vertical"
+        (resizeEnd)="tailwindLastResize.set($event)"
+      >
+        <section
+          tngSplitPane
+          paneId="tailwind-editor"
+          [grow]="1"
+          [minSize]="180"
+          class="grid place-content-center gap-2 p-4 text-tng-fg-primary"
+        >
+          <strong>Workflow editor</strong>
+          <span class="text-sm text-tng-fg-secondary">Build and connect automation steps.</span>
+        </section>
+
+        <tng-split-handle ariaLabel="Resize JSON preview" primaryPane="next" />
+
+        <section
+          tngSplitPane
+          paneId="tailwind-json"
+          [defaultSize]="180"
+          [minSize]="120"
+          [maxSize]="260"
+          collapsible
+          [collapsed]="tailwindJsonCollapsed()"
+          (collapsedChange)="tailwindJsonCollapsed.set($event)"
+          class="grid content-start gap-2 bg-tng-bg-muted p-4 text-tng-fg-primary"
+        >
+          <strong>JSON preview</strong>
+          <code class="text-sm text-tng-fg-secondary">{{
+            '{ "nodes": 4, "connections": 3 }'
+          }}</code>
+        </section>
+      </tng-split-group>
+      @if (tailwindLastResize(); as event) {
+        <p class="mt-3 text-sm text-tng-fg-secondary" role="status">
+          {{ event.previousPaneId }}: {{ event.previousPaneSize }}px · {{ event.nextPaneId }}:
+          {{ event.nextPaneSize }}px
+        </p>
+      }
+    </ng-template>
+  </app-docs-example-tabs-section>
+
+  <app-docs-example-tabs-section
+    id="application-workspace"
+    class="split-examples__block"
+    heading="Application builder workspace"
+    description="A realistic editor shell where toolbar icon buttons hide or restore the project navigator and properties inspector."
+    ariaLabel="Application builder workspace variants"
+    tabListAriaLabel="Application builder workspace style tabs"
+    defaultValue="plain-css"
+    [codeBlockTheme]="codeBlockTheme()"
+  >
+    <ng-template
+      appDocsExampleVariant
+      value="plain-css"
+      label="Plain CSS"
+      panelTitle="Application builder workspace (Plain CSS)"
+      [codeTabs]="workspacePlainCodeTabs"
+    >
+      <div class="split-workspace">
+        <header class="split-workspace__toolbar">
+          <strong>Customer portal</strong>
+          <div class="split-workspace__actions">
+            <button
+              type="button"
+              aria-controls="plain-project-panel"
+              [attr.aria-expanded]="!plainProjectCollapsed()"
+              [attr.aria-label]="
+                plainProjectCollapsed() ? 'Show project navigator' : 'Hide project navigator'
+              "
+              (click)="plainProjectCollapsed.set(!plainProjectCollapsed())"
+            >
+              <tng-icon [icon]="plainProjectCollapsed() ? 'panel-left-open' : 'panel-left-close'" />
+            </button>
+            <button
+              type="button"
+              aria-controls="plain-inspector-panel"
+              [attr.aria-expanded]="!plainInspectorCollapsed()"
+              [attr.aria-label]="
+                plainInspectorCollapsed()
+                  ? 'Show properties inspector'
+                  : 'Hide properties inspector'
+              "
+              (click)="plainInspectorCollapsed.set(!plainInspectorCollapsed())"
+            >
+              <tng-icon
+                [icon]="plainInspectorCollapsed() ? 'panel-right-open' : 'panel-right-close'"
+              />
+            </button>
+          </div>
+        </header>
+
+        <div class="split-workspace__viewport">
+          <tng-split-group class="split-workspace__layout" orientation="horizontal">
+            <aside
+              id="plain-project-panel"
+              tngSplitPane
+              paneId="plain-project"
+              [defaultSize]="220"
+              [minSize]="160"
+              [maxSize]="300"
+              collapsible
+              [collapsed]="plainProjectCollapsed()"
+              (collapsedChange)="plainProjectCollapsed.set($event)"
+              class="split-workspace__side-panel"
+            >
+              <strong>Project</strong>
+              <nav class="split-workspace__tree" aria-label="Project files">
+                <span>⌄ src</span>
+                <span>&nbsp;&nbsp;customer-profile.component.ts</span>
+                <span>&nbsp;&nbsp;customer-profile.component.html</span>
+                <span>&nbsp;&nbsp;customer-profile.component.css</span>
+              </nav>
+            </aside>
+
+            <tng-split-handle ariaLabel="Resize project navigator" />
+
+            <main
+              tngSplitPane
+              paneId="plain-code-editor"
+              [grow]="1"
+              [minSize]="280"
+              class="split-workspace__editor"
+            >
+              <div class="split-workspace__editor-tab">customer-profile.component.ts</div>
+              <div class="split-workspace__code" aria-label="TypeScript editor preview">
+                <span class="split-workspace__line-number">1</span>
+                <code>export class CustomerProfileComponent</code>
+                <span class="split-workspace__line-number">2</span>
+                <code>&nbsp;&nbsp;readonly customer = input.required&lt;Customer&gt;();</code>
+                <span class="split-workspace__line-number">3</span>
+                <code>&nbsp;&nbsp;readonly mode = signal('details');</code>
+              </div>
+            </main>
+
+            <tng-split-handle ariaLabel="Resize properties inspector" primaryPane="next" />
+
+            <aside
+              id="plain-inspector-panel"
+              tngSplitPane
+              paneId="plain-inspector"
+              [defaultSize]="260"
+              [minSize]="200"
+              [maxSize]="340"
+              collapsible
+              [collapsed]="plainInspectorCollapsed()"
+              (collapsedChange)="plainInspectorCollapsed.set($event)"
+              class="split-workspace__side-panel"
+            >
+              <strong>Properties</strong>
+              <label class="split-workspace__field">
+                Name
+                <input value="Customer profile" />
+              </label>
+              <label class="split-workspace__field">
+                Route
+                <input value="/customers/:id" />
+              </label>
+            </aside>
+          </tng-split-group>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template
+      appDocsExampleVariant
+      value="tailwind-css"
+      label="Tailwind CSS"
+      panelTitle="Application builder workspace (Tailwind CSS)"
+      [codeTabs]="workspaceTailwindCodeTabs"
+    >
+      <div
+        class="overflow-hidden rounded-xl border border-tng-border-subtle bg-tng-bg-surface text-tng-fg-primary"
+      >
+        <header
+          class="flex min-h-12 items-center justify-between border-b border-tng-border-subtle px-3"
+        >
+          <strong>Customer portal</strong>
+          <div class="flex gap-1.5">
+            <button
+              type="button"
+              class="grid size-8 place-items-center rounded-lg border border-tng-border-subtle bg-tng-bg-base text-tng-fg-secondary transition hover:bg-tng-bg-muted hover:text-tng-fg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tng-focus-ring"
+              aria-controls="tailwind-project-panel"
+              [attr.aria-expanded]="!tailwindProjectCollapsed()"
+              [attr.aria-label]="
+                tailwindProjectCollapsed() ? 'Show project navigator' : 'Hide project navigator'
+              "
+              (click)="tailwindProjectCollapsed.set(!tailwindProjectCollapsed())"
+            >
+              <tng-icon
+                [icon]="tailwindProjectCollapsed() ? 'panel-left-open' : 'panel-left-close'"
+                class="h-4 w-4"
+              />
+            </button>
+            <button
+              type="button"
+              class="grid size-8 place-items-center rounded-lg border border-tng-border-subtle bg-tng-bg-base text-tng-fg-secondary transition hover:bg-tng-bg-muted hover:text-tng-fg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tng-focus-ring"
+              aria-controls="tailwind-inspector-panel"
+              [attr.aria-expanded]="!tailwindInspectorCollapsed()"
+              [attr.aria-label]="
+                tailwindInspectorCollapsed()
+                  ? 'Show properties inspector'
+                  : 'Hide properties inspector'
+              "
+              (click)="tailwindInspectorCollapsed.set(!tailwindInspectorCollapsed())"
+            >
+              <tng-icon
+                [icon]="tailwindInspectorCollapsed() ? 'panel-right-open' : 'panel-right-close'"
+                class="h-4 w-4"
+              />
+            </button>
+          </div>
+        </header>
+
+        <div class="overflow-x-auto">
+          <tng-split-group class="h-[30rem] min-w-[46rem]" orientation="horizontal">
+            <aside
+              id="tailwind-project-panel"
+              tngSplitPane
+              paneId="tailwind-project"
+              [defaultSize]="220"
+              [minSize]="160"
+              [maxSize]="300"
+              collapsible
+              [collapsed]="tailwindProjectCollapsed()"
+              (collapsedChange)="tailwindProjectCollapsed.set($event)"
+              class="grid content-start gap-4 bg-tng-bg-muted p-4"
+            >
+              <strong>Project</strong>
+              <nav aria-label="Project files" class="grid gap-2.5 text-xs text-tng-fg-secondary">
+                <span>⌄ src</span>
+                <span>&nbsp;&nbsp;customer-profile.component.ts</span>
+                <span>&nbsp;&nbsp;customer-profile.component.html</span>
+                <span>&nbsp;&nbsp;customer-profile.component.css</span>
+              </nav>
+            </aside>
+
+            <tng-split-handle ariaLabel="Resize project navigator" />
+
+            <main
+              tngSplitPane
+              paneId="tailwind-code-editor"
+              [grow]="1"
+              [minSize]="280"
+              class="bg-tng-bg-base"
+            >
+              <div class="border-b border-tng-border-subtle px-4 py-3 text-xs">
+                customer-profile.component.ts
+              </div>
+              <div
+                class="grid grid-cols-[2rem_1fr] gap-y-1 p-6 font-mono text-sm leading-7 text-tng-fg-primary"
+                aria-label="TypeScript editor preview"
+              >
+                <span class="select-none text-tng-fg-muted">1</span>
+                <code>export class CustomerProfileComponent</code>
+                <span class="select-none text-tng-fg-muted">2</span>
+                <code>&nbsp;&nbsp;readonly customer = input.required&lt;Customer&gt;();</code>
+                <span class="select-none text-tng-fg-muted">3</span>
+                <code>&nbsp;&nbsp;readonly mode = signal('details');</code>
+              </div>
+            </main>
+
+            <tng-split-handle ariaLabel="Resize properties inspector" primaryPane="next" />
+
+            <aside
+              id="tailwind-inspector-panel"
+              tngSplitPane
+              paneId="tailwind-inspector"
+              [defaultSize]="260"
+              [minSize]="200"
+              [maxSize]="340"
+              collapsible
+              [collapsed]="tailwindInspectorCollapsed()"
+              (collapsedChange)="tailwindInspectorCollapsed.set($event)"
+              class="grid content-start gap-4 bg-tng-bg-muted p-4"
+            >
+              <strong>Properties</strong>
+              <label class="grid gap-1.5 text-xs text-tng-fg-secondary">
+                Name
+                <input
+                  class="min-w-0 rounded-lg border border-tng-border-subtle bg-tng-bg-base px-2.5 py-2 text-tng-fg-primary"
+                  value="Customer profile"
+                />
+              </label>
+              <label class="grid gap-1.5 text-xs text-tng-fg-secondary">
+                Route
+                <input
+                  class="min-w-0 rounded-lg border border-tng-border-subtle bg-tng-bg-base px-2.5 py-2 text-tng-fg-primary"
+                  value="/customers/:id"
+                />
+              </label>
+            </aside>
+          </tng-split-group>
+        </div>
+      </div>
+    </ng-template>
+  </app-docs-example-tabs-section>
+
+  <section id="persistence" class="split-examples__block split-examples__persistence">
+    <h3>Consumer persistence</h3>
+    <p>
+      Save only <code>resizeEnd</code> values to application preferences. TailNG never writes to
+      local storage.
+    </p>
+    <tng-code-block
+      [code]="persistenceCode"
+      adapter="shiki"
+      language="ts"
+      title="Persist final pane sizes"
+      [lineNumbers]="true"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+  </section>
+</article>

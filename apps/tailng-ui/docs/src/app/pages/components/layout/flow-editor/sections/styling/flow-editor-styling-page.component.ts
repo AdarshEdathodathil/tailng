@@ -44,6 +44,10 @@ export class FlowEditorStylingPageComponent {
     '  --tng-flow-connection-motion-reduced-width: 3px;',
     '  --tng-flow-controls-background: var(--tng-semantic-background-surface);',
     '  --tng-flow-controls-border: var(--tng-semantic-border-subtle);',
+    '  --tng-flow-minimap-background: var(--tng-semantic-background-surface);',
+    '  --tng-flow-minimap-border: var(--tng-semantic-border-default);',
+    '  --tng-flow-minimap-node-selected: var(--tng-semantic-accent-brand);',
+    '  --tng-flow-minimap-node-error: var(--tng-semantic-accent-danger);',
     '}',
   ].join('\n');
   protected readonly templateCode = [

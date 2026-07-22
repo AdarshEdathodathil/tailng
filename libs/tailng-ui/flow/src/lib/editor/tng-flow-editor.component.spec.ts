@@ -3,9 +3,13 @@ import { TestBed } from '@angular/core/testing';
 import {
   FCreateConnectionEvent,
   FDeleteSelectedEvent,
+  FMinimapComponent,
   FMoveNodesEvent,
   FSelectionChangeEvent,
 } from '@foblex/flow';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { TngFlowEditorComponent } from './tng-flow-editor.component';
 import { TngFlowNodeTemplateDirective } from '../node-template/tng-flow-node-template.directive';
@@ -22,6 +26,9 @@ import type {
   TngFlowNodesMovedEvent,
   TngFlowPaletteItem,
 } from '../types/tng-flow.types';
+
+const specDirectory = dirname(fileURLToPath(import.meta.url));
+const editorStyles = readFileSync(resolve(specDirectory, 'tng-flow-editor.component.css'), 'utf8');
 
 const nodes: readonly TngFlowNode<{ summary: string }>[] = [
   {
@@ -158,18 +165,24 @@ describe('TngFlowEditorComponent', () => {
     expect(host.querySelector('[data-node-id="custom"]')).not.toBeNull();
   });
 
-  it('renders custom-template selection from the controlled selection input', () => {
+  it('uses the editor selection ring without duplicating the default-node outline', () => {
     const fixture = TestBed.createComponent(FlowEditorHost);
     fixture.componentInstance.selection.set({
-      nodeIds: new Set(['custom']),
+      nodeIds: new Set(['custom', 'default']),
       connectionIds: new Set(),
     });
     fixture.detectChanges();
 
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="custom-node"]')
-        ?.textContent,
-    ).toContain('selected');
+    const host = fixture.nativeElement as HTMLElement;
+    const defaultNode = host.querySelector<HTMLElement>('[data-node-id="default"] tng-flow-node');
+    expect(host.querySelector('[data-testid="custom-node"]')?.textContent).toContain('selected');
+    expect(editorStyles).toMatch(
+      /\.tng-flow-editor__node--selected \.tng-flow-editor__node-content\s*\{/,
+    );
+    expect(editorStyles).toMatch(
+      /\.tng-flow-editor__node-content > tng-flow-node\s*\{[^}]*--tng-flow-node-selection-outline:\s*none;/s,
+    );
+    expect(defaultNode?.hasAttribute('data-selected')).toBe(true);
   });
 
   it('provides resolved presentation and indexed issues to custom node templates', () => {
@@ -828,5 +841,158 @@ describe('TngFlowEditorComponent', () => {
 
     expect(canonical).toHaveBeenCalledWith({ position: { x: -24, y: 32 }, scale: 1.15 });
     expect(legacy).toHaveBeenCalledWith({ position: { x: -24, y: 32 }, scale: 1.15 });
+  });
+
+  it('keeps the minimap opt-in and applies accessible default options', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.tng-flow-editor__minimap-shell'),
+    ).toBeNull();
+
+    fixture.componentRef.setInput('showMinimap', true);
+    fixture.detectChanges();
+
+    const shell = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '.tng-flow-editor__minimap-shell',
+    );
+    const minimap = fixture.debugElement.query(
+      (debugElement) => debugElement.componentInstance instanceof FMinimapComponent,
+    ).componentInstance as FMinimapComponent;
+    expect(shell?.getAttribute('data-position')).toBe('bottom-left');
+    expect(shell?.getAttribute('role')).toBe('group');
+    expect(shell?.getAttribute('tabindex')).toBe('0');
+    expect(shell?.getAttribute('aria-label')).toBe('Workflow overview');
+    expect(shell?.style.width).toBe('140px');
+    expect(shell?.style.height).toBe('120px');
+    expect(minimap.fMinSize()).toBe(1000);
+    expect(minimap.fNodeRenderLimit()).toBe(10000);
+  });
+
+  it('normalizes custom minimap options and hides non-interactive overviews from assistive tech', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('showMinimap', true);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('minimapOptions', {
+      position: 'top-right',
+      width: 196,
+      height: 108,
+      minSize: 720,
+      nodeRenderLimit: 12,
+      interactive: false,
+      ariaLabel: 'Process map',
+    });
+    fixture.detectChanges();
+
+    const shell = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '.tng-flow-editor__minimap-shell',
+    );
+    const minimapElement = shell?.querySelector<HTMLElement>('f-minimap');
+    const minimap = fixture.debugElement.query(
+      (debugElement) => debugElement.componentInstance instanceof FMinimapComponent,
+    ).componentInstance as FMinimapComponent;
+    expect(shell?.getAttribute('data-position')).toBe('top-right');
+    expect(shell?.getAttribute('aria-hidden')).toBe('true');
+    expect(shell?.hasAttribute('tabindex')).toBe(false);
+    expect(shell?.hasAttribute('role')).toBe(false);
+    expect(shell?.style.width).toBe('196px');
+    expect(shell?.style.height).toBe('108px');
+    expect(minimapElement?.style.pointerEvents).toBe('none');
+    expect(minimap.fMinSize()).toBe(720);
+    expect(minimap.fNodeRenderLimit()).toBe(12);
+  });
+
+  it('maps TailNG node presentation and validation states to minimap classes', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', [nodes[0], { ...nodes[1], disabled: true }]);
+    fixture.componentRef.setInput('selection', {
+      nodeIds: new Set(['custom']),
+      connectionIds: new Set(),
+    });
+    fixture.componentRef.setInput('presentation', {
+      nodes: { custom: { highlighted: true } },
+    });
+    fixture.componentRef.setInput('validation', {
+      issues: [
+        {
+          id: 'invalid-default',
+          code: 'invalid',
+          severity: 'error',
+          message: 'Default node is invalid.',
+          target: { kind: 'node', nodeId: 'default' },
+        },
+      ],
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const harness = fixture.componentInstance as unknown as {
+      minimapClassesFor: (nodeId: string) => string[];
+    };
+    expect(harness.minimapClassesFor('custom')).toEqual([
+      'tng-flow-minimap__node',
+      'tng-flow-minimap__node--selected',
+      'tng-flow-minimap__node--highlighted',
+    ]);
+    expect(harness.minimapClassesFor('default')).toEqual([
+      'tng-flow-minimap__node',
+      'tng-flow-minimap__node--disabled',
+      'tng-flow-minimap__node--error',
+    ]);
+  });
+
+  it('keeps minimap viewport navigation active in readonly mode without graph mutations', async () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('showMinimap', true);
+    fixture.componentRef.setInput('readonly', true);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const viewportChanged = vi.fn();
+    const nodesMoved = vi.fn();
+    const fitToScreen = vi.spyOn(fixture.componentInstance, 'fitToScreen');
+    fixture.componentInstance.viewportChange.subscribe(viewportChanged);
+    fixture.componentInstance.nodesMoved.subscribe(nodesMoved);
+    const shell = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '.tng-flow-editor__minimap-shell',
+    );
+    const arrowEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'ArrowRight',
+    });
+    shell?.dispatchEvent(arrowEvent);
+    await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(arrowEvent.defaultPrevented).toBe(true);
+    expect(viewportChanged).toHaveBeenCalledWith({ position: { x: -40, y: 0 }, scale: 1 });
+    expect(nodesMoved).not.toHaveBeenCalled();
+
+    shell?.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Home' }),
+    );
+    expect(fitToScreen).toHaveBeenCalledOnce();
+  });
+
+  it('keeps navigation available and reports when node rectangles exceed the render limit', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('showMinimap', true);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('minimapOptions', { nodeRenderLimit: 1 });
+    fixture.detectChanges();
+
+    const shell = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '.tng-flow-editor__minimap-shell',
+    );
+    expect(shell?.hasAttribute('data-limited')).toBe(true);
+    expect(shell?.querySelector('.tng-flow-editor__minimap-limit')?.textContent).toContain(
+      'Overview simplified',
+    );
+    expect(shell?.querySelector<HTMLElement>('f-minimap')?.style.pointerEvents).toBe('auto');
   });
 });

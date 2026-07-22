@@ -274,6 +274,13 @@ export const COMPONENTS_LAYOUT_GROUP: ComponentsDocsGroup = {
       description: 'Styled stepper shell powered by headless value, focus, and state management.',
     },
     {
+      id: 'split',
+      slug: 'split',
+      title: 'Split Layout',
+      description:
+        'Resizable horizontal and vertical panes with controlled sizes, collapse states, and accessible handles.',
+    },
+    {
       id: 'flow-editor',
       slug: 'flow-editor',
       title: 'Flow Editor',

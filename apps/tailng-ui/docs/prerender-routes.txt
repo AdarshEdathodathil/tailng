@@ -806,6 +806,11 @@
 /components/layout/separator/overview
 /components/layout/separator/ownable-install
 /components/layout/separator/styling
+/components/layout/split
+/components/layout/split/api
+/components/layout/split/examples
+/components/layout/split/overview
+/components/layout/split/styling
 /components/layout/stepper
 /components/layout/stepper/api
 /components/layout/stepper/examples

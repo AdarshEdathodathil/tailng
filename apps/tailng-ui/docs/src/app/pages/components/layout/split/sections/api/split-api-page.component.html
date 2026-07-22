@@ -1,0 +1,152 @@
+<article class="docs-section-page">
+  <section class="docs-overview-block">
+    <h2 class="docs-overview-title">Split Layout API</h2>
+    <p class="docs-overview-lead">
+      Import all three standalone building blocks from <code>&#64;tailng-ui/components</code>.
+    </p>
+  </section>
+
+  <section id="split-group" class="docs-overview-block">
+    <h3><code>tng-split-group</code></h3>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Input</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>orientation</code></td>
+            <td><code>'horizontal' | 'vertical'</code></td>
+            <td><code>'horizontal'</code></td>
+            <td>Chooses left/right or top/bottom layout.</td>
+          </tr>
+          <tr>
+            <td><code>disabled</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Preserves sizes while disabling every handle.</td>
+          </tr>
+          <tr>
+            <td><code>step</code></td>
+            <td><code>number</code></td>
+            <td><code>10</code></td>
+            <td>Default arrow-key increment in pixels.</td>
+          </tr>
+          <tr>
+            <td><code>largeStep</code></td>
+            <td><code>number</code></td>
+            <td><code>50</code></td>
+            <td>Default Shift+Arrow increment.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="split-pane" class="docs-overview-block">
+    <h3><code>[tngSplitPane]</code></h3>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Input</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>paneId</code></td>
+            <td><code>string</code></td>
+            <td>generated</td>
+            <td>Stable id used by events and imperative methods.</td>
+          </tr>
+          <tr>
+            <td><code>size</code></td>
+            <td><code>number | null</code></td>
+            <td><code>null</code></td>
+            <td>Controlled pixel size.</td>
+          </tr>
+          <tr>
+            <td><code>defaultSize</code></td>
+            <td><code>number | null</code></td>
+            <td><code>null</code></td>
+            <td>Initial uncontrolled pixel size.</td>
+          </tr>
+          <tr>
+            <td><code>minSize</code>, <code>maxSize</code></td>
+            <td><code>number</code></td>
+            <td><code>0</code>, unbounded</td>
+            <td>Expanded size constraints.</td>
+          </tr>
+          <tr>
+            <td><code>grow</code></td>
+            <td><code>number</code></td>
+            <td><code>0</code></td>
+            <td>Weight used to receive remaining container space.</td>
+          </tr>
+          <tr>
+            <td><code>collapsible</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Allows keyboard, pointer, or API collapse.</td>
+          </tr>
+          <tr>
+            <td><code>collapsed</code></td>
+            <td><code>boolean | undefined</code></td>
+            <td><code>undefined</code></td>
+            <td>Optional controlled collapse state.</td>
+          </tr>
+          <tr>
+            <td><code>defaultCollapsed</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Initial uncontrolled collapse state.</td>
+          </tr>
+          <tr>
+            <td><code>collapsedSize</code></td>
+            <td><code>number</code></td>
+            <td><code>0</code></td>
+            <td>Collapsed pixels; use a nonzero value for an icon rail.</td>
+          </tr>
+          <tr>
+            <td><code>disabled</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Prevents adjacent handles from resizing this pane.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>sizeChange</code> and <code>collapsedChange</code> emit controlled-state requests.</p>
+  </section>
+
+  <section id="split-handle" class="docs-overview-block">
+    <h3><code>tng-split-handle</code></h3>
+    <p>
+      <code>ariaLabel</code> names the separator. Optional <code>step</code> and
+      <code>largeStep</code> override the group, while <code>primaryPane</code> selects
+      <code>'previous'</code>, <code>'next'</code>, or automatic collapse behavior.
+    </p>
+  </section>
+
+  <section id="events-and-methods" class="docs-overview-block">
+    <h3>Events and methods</h3>
+    <p>
+      <code>resizeStart</code>, frame-coalesced <code>resize</code>, and <code>resizeEnd</code> emit
+      <code>TngSplitResizeEvent</code> with adjacent ids, final pixel sizes, and
+      <code>pointer</code>, <code>keyboard</code>, or <code>api</code> source.
+    </p>
+    <p>
+      The exported group instance provides <code>recalculate()</code>,
+      <code>setPaneSize(id, pixels)</code>, <code>setPaneCollapsed(id, state)</code>, and
+      <code>togglePane(id)</code>. Persistence remains application-owned.
+    </p>
+  </section>
+</article>

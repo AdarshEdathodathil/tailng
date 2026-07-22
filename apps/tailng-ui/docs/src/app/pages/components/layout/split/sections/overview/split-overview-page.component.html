@@ -1,0 +1,190 @@
+<article class="docs-overview split-overview">
+  <section id="imports" class="docs-overview-block">
+    <h2 class="docs-overview-title">Split Layout</h2>
+    <p class="docs-overview-lead">
+      Split Layout composes two or more pixel-constrained panes with pointer and keyboard resize
+      handles. Applications keep ownership of controlled size, collapse, breakpoint, and persistence
+      state.
+    </p>
+    <tng-code-block
+      [code]="importCode"
+      adapter="shiki"
+      language="ts"
+      title="Component imports"
+      [theme]="codeBlockTheme()"
+      [lineNumbers]="false"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+  </section>
+
+  <section id="workspace-layout" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Workspace layout"
+      description="Resize the palette, inspector, or nested JSON panel. Press Enter on a handle to toggle its collapsible pane; the palette preserves a 56px icon rail while the other panels collapse to zero."
+      ariaLabel="Split workspace style variants"
+      tabListAriaLabel="Split workspace Plain CSS and Tailwind tabs"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain CSS"
+        panelTitle="Workflow workspace (Plain CSS)"
+        [codeTabs]="plainCodeTabs"
+      >
+        <tng-split-group class="split-demo" orientation="horizontal">
+          <aside
+            tngSplitPane
+            paneId="plain-palette"
+            [defaultSize]="272"
+            [minSize]="224"
+            [maxSize]="360"
+            collapsible
+            [collapsed]="plainPaletteCollapsed()"
+            [collapsedSize]="56"
+            (collapsedChange)="plainPaletteCollapsed.set($event)"
+          >
+            <span class="split-demo__icon" aria-hidden="true">＋</span>
+            <strong class="split-demo__label">Node palette</strong>
+          </aside>
+
+          <tng-split-handle ariaLabel="Resize node palette" />
+
+          <main tngSplitPane paneId="plain-workspace" [grow]="1" [minSize]="480">
+            <tng-split-group orientation="vertical">
+              <section tngSplitPane paneId="plain-canvas" [grow]="1" [minSize]="240">
+                <strong>Workflow canvas</strong>
+                <span>Flexible center workspace</span>
+              </section>
+              <tng-split-handle ariaLabel="Resize JSON preview" primaryPane="next" />
+              <section
+                tngSplitPane
+                paneId="plain-json"
+                [defaultSize]="160"
+                [minSize]="120"
+                [maxSize]="240"
+                collapsible
+                [collapsed]="plainJsonCollapsed()"
+                (collapsedChange)="plainJsonCollapsed.set($event)"
+              >
+                <strong>JSON preview</strong>
+                <code>{{ '{ "workflow": "ready" }' }}</code>
+              </section>
+            </tng-split-group>
+          </main>
+
+          <tng-split-handle ariaLabel="Resize node inspector" primaryPane="next" />
+
+          <aside
+            tngSplitPane
+            paneId="plain-inspector"
+            [defaultSize]="352"
+            [minSize]="288"
+            [maxSize]="480"
+            collapsible
+            [collapsed]="plainInspectorCollapsed()"
+            (collapsedChange)="plainInspectorCollapsed.set($event)"
+          >
+            <strong>Node inspector</strong>
+            <span>Controlled properties</span>
+          </aside>
+        </tng-split-group>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Workflow workspace (Tailwind CSS)"
+        [codeTabs]="tailwindCodeTabs"
+      >
+        <div
+          class="h-[31rem] overflow-hidden rounded-xl border border-tng-border-subtle bg-tng-bg-base text-tng-fg-primary"
+        >
+          <tng-split-group class="overflow-hidden bg-tng-bg-base" orientation="horizontal">
+            <aside
+              tngSplitPane
+              paneId="tailwind-palette"
+              [defaultSize]="272"
+              [minSize]="224"
+              [maxSize]="360"
+              collapsible
+              [collapsed]="tailwindPaletteCollapsed()"
+              [collapsedSize]="56"
+              (collapsedChange)="tailwindPaletteCollapsed.set($event)"
+              class="grid content-start gap-2 bg-tng-bg-surface p-4"
+            >
+              <span class="text-xl" aria-hidden="true">＋</span>
+              @if (!tailwindPaletteCollapsed()) {
+                <strong>Node palette</strong>
+              }
+            </aside>
+
+            <tng-split-handle ariaLabel="Resize node palette" />
+
+            <main tngSplitPane paneId="tailwind-workspace" [grow]="1" [minSize]="480">
+              <tng-split-group orientation="vertical">
+                <section
+                  tngSplitPane
+                  paneId="tailwind-canvas"
+                  [grow]="1"
+                  [minSize]="240"
+                  class="grid place-content-center gap-2 p-4 text-center"
+                >
+                  <strong>Workflow canvas</strong>
+                  <span class="text-sm text-tng-fg-secondary">Flexible center workspace</span>
+                </section>
+                <tng-split-handle ariaLabel="Resize JSON preview" primaryPane="next" />
+                <section
+                  tngSplitPane
+                  paneId="tailwind-json"
+                  [defaultSize]="160"
+                  [minSize]="120"
+                  [maxSize]="240"
+                  collapsible
+                  [collapsed]="tailwindJsonCollapsed()"
+                  (collapsedChange)="tailwindJsonCollapsed.set($event)"
+                  class="grid content-start gap-2 border-t border-tng-border-subtle bg-tng-bg-muted p-4"
+                >
+                  <strong>JSON preview</strong>
+                  <code class="text-sm text-tng-fg-secondary">{{ '{ "workflow": "ready" }' }}</code>
+                </section>
+              </tng-split-group>
+            </main>
+
+            <tng-split-handle ariaLabel="Resize node inspector" primaryPane="next" />
+
+            <aside
+              tngSplitPane
+              paneId="tailwind-inspector"
+              [defaultSize]="352"
+              [minSize]="288"
+              [maxSize]="480"
+              collapsible
+              [collapsed]="tailwindInspectorCollapsed()"
+              (collapsedChange)="tailwindInspectorCollapsed.set($event)"
+              class="grid content-start gap-2 bg-tng-bg-surface p-4"
+            >
+              <strong>Node inspector</strong>
+              <span class="text-sm text-tng-fg-secondary">Controlled properties</span>
+            </aside>
+          </tng-split-group>
+        </div>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
+  <section id="accessibility-baseline" class="docs-overview-block">
+    <h3>Accessibility baseline</h3>
+    <ul class="docs-overview-list">
+      <li>
+        Handles expose separator role, orientation, adjacent pane ids, and pixel value ranges.
+      </li>
+      <li>Arrow keys resize; Shift uses the large step; Home and End move to boundaries.</li>
+      <li>Enter toggles the selected collapsible pane and focus rings remain visible.</li>
+      <li>Horizontal behavior follows application direction in RTL layouts.</li>
+    </ul>
+  </section>
+</article>

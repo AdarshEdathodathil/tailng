@@ -22,6 +22,11 @@ if (stepperItem === undefined) {
   throw new Error('Missing "stepper" in components layout docs group.');
 }
 
+const splitItem = group.items.find((item) => item.slug === 'split');
+if (splitItem === undefined) {
+  throw new Error('Missing "split" in components layout docs group.');
+}
+
 const flowEditorItem = group.items.find((item) => item.slug === 'flow-editor');
 if (flowEditorItem === undefined) {
   throw new Error('Missing "flow-editor" in components layout docs group.');
@@ -75,6 +80,12 @@ export const COMPONENTS_LAYOUT_ROUTES: Routes = [
     data: toComponentsDocsRouteData(group, stepperItem),
     loadChildren: () =>
       import('./stepper/routes').then((module) => module.COMPONENTS_LAYOUT_STEPPER_ROUTES),
+  },
+  {
+    path: splitItem.slug,
+    data: toComponentsDocsRouteData(group, splitItem),
+    loadChildren: () =>
+      import('./split/routes').then((module) => module.COMPONENTS_LAYOUT_SPLIT_ROUTES),
   },
   {
     path: flowEditorItem.slug,
