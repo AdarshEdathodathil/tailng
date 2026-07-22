@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- Angular and Foblex callbacks use framework-owned mutable event types. */
+ 
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -40,10 +40,7 @@ import {
   resolveTngFlowConnectionView,
   resolveTngFlowNodeView,
 } from '../model/tng-flow-resolved-view';
-import {
-  areTngFlowSelectionsEqual,
-  sanitizeTngFlowSelection,
-} from '../model/tng-flow-selection';
+import { areTngFlowSelectionsEqual, sanitizeTngFlowSelection } from '../model/tng-flow-selection';
 import { TngFlowNodeComponent } from '../node/tng-flow-node.component';
 import {
   TngFlowNodeTemplateDirective,
@@ -58,6 +55,11 @@ import type {
   TngFlowValidationIssueActivatedEvent,
   TngFlowValidationIssueActivationSource,
 } from '../types/tng-flow-events.types';
+import type {
+  TngFlowMinimapOptions,
+  TngFlowMinimapPosition,
+  TngResolvedFlowMinimapOptions,
+} from '../types/tng-flow-minimap.types';
 import type { TngFlowRevealOptions } from '../types/tng-flow-navigation.types';
 import {
   EMPTY_TNG_FLOW_PRESENTATION,
@@ -134,6 +136,27 @@ const READONLY_BLOCKED_KEYS = new Set([
   'end',
   'home',
 ]);
+const TNG_FLOW_MINIMAP_POSITIONS = new Set<TngFlowMinimapPosition>([
+  'bottom-left',
+  'bottom-right',
+  'top-left',
+  'top-right',
+]);
+const TNG_FLOW_MINIMAP_KEYBOARD_DELTAS: Readonly<Record<string, TngFlowPoint>> = Object.freeze({
+  ArrowLeft: { x: 1, y: 0 },
+  ArrowRight: { x: -1, y: 0 },
+  ArrowUp: { x: 0, y: 1 },
+  ArrowDown: { x: 0, y: -1 },
+});
+const DEFAULT_TNG_FLOW_MINIMAP_OPTIONS: TngResolvedFlowMinimapOptions = Object.freeze({
+  position: 'bottom-left',
+  width: 140,
+  height: 120,
+  minSize: 1000,
+  nodeRenderLimit: 10000,
+  interactive: true,
+  ariaLabel: 'Workflow overview',
+});
 
 type FoblexPointLike = Readonly<{ x: number; y: number }>;
 type FoblexCanvasChangeLike = Readonly<{ position: FoblexPointLike; scale: number }>;
@@ -250,6 +273,10 @@ export class TngFlowEditorComponent<
   public readonly showControls = input<boolean, boolean | string>(true, {
     transform: booleanAttribute,
   });
+  public readonly showMinimap = input<boolean, boolean | string>(false, {
+    transform: booleanAttribute,
+  });
+  public readonly minimapOptions = input<TngFlowMinimapOptions | null>(null);
   public readonly showSelectionArea = input<boolean, boolean | string>(true, {
     transform: booleanAttribute,
   });
@@ -310,13 +337,41 @@ export class TngFlowEditorComponent<
   protected readonly validationSeverity = computed(() =>
     resolveTngFlowValidationSeverity(this.validationIssues()),
   );
+  protected readonly resolvedMinimapOptions = computed<TngResolvedFlowMinimapOptions>(() => {
+    const options = this.minimapOptions() ?? {};
+    const requestedPosition = options.position;
+    const requestedAriaLabel = options.ariaLabel?.trim();
+    return {
+      position:
+        requestedPosition !== undefined && TNG_FLOW_MINIMAP_POSITIONS.has(requestedPosition)
+          ? requestedPosition
+          : DEFAULT_TNG_FLOW_MINIMAP_OPTIONS.position,
+      width: this.normalizePositiveOption(options.width, DEFAULT_TNG_FLOW_MINIMAP_OPTIONS.width),
+      height: this.normalizePositiveOption(options.height, DEFAULT_TNG_FLOW_MINIMAP_OPTIONS.height),
+      minSize: this.normalizePositiveOption(
+        options.minSize,
+        DEFAULT_TNG_FLOW_MINIMAP_OPTIONS.minSize,
+      ),
+      nodeRenderLimit: this.normalizeNonNegativeOption(
+        options.nodeRenderLimit,
+        DEFAULT_TNG_FLOW_MINIMAP_OPTIONS.nodeRenderLimit,
+      ),
+      interactive: options.interactive ?? DEFAULT_TNG_FLOW_MINIMAP_OPTIONS.interactive,
+      ariaLabel:
+        requestedAriaLabel === undefined || requestedAriaLabel.length === 0
+          ? DEFAULT_TNG_FLOW_MINIMAP_OPTIONS.ariaLabel
+          : requestedAriaLabel,
+    };
+  });
+  protected readonly minimapOverRenderLimit = computed(() => {
+    const limit = this.resolvedMinimapOptions().nodeRenderLimit;
+    return limit > 0 && this.graphNodes().length > limit;
+  });
 
   private readonly graphIndex = computed<TngFlowGraphIndex<TData, TConnectionData>>(
     () => this.analysis().index,
   );
-  private readonly issueIndex = computed(() =>
-    createTngFlowIssueIndex(this.resolvedValidation()),
-  );
+  private readonly issueIndex = computed(() => createTngFlowIssueIndex(this.resolvedValidation()));
   private readonly sanitizedSelection = computed(() =>
     this.canSelect()
       ? sanitizeTngFlowSelection(this.selection(), this.graphIndex())
@@ -394,6 +449,15 @@ export class TngFlowEditorComponent<
     const listener = (event: KeyboardEvent): void => this.onHostKeydown(event);
     this.hostElement.nativeElement.addEventListener('keydown', listener, true);
     onCleanup(() => this.hostElement.nativeElement.removeEventListener('keydown', listener, true));
+  });
+  private readonly minimapSyncEffect = afterRenderEffect(() => {
+    if (!this.showMinimap()) {
+      return;
+    }
+    this.graphNodes();
+    this.resolvedNodeViews();
+    this.resolvedMinimapOptions();
+    this.canvas().redraw();
   });
 
   public connectorId(nodeId: string, portId: string): string {
@@ -524,6 +588,18 @@ export class TngFlowEditorComponent<
       throw new Error(`Unknown TailNG flow connection "${connectionId}".`);
     }
     return view;
+  }
+
+  protected minimapClassesFor(nodeId: string): string[] {
+    const view = this.viewFor(nodeId);
+    return [
+      'tng-flow-minimap__node',
+      ...(view.selected ? ['tng-flow-minimap__node--selected'] : []),
+      ...(view.disabled ? ['tng-flow-minimap__node--disabled'] : []),
+      ...(view.highlighted ? ['tng-flow-minimap__node--highlighted'] : []),
+      ...(view.validationSeverity === 'error' ? ['tng-flow-minimap__node--error'] : []),
+      ...(view.validationSeverity === 'warning' ? ['tng-flow-minimap__node--warning'] : []),
+    ];
   }
 
   protected isNodeSelected(nodeId: string): boolean {
@@ -722,6 +798,35 @@ export class TngFlowEditorComponent<
       this.viewportChange.emit(viewport);
       this.viewportChanged.emit(viewport);
     });
+  }
+
+  protected onMinimapKeydown(event: KeyboardEvent): void {
+    const options = this.resolvedMinimapOptions();
+    if (!this.showMinimap() || !options.interactive) {
+      return;
+    }
+    if (event.key === 'Home') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.fitToScreen();
+      return;
+    }
+    const unitDelta = TNG_FLOW_MINIMAP_KEYBOARD_DELTAS[event.key];
+    if (unitDelta === undefined) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    const step = event.shiftKey ? 160 : 40;
+    const canvas = this.canvas();
+    const current = canvas.getPosition();
+    canvas._setPosition({
+      x: current.x + unitDelta.x * step,
+      y: current.y + unitDelta.y * step,
+    });
+    canvas.redraw();
+    canvas.emitCanvasChangeEvent();
   }
 
   private buildConnectableTargets(): ReadonlyMap<string, string[]> {
@@ -1046,10 +1151,7 @@ export class TngFlowEditorComponent<
     return true;
   }
 
-  private emitConnectionActivated(
-    connectionId: string,
-    source: TngFlowActivationSource,
-  ): boolean {
+  private emitConnectionActivated(connectionId: string, source: TngFlowActivationSource): boolean {
     if (!this.capabilities().activate || !this.graphIndex().connectionsById.has(connectionId)) {
       return false;
     }
@@ -1088,9 +1190,8 @@ export class TngFlowEditorComponent<
     if (nodeId !== undefined) {
       return this.emitNodeActivated(nodeId, 'keyboard');
     }
-    const connectionId = target?.closest<HTMLElement>('[data-connection-id]')?.dataset[
-      'connectionId'
-    ];
+    const connectionId =
+      target?.closest<HTMLElement>('[data-connection-id]')?.dataset['connectionId'];
     if (connectionId !== undefined) {
       return this.emitConnectionActivated(connectionId, 'keyboard');
     }
@@ -1143,9 +1244,17 @@ export class TngFlowEditorComponent<
     }
     return (
       target.closest(
-        'input, textarea, select, button, a[href], [contenteditable]:not([contenteditable="false"])',
+        'input, textarea, select, button, a[href], [data-tng-flow-minimap-interactive], [contenteditable]:not([contenteditable="false"])',
       ) !== null
     );
+  }
+
+  private normalizePositiveOption(value: number | undefined, fallback: number): number {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback;
+  }
+
+  private normalizeNonNegativeOption(value: number | undefined, fallback: number): number {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback;
   }
 
   private toPoint(point: FoblexPointLike): TngFlowPoint {

@@ -2564,6 +2564,65 @@
     ]
   },
   {
+    "title": "Split Layout",
+    "description": "Resizable horizontal and vertical panes with controlled sizes, collapse states, and accessible handles.",
+    "section": "Components / Layout",
+    "url": "/components/layout/split",
+    "tags": [
+      "components",
+      "layout",
+      "split"
+    ]
+  },
+  {
+    "title": "Split Layout API",
+    "description": "Group, pane, handle, event, and imperative APIs for Split Layout.",
+    "section": "Components / Layout",
+    "url": "/components/layout/split/api",
+    "tags": [
+      "components",
+      "layout",
+      "split",
+      "api"
+    ]
+  },
+  {
+    "title": "Split Layout Examples",
+    "description": "Plain CSS and Tailwind split layouts, including an icon-controlled application workspace and consumer-owned persistence.",
+    "section": "Components / Layout",
+    "url": "/components/layout/split/examples",
+    "tags": [
+      "components",
+      "layout",
+      "split",
+      "examples"
+    ]
+  },
+  {
+    "title": "Split Layout Overview",
+    "description": "A resizable palette, workflow canvas, inspector, and nested JSON workspace.",
+    "section": "Components / Layout",
+    "url": "/components/layout/split/overview",
+    "tags": [
+      "components",
+      "layout",
+      "split",
+      "overview"
+    ]
+  },
+  {
+    "title": "Split Layout Styling",
+    "description": "Theme tokens and state hooks for Split Layout panes and handles.",
+    "section": "Components / Layout",
+    "url": "/components/layout/split/styling",
+    "tags": [
+      "components",
+      "layout",
+      "split",
+      "styling"
+    ]
+  },
+  {
     "title": "Stepper",
     "description": "Styled stepper shell powered by headless value, focus, and state management.",
     "section": "Components / Layout",

@@ -1137,6 +1137,48 @@ tng-flow-editor {
   --tng-flow-connection-motion-duration-fast: 0.55s;
   --tng-flow-connection-motion-reduced-width: 3px;
   --tng-flow-validation-badge-size: 1.25rem;
+  --tng-flow-minimap-background: var(--tng-semantic-background-surface, #fff);
+  --tng-flow-minimap-border: var(--tng-semantic-border-default, rgb(0 0 0 / 16%));
+  --tng-flow-minimap-shadow: var(--ff-shadow-floating);
+  --tng-flow-minimap-node: var(--tng-semantic-foreground-secondary, #475569);
+  --tng-flow-minimap-node-selected: var(--tng-semantic-accent-brand, #2563eb);
+  --tng-flow-minimap-node-disabled: var(--tng-semantic-foreground-muted, #94a3b8);
+  --tng-flow-minimap-node-highlighted: var(--tng-semantic-accent-info, #0284c7);
+  --tng-flow-minimap-node-error: var(--tng-semantic-accent-danger, #dc2626);
+  --tng-flow-minimap-node-warning: var(--tng-semantic-accent-warning, #d97706);
+  --tng-flow-minimap-viewport-border: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, #2563eb) 54%,
+    transparent
+  );
+  --tng-flow-minimap-viewport-background: color-mix(
+    in srgb,
+    var(--tng-semantic-accent-brand, #2563eb) 16%,
+    transparent
+  );
+  --ff-minimap-background-color: var(--tng-flow-minimap-background);
+  --ff-minimap-border-color: var(--tng-flow-minimap-border);
+  --ff-minimap-shadow: var(--tng-flow-minimap-shadow);
+  --ff-minimap-node-color: var(--tng-flow-minimap-node);
+  --ff-minimap-node-selected-color: var(--tng-flow-minimap-node-selected);
+  --ff-minimap-view-border-color: var(--tng-flow-minimap-viewport-border);
+  --ff-minimap-view-color: var(--tng-flow-minimap-viewport-background);
+}
+tng-flow-editor .tng-flow-minimap__node--selected {
+  fill: var(--tng-flow-minimap-node-selected);
+}
+tng-flow-editor .tng-flow-minimap__node--disabled {
+  fill: var(--tng-flow-minimap-node-disabled);
+  opacity: 0.55;
+}
+tng-flow-editor .tng-flow-minimap__node--highlighted {
+  fill: var(--tng-flow-minimap-node-highlighted);
+}
+tng-flow-editor .tng-flow-minimap__node--warning {
+  fill: var(--tng-flow-minimap-node-warning);
+}
+tng-flow-editor .tng-flow-minimap__node--error {
+  fill: var(--tng-flow-minimap-node-error);
 }
 tng-flow-editor .tng-flow-editor__connection[data-status=active] {
   --ff-connection-color: var(--tng-flow-connection-active-color);

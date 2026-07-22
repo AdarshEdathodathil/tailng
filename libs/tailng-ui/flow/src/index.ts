@@ -8,9 +8,7 @@ export type { TngFlowNodeTemplateContext } from './lib/node-template/tng-flow-no
 export { TngFlowPaletteItemDirective } from './lib/palette-item/tng-flow-palette-item.directive';
 export { EMPTY_TNG_FLOW_SELECTION } from './lib/types/tng-flow.types';
 export { resolveTngFlowCapabilities } from './lib/model/tng-flow-capabilities';
-export type {
-  TngFlowCapabilities,
-} from './lib/model/tng-flow-capabilities';
+export type { TngFlowCapabilities } from './lib/model/tng-flow-capabilities';
 export {
   createTngFlowIssueIndex,
   resolveTngFlowValidationSeverity,
@@ -68,6 +66,10 @@ export type {
   TngFlowValidationIssueActivationSource,
 } from './lib/types/tng-flow-events.types';
 export type { TngFlowRevealOptions } from './lib/types/tng-flow-navigation.types';
+export type {
+  TngFlowMinimapOptions,
+  TngFlowMinimapPosition,
+} from './lib/types/tng-flow-minimap.types';
 export { EMPTY_TNG_FLOW_PRESENTATION } from './lib/types/tng-flow-presentation.types';
 export type {
   TngFlowConnectionMotion,

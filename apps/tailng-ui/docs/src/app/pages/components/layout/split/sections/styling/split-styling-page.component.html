@@ -1,0 +1,37 @@
+<article class="docs-section-page">
+  <section class="docs-overview-block">
+    <h2 class="docs-overview-title">Split Layout styling</h2>
+    <p class="docs-overview-lead">
+      The default separator resolves through TailNG semantic tokens and includes dark-mode and
+      forced-colors behavior.
+    </p>
+  </section>
+
+  <section id="css-custom-properties" class="docs-overview-block">
+    <h3>CSS custom properties</h3>
+    <tng-code-block
+      [code]="tokenCode"
+      adapter="shiki"
+      language="css"
+      title="Workspace split tokens"
+      [lineNumbers]="true"
+      [wrap]="true"
+      [sanitizeHtml]="false"
+    />
+  </section>
+
+  <section id="state-hooks" class="docs-overview-block">
+    <h3>State hooks</h3>
+    <p>
+      Panes expose <code>data-collapsed</code>, <code>data-resizing</code>, and
+      <code>data-disabled</code>. Groups expose orientation, disabled, resizing, and
+      <code>data-constrained</code> when the container is smaller than the combined minimums.
+      Handles expose orientation, disabled, and resizing states.
+    </p>
+    <p>
+      Fully collapsed zero-size panes also receive <code>inert</code> and
+      <code>aria-hidden="true"</code>. Use the pane state hook to swap full content for an icon rail
+      at nonzero collapsed sizes.
+    </p>
+  </section>
+</article>

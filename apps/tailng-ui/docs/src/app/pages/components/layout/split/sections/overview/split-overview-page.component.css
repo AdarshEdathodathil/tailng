@@ -1,0 +1,53 @@
+.split-overview {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.split-demo {
+  height: 32rem;
+  overflow: hidden;
+  border: 1px solid var(--tng-semantic-border-default);
+  border-radius: 0.9rem;
+  background: var(--tng-semantic-background-canvas);
+}
+
+.split-demo [tngSplitPane] {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+  padding: 1rem;
+}
+
+.split-demo [paneId='plain-palette'],
+.split-demo [paneId='plain-inspector'] {
+  background: var(--tng-semantic-background-surface);
+}
+
+.split-demo [paneId='plain-canvas'] {
+  place-content: center;
+  text-align: center;
+}
+
+.split-demo [paneId='plain-json'] {
+  border-top: 1px solid var(--tng-semantic-border-subtle);
+  background: var(--tng-semantic-background-muted);
+}
+
+.split-demo__icon {
+  font-size: 1.25rem;
+}
+
+.split-demo [paneId='plain-palette'][data-collapsed] {
+  justify-items: center;
+  padding-inline: 0;
+}
+
+.split-demo [paneId='plain-palette'][data-collapsed] .split-demo__label {
+  display: none;
+}
+
+@media (max-width: 70rem) {
+  .split-demo {
+    height: 27rem;
+  }
+}

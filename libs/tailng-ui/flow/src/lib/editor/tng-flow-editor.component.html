@@ -91,6 +91,7 @@
           [class.tng-flow-editor__node--selected]="isNodeSelected(node.id)"
           [fNodeId]="node.id"
           [fNodePosition]="node.position"
+          [fMinimapClass]="minimapClassesFor(node.id)"
           [fNodeSelectionDisabled]="!canSelect()"
           [fNodeDraggingDisabled]="!canEdit() || node.disabled === true || node.locked === true"
           [style.min-height.px]="nodeMinHeight(node.id)"
@@ -101,6 +102,7 @@
           [attr.data-dimmed]="viewFor(node.id).dimmed ? '' : null"
           (dblclick)="onNodeDoubleClick($event, node.id)"
         >
+          @let nodeTemplate = templateFor(node.type);
           @if (canEdit() && node.disabled !== true && node.locked !== true) {
             <button
               fDragHandle
@@ -114,7 +116,7 @@
           }
 
           <div class="tng-flow-editor__node-content" [style.min-height.px]="nodeMinHeight(node.id)">
-            @if (templateFor(node.type); as nodeTemplate) {
+            @if (nodeTemplate) {
               <ng-container
                 [ngTemplateOutlet]="nodeTemplate"
                 [ngTemplateOutletContext]="templateContext(node)"
@@ -203,6 +205,34 @@
 
     @if (showSelectionArea() && canSelect()) {
       <f-selection-area />
+    }
+
+    @if (showMinimap()) {
+      @let minimap = resolvedMinimapOptions();
+      <div
+        class="tng-flow-editor__minimap-shell"
+        [attr.data-position]="minimap.position"
+        [attr.data-interactive]="minimap.interactive ? '' : null"
+        [attr.data-limited]="minimapOverRenderLimit() ? '' : null"
+        [attr.data-tng-flow-minimap-interactive]="minimap.interactive ? '' : null"
+        [attr.role]="minimap.interactive ? 'group' : null"
+        [attr.tabindex]="minimap.interactive ? '0' : null"
+        [attr.aria-label]="minimap.interactive ? minimap.ariaLabel : null"
+        [attr.aria-hidden]="minimap.interactive ? null : 'true'"
+        [style.width.px]="minimap.width"
+        [style.height.px]="minimap.height"
+        (keydown)="onMinimapKeydown($event)"
+      >
+        <f-minimap
+          class="tng-flow-editor__minimap"
+          [fMinSize]="minimap.minSize"
+          [fNodeRenderLimit]="minimap.nodeRenderLimit"
+          [style.pointer-events]="minimap.interactive ? 'auto' : 'none'"
+        />
+        @if (minimapOverRenderLimit()) {
+          <span class="tng-flow-editor__minimap-limit">Overview simplified</span>
+        }
+      </div>
     }
   </f-flow>
 

@@ -1031,6 +1031,28 @@ export const docsComponentOutlineItemsBySlug: Readonly<
       { id: 'import-and-usage', label: 'Import in your feature module/component' },
     ],
   },
+  split: {
+    overview: [
+      { id: 'imports', label: 'Imports' },
+      { id: 'workspace-layout', label: 'Workspace layout' },
+      { id: 'accessibility-baseline', label: 'Accessibility baseline' },
+    ],
+    api: [
+      { id: 'split-group', label: 'Split group' },
+      { id: 'split-pane', label: 'Split pane' },
+      { id: 'split-handle', label: 'Split handle' },
+      { id: 'events-and-methods', label: 'Events and methods' },
+    ],
+    styling: [
+      { id: 'css-custom-properties', label: 'CSS custom properties' },
+      { id: 'state-hooks', label: 'State hooks' },
+    ],
+    examples: [
+      { id: 'vertical-json-panel', label: 'Vertical JSON panel' },
+      { id: 'application-workspace', label: 'Application builder workspace' },
+      { id: 'persistence', label: 'Consumer persistence' },
+    ],
+  },
   switch: {
     overview: [
       { id: 'imports', label: 'Imports' },

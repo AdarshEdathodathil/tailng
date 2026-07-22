@@ -6,10 +6,14 @@
 .tng-flow-node {
   display: block;
   min-height: inherit;
+  border-radius: var(--tng-card-radius, var(--tng-radius-surface, 1rem));
 }
 
 :host([data-selected]) .tng-flow-node {
-  outline: 2px solid var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
+  outline: var(
+    --tng-flow-node-selection-outline,
+    2px solid var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb))
+  );
   outline-offset: 2px;
 }
 

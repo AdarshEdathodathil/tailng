@@ -44,7 +44,9 @@
           <tr>
             <td><code>presentation</code></td>
             <td><code>TngFlowPresentation&lt;TStatus&gt;</code></td>
-            <td><code>{{ '{}' }}</code></td>
+            <td>
+              <code>{{ '{}' }}</code>
+            </td>
             <td>Controlled runtime status and visual emphasis for nodes and connections.</td>
           </tr>
           <tr>
@@ -116,6 +118,21 @@
             <td><code>boolean</code></td>
             <td><code>true</code></td>
             <td>Controls the built-in grid, viewport toolbar, and marquee selection surface.</td>
+          </tr>
+          <tr>
+            <td><code>showMinimap</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Shows the themed workflow overview without requiring direct Foblex imports.</td>
+          </tr>
+          <tr>
+            <td><code>minimapOptions</code></td>
+            <td><code>TngFlowMinimapOptions | null</code></td>
+            <td><code>null</code></td>
+            <td>
+              Configures position, dimensions, minimum overview size, node render limit,
+              interactivity, and accessible label.
+            </td>
           </tr>
           <tr>
             <td><code>snapToGrid</code></td>
@@ -479,7 +496,9 @@
             <td>Centers a validation target and optionally requests controlled selection.</td>
           </tr>
           <tr>
-            <td><code>activateNode(nodeId)</code> / <code>activateConnection(connectionId)</code></td>
+            <td>
+              <code>activateNode(nodeId)</code> / <code>activateConnection(connectionId)</code>
+            </td>
             <td>Emits a generic API activation event when allowed by the current mode.</td>
           </tr>
           <tr>
