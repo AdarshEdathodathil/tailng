@@ -58,6 +58,8 @@
         <f-connection-for-create>
           @if (useNearestBorderLayout()) {
             <f-connection-marker-arrow type="f-connection-marker-start-all-states" />
+          }
+          @if (useNearestBorderLayout()) {
             <f-connection-marker-arrow type="f-connection-marker-end-all-states" />
           }
         </f-connection-for-create>
@@ -93,6 +95,8 @@
           >
             @if (useNearestBorderLayout()) {
               <f-connection-marker-arrow type="f-connection-marker-start-all-states" />
+            }
+            @if (useNearestBorderLayout()) {
               <f-connection-marker-arrow type="f-connection-marker-end-all-states" />
             }
             @let template = connectionTemplate()?.templateRef;
