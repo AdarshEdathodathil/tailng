@@ -210,6 +210,122 @@ directive supports disabled state plus optional preview and placeholder `Templat
 
 Use `[mode]="'inspect'"` for an interactive execution view and `[mode]="'readonly'"` for a non-selectable viewer.
 
+## Automatic layout
+
+Automatic layout is engine-neutral and opt-in. Install the official Dagre adapter when needed;
+`@tailng-ui/flow` does not depend on it.
+
+```bash
+pnpm add @tailng-ui/flow-layout-dagre
+```
+
+```ts
+import { provideTngFlowLayoutEngine, type TngFlowNodesLayoutRequest } from '@tailng-ui/flow';
+import { TNG_FLOW_DAGRE_LAYOUT_ENGINE } from '@tailng-ui/flow-layout-dagre';
+
+bootstrapApplication(AppComponent, {
+  providers: [provideTngFlowLayoutEngine(TNG_FLOW_DAGRE_LAYOUT_ENGINE)],
+});
+
+applyLayout(request: TngFlowNodesLayoutRequest): void {
+  const positions = new Map(request.nodes.map((move) => [move.id, move.position]));
+  this.workflow.update((workflow) => ({
+    ...workflow,
+    nodes: workflow.nodes.map((node) => {
+      const position = positions.get(node.id);
+      return position === undefined ? node : { ...node, position };
+    }),
+  }));
+}
+```
+
+```html
+<button type="button" (click)="editor.requestAutoLayout({ direction: 'left-to-right' })">
+  Arrange workflow
+</button>
+
+<tng-flow-editor
+  #editor="tngFlowEditor"
+  [definition]="workflow()"
+  (nodesLayoutRequested)="applyLayout($event)"
+/>
+```
+
+The editor measures the rendered custom nodes, invokes the configured engine once, and emits one
+complete controlled request. Locked nodes remain fixed by default. Optional viewport fitting is a
+separate presentation effect and runs only after the application supplies the requested positions:
+
+```ts
+editor.requestAutoLayout({
+  direction: 'top-to-bottom',
+  viewport: { fit: true, animated: true, padding: 48 },
+});
+```
+
+`requestAutoLayout()` resolves to `false` outside edit mode, before the editor is ready, when node
+geometry is unusable, or if the graph changes while an asynchronous engine is calculating.
+
+## Alignment, distribution, and smart guides
+
+The standalone arrangement utilities accept measured, unscaled canvas bounds and return
+position-only moves. They never mutate the bounds or graph nodes.
+
+```ts
+import { alignTngFlowNodes, distributeTngFlowNodes, type TngFlowNodeBounds } from '@tailng-ui/flow';
+
+const bounds: readonly TngFlowNodeBounds[] = measureNodeBounds();
+const aligned = alignTngFlowNodes(bounds, 'horizontal-center');
+const distributed = distributeTngFlowNodes(bounds, 'horizontal', { gridSize: 16 });
+```
+
+Disabled bounds are ignored. Locked bounds are fixed anchors by default and are never returned as
+moves; pass `{ lockedNodes: 'ignore' }` to exclude them from the calculation. Distribution uses
+equal edge-to-edge gaps for mixed-size nodes. When `gridSize` is set, grid snapping is the final
+step and therefore takes precedence over an exact alignment or gap.
+
+The editor can measure the selected rendered nodes and emit one controlled arrangement request:
+
+```html
+<button type="button" (click)="editor.requestNodeAlignment('left', {}, 'controls')">
+  Align left
+</button>
+<button type="button" (click)="editor.requestNodeDistribution('horizontal', {}, 'controls')">
+  Distribute horizontally
+</button>
+
+<tng-flow-editor
+  #editor="tngFlowEditor"
+  [definition]="workflow()"
+  [selection]="selection()"
+  [smartGuides]="{
+    enabled: true,
+    alignmentThreshold: 10,
+    spacingThreshold: 10,
+    disableModifier: 'alt'
+  }"
+  (nodesArrangementRequested)="applyArrangement($event)"
+/>
+```
+
+```ts
+applyArrangement(request: TngFlowNodesArrangementRequest): void {
+  const positions = new Map(request.nodes.map((move) => [move.id, move.position]));
+  this.workflow.update((workflow) => ({
+    ...workflow,
+    nodes: workflow.nodes.map((node) => {
+      const position = positions.get(node.id);
+      return position === undefined ? node : { ...node, position };
+    }),
+  }));
+}
+```
+
+Smart guides are opt-in and appear only in edit mode. Thresholds are CSS-screen pixels, so their
+feel stays constant at every zoom level. The suppression modifier is sampled on the initiating
+pointer down and remains deterministic for that drag. Magnetic alignment is considered before the
+editor's final grid policy; locked nodes remain available as magnetic anchors but never enter the
+movable Foblex selection.
+
 ## Connection validation
 
 The editor validates direction, disabled state, self-connections, port kind, duplicates, and port multiplicity before calling the optional consumer validator.
@@ -246,6 +362,52 @@ Custom templates replace only the node body. TailNG retains geometry, connectors
 </tng-flow-editor>
 ```
 
+## Connection labels and custom content
+
+Set the optional `label` to render TailNG's default midpoint label. Long labels truncate visually
+while the connection keeps the complete accessible name. `description` supplies additional
+accessible and hover context without changing connection identity, endpoints, or runtime state.
+
+```ts
+const approvedRoute: TngFlowConnection = {
+  id: 'review-to-publish',
+  source: { nodeId: 'review', portId: 'approved' },
+  target: { nodeId: 'publish', portId: 'input' },
+  label: 'Approved review route',
+  description: 'Continue after the document passes review.',
+  type: 'adaptive-curve',
+};
+```
+
+Import `TngFlowConnectionTemplateDirective` when the application needs custom connection content:
+
+```html
+<tng-flow-editor [definition]="workflow()" [selection]="selection()">
+  <ng-template
+    tngFlowConnection
+    let-connection
+    let-view="view"
+    let-issues="issues"
+    let-mode="mode"
+    let-selected="selected"
+  >
+    <app-route-label
+      [connection]="connection"
+      [status]="view.status"
+      [validationIssues]="issues"
+      [mode]="mode"
+      [selected]="selected"
+    />
+  </ng-template>
+</tng-flow-editor>
+```
+
+`$implicit` and `connection` contain the current `TngFlowConnection`; `view` contains resolved
+runtime, presentation, selection, and validation state. The template replaces only the default
+label content. TailNG retains the connection path, validation badge, selection, reassignment,
+accessibility, and Foblex-managed midpoint shell. The first template contract intentionally does
+not expose a `midpoint` value.
+
 Validation and presentation are independent controlled projections. Validation uses stable issue
 ids and discriminated flow, node, port, or connection targets. Presentation adds transient runtime
 status, progress, emphasis, and connection motion without changing graph data or selection.
@@ -276,18 +438,125 @@ application decides whether to open an inspector or take another action.
 
 The editor host has a default height of `36rem`; override the host height in the consuming component when needed.
 
+## Nearest-border attachment layout
+
+By default the editor uses `attachmentLayout="static-ports"`: declared `port.side` values and
+port labels render as authored.
+
+Set `attachmentLayout="nearest-border"` for flowchart-style edges:
+
+- Connected endpoints are live-assigned to facing node borders from relative node positions.
+- Sockets on one border are equal-spaced with the existing `(i+1)/(n+1)` rule, and a border may
+  host both incoming and outgoing endpoints.
+- Port labels are hidden; connections render start and end arrow markers.
+- Sides update while nodes move (provisional positions) without mutating `definition.ports[].side`.
+
+Equal spacing of multiple edges on one border requires **one unique port per connection endpoint**.
+Sharing a single `multiple: true` port stacks edges on one socket. Use
+`materializeTngFlowEndpoint` / `materializeTngFlowConnectionEndpoints` and
+`pruneUnusedTngFlowConnectionPorts` when creator ports should expand into unique endpoints
+(see the professional flow builder demo).
+
+```html
+<tng-flow-editor
+  attachmentLayout="nearest-border"
+  [definition]="workflow()"
+  [selection]="selection()"
+  (connectionCreateRequested)="createConnection($event)"
+/>
+```
+
 ## Keyboard interaction
 
-- `Delete` / `Backspace`: request deletion of editable selected elements.
-- `Escape`: clear selection or cancel connection creation.
-- `Command/Ctrl + A`: select all in edit mode.
-- `Enter`: activate the focused or sole selected node/connection in edit and inspect modes.
-- Shift, Command, or Ctrl while clicking: toggle multi-selection.
+- Arrow keys navigate spatially across nodes and connections; `Command/Ctrl + Arrow` follows graph
+  topology, and `Shift + Arrow` extends the controlled selection.
+- Space grabs the focused movable node selection. Arrow keys preview movement, `Shift + Arrow`
+  applies the coarse step, Space or Enter drops it through `nodesMoved`, and Escape restores the
+  original presentation without an event. Locked and disabled nodes are excluded.
+- Keyboard movement uses one canvas unit by default, or `gridSize` when `snapToGrid` is enabled.
+  A snapped multi-node move derives one delta from the anchor and applies it to every movable node,
+  preserving the selection's relative geometry. Configure `keyboardOptions.moveStep` and
+  `keyboardOptions.largeMoveStep` to override the normal and coarse steps.
+- The configured `keyboardOptions.connectKeys` (default `['c']`) starts connection authoring from
+  one selected node through Foblex's public connection session. When a node has multiple eligible
+  outputs, arrows choose the source port first. Arrows then traverse only compatible target ports;
+  Enter or Space chooses or confirms, and Escape cancels and restores source focus.
+- Built-in and consumer connection validators are applied during target traversal and again before
+  `connectionCreateRequested` emits. Connection authoring is controlled and never mutates the input
+  graph directly. Locked and disabled nodes or ports cannot be sources or targets.
+- `Delete` / `Backspace` requests deletion of editable selected elements.
+- `Escape` clears selection or cancels the active keyboard operation.
+- `Command/Ctrl + A` selects all in edit mode.
+- `Enter` activates the focused or sole selected node/connection in edit and inspect modes.
+- Shift, Command, or Ctrl while clicking toggles multi-selection.
 
 Palette buttons use their native Enter and Space activation. The example above routes that
 activation through the editor's controlled node-creation request.
 
-Keyboard commands only act while the flow has focus and never intercept text editing inside custom nodes.
+The editor is one graph tab stop with an `aria-activedescendant` for node and connection navigation.
+Port focus is entered programmatically while authoring a connection, with source, target, position,
+compatibility, request, and cancellation status announced. Focus rings compensate for canvas zoom.
+If a controlled graph update removes the active item or focused port, focus falls back to the editor.
+Keyboard commands only act while the flow has focus and never intercept inputs, textareas, selects,
+contenteditable regions, links, buttons, native controls, or focusable custom controls projected by
+node templates.
+
+Edit mode enables all authoring keys. Inspect mode keeps navigation, selection, and activation while
+blocking movement, connection, and deletion. Readonly mode blocks graph interaction while leaving
+viewport controls and the optional interactive minimap available.
+
+## Commands and context menus
+
+Command shortcuts and custom context-menu interception are opt-in. TailNG supplies the controlled
+selection and placement anchor; the application owns history, clipboard serialization, pasted-data
+validation, ids, menu content, and every graph mutation.
+
+```html
+<tng-flow-editor
+  #editor="tngFlowEditor"
+  [definition]="workflow()"
+  [selection]="selection()"
+  [commandShortcuts]="['copy', 'paste', 'duplicate']"
+  [contextMenuEnabled]="true"
+  (selectionChange)="selection.set($event)"
+  (commandRequested)="handleCommand($event)"
+  (contextMenuRequested)="openContextMenu($event)"
+/>
+```
+
+```ts
+handleCommand(request: TngFlowEditorCommandRequest): void {
+  // Read or update application-owned history and clipboard state, then
+  // produce a new controlled workflow snapshot when the command mutates data.
+}
+
+openContextMenu(request: TngFlowContextMenuRequest): void {
+  this.menu.open({
+    clientPosition: request.clientPosition,
+    data: request,
+  });
+}
+
+runContextCommand(
+  editor: TngFlowEditorComponent,
+  request: TngFlowContextMenuRequest,
+  command: TngFlowEditorCommand,
+): void {
+  editor.requestCommand(command, 'context-menu', request.canvasPosition);
+}
+```
+
+`commandShortcuts` accepts `false`, `true`, or an explicit command allow-list. The standard
+Command/Ctrl shortcuts request undo, redo, cut, copy, paste, and duplicate; Ctrl+Y is also accepted
+for redo. Copy is available in edit and inspect modes. The other commands are edit-only, and
+`requestCommand()` follows the same mode rules even when called directly. Paste and duplicate use
+the last pointer position in canvas coordinates, falling back to the visible viewport centre.
+
+`contextMenuEnabled` defaults to false. Pointer requests identify canvas, node, connection, or port
+targets and include both browser `clientPosition` and transformed `canvasPosition` coordinates.
+Right-clicking an unselected selectable node or connection emits `selectionChange` first and then
+`contextMenuRequested` with that proposed selection. Keyboard Context Menu and Shift+F10 requests
+anchor to the active graph element, or the viewport centre when no graph element is active.
 
 ## Compatibility
 

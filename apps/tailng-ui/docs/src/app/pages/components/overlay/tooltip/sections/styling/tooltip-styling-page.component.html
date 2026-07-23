@@ -27,6 +27,16 @@
     </ul>
   </section>
 
+  <section id="overlay-z-index" class="tooltip-styling-block">
+    <h3>Overlay z-index</h3>
+    <p>
+      Tooltip content uses
+      <code>var(--tng-tooltip-z-overlay, var(--tng-tooltip-overlay-z-index, var(--tng-z-overlay, 20)))</code>.
+      Set <code>--tng-tooltip-z-overlay</code> on <code>tng-tooltip</code> (or an ancestor), or set
+      <code>--tng-z-overlay</code> app-wide so tooltips share the same stacking context as other overlays.
+    </p>
+  </section>
+
   <section id="reference-css" class="tooltip-styling-block">
     <h3>Reference CSS</h3>
     <tng-code-block

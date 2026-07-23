@@ -25,6 +25,10 @@ import {
   type TngOverlayPlacement,
   type TngOverlayRect,
 } from '@tailng-ui/cdk';
+import {
+  clearOverlayOwnerId,
+  stampOverlayOwnerId,
+} from '../../overlay/_shared/tng-overlay-ownership';
 import type { TngDateRangePickerAttributeMap } from './date-range-picker.types';
 
 type TngDateRangePickerOverlayController = Readonly<{
@@ -488,6 +492,8 @@ export class TngDateRangePickerOverlay {
     this.setupRepositionListeners();
     this.setupScrollLock(anchor);
 
+    stampOverlayOwnerId(overlay, this.findDateRangePickerAnchorEl() ?? overlay);
+
     if (overlay.parentNode !== this.ownerDocument.body) {
       this.ownerDocument.body.appendChild(overlay);
     }
@@ -521,6 +527,7 @@ export class TngDateRangePickerOverlay {
     this.teardownScrollLock();
     this.resolvedPlacement.set(this.resolvePlacement().side === 'top' ? 'top' : 'bottom');
     this.clearPortalledThemeVars();
+    clearOverlayOwnerId(overlay);
     clearFixedPortalledOverlayBaseStyles(overlay);
     overlay.style.maxHeight = '';
     overlay.style.maxWidth = '';

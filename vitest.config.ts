@@ -47,7 +47,12 @@ export default defineConfig({
     // Important: Ensure Vitest picks up files in libs/
     include: ['libs/**/*.{test,spec}.ts', 'apps/**/*.{test,spec}.ts'],
     // Add this to prevent Vitest from hanging on large monorepos
-    exclude: ['**/node_modules/**', '**/dist/**', '**/cypress/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/*.browser.spec.ts',
+    ],
     // Angular compilation can briefly saturate workers in the full 450+ file run.
     testTimeout: 10_000,
     server: {

@@ -51,6 +51,7 @@ export default defineConfig({
   test: {
     name: 'flow',
     include: ['src/**/*.spec.ts'],
+    exclude: ['src/**/*.browser.spec.ts'],
     environment: 'jsdom',
     setupFiles: [resolve(projectRoot, './src/test-setup.ts')],
     server: {

@@ -4,5 +4,6 @@
     --tng-tooltip-trigger-height:   var(--tng-control-height-sm);
     --tng-tooltip-font-size:        var(--tng-text-xs);
     --tng-tooltip-focus-ring:       var(--tng-focus-ring);
+    --tng-tooltip-z-overlay:        var(--tng-tooltip-overlay-z-index, var(--tng-z-overlay, 20));
   }
 }

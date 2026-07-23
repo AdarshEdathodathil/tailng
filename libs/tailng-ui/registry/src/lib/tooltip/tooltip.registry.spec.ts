@@ -24,4 +24,15 @@ describe('tooltip registry item', () => {
     expect(primitiveFile?.content).toContain("selector: '[tngTooltipTrigger]'");
     expect(primitiveFile?.content).toContain('createTooltipId');
   });
+
+  it('generates tooltip CSS with the themed overlay z-index chain', () => {
+    const cssFile = tooltipRegistryItem.files.find((file) =>
+      file.path.endsWith('tailng-ui/tooltip/tng-tooltip.css'),
+    );
+
+    expect(cssFile).toBeDefined();
+    expect(cssFile?.content).toContain(
+      'z-index: var(--tng-tooltip-z-overlay, var(--tng-tooltip-overlay-z-index, var(--tng-z-overlay, 20)));',
+    );
+  });
 });

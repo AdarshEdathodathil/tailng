@@ -1,4 +1,6 @@
 export { TngFlowEditorComponent } from './lib/editor/tng-flow-editor.component';
+export { alignTngFlowNodes, distributeTngFlowNodes } from './lib/arrangement/tng-flow-arrangement';
+export { TngFlowConnectionTemplateDirective } from './lib/connection-template/tng-flow-connection-template.directive';
 export { TngFlowNodeComponent, resolveTngFlowStatusTone } from './lib/node/tng-flow-node.component';
 export type { TngFlowStatusTone } from './lib/node/tng-flow-node.component';
 export { TngFlowPortComponent } from './lib/port/tng-flow-port.component';
@@ -6,6 +8,10 @@ export { TngFlowValidationBadgeComponent } from './lib/validation-badge/tng-flow
 export { TngFlowNodeTemplateDirective } from './lib/node-template/tng-flow-node-template.directive';
 export type { TngFlowNodeTemplateContext } from './lib/node-template/tng-flow-node-template.directive';
 export { TngFlowPaletteItemDirective } from './lib/palette-item/tng-flow-palette-item.directive';
+export {
+  provideTngFlowLayoutEngine,
+  TNG_FLOW_LAYOUT_ENGINE,
+} from './lib/layout/tng-flow-layout.provider';
 export { EMPTY_TNG_FLOW_SELECTION } from './lib/types/tng-flow.types';
 export { resolveTngFlowCapabilities } from './lib/model/tng-flow-capabilities';
 export type { TngFlowCapabilities } from './lib/model/tng-flow-capabilities';
@@ -18,7 +24,28 @@ export {
   areTngFlowSelectionsEqual,
   sanitizeTngFlowSelection,
 } from './lib/model/tng-flow-selection';
+export {
+  isTngFlowCreatorPort,
+  materializeTngFlowConnectionEndpoints,
+  materializeTngFlowEndpoint,
+  pruneUnusedTngFlowConnectionPorts,
+} from './lib/model/tng-flow-endpoint-materialize';
 export type {
+  TngFlowEndpointMaterializeOptions,
+  TngFlowMaterializedEndpointResult,
+} from './lib/model/tng-flow-endpoint-materialize';
+export {
+  DEFAULT_TNG_FLOW_NODE_SIZE,
+  resolveTngFlowFacingSides,
+  resolveTngFlowNearestBorderSides,
+  tngFlowBoundsToNearestBorderNode,
+} from './lib/geometry/tng-flow-nearest-border';
+export type {
+  TngFlowNearestBorderFacingSides,
+  TngFlowNearestBorderNode,
+} from './lib/geometry/tng-flow-nearest-border';
+export type {
+  TngFlowAttachmentLayout,
   TngFlowConnection,
   TngFlowConnectionCandidate,
   TngFlowConnectionCreateRequest,
@@ -65,6 +92,45 @@ export type {
   TngFlowValidationIssueActivatedEvent,
   TngFlowValidationIssueActivationSource,
 } from './lib/types/tng-flow-events.types';
+export type {
+  TngFlowArrangementOperation,
+  TngFlowArrangementOptions,
+  TngFlowArrangementRequestSource,
+  TngFlowDistributionAxis,
+  TngFlowLockedNodeArrangement,
+  TngFlowNodeAlignment,
+  TngFlowNodesArrangementRequest,
+  TngFlowSmartGuideModifier,
+  TngFlowSmartGuidesOptions,
+} from './lib/types/tng-flow-arrangement.types';
+export type {
+  TngFlowEditorCommand,
+  TngFlowEditorCommandRequest,
+  TngFlowEditorCommandShortcuts,
+  TngFlowEditorCommandSource,
+} from './lib/types/tng-flow-command.types';
+export type { TngFlowConnectionTemplateContext } from './lib/types/tng-flow-connection-template.types';
+export type {
+  TngFlowContextMenuRequest,
+  TngFlowContextMenuSource,
+  TngFlowContextMenuTarget,
+} from './lib/types/tng-flow-context-menu.types';
+export type { TngFlowNodeBounds, TngFlowSize } from './lib/types/tng-flow-geometry.types';
+export type { TngFlowKeyboardOptions } from './lib/types/tng-flow-keyboard.types';
+export type {
+  TngFlowAutoLayoutOptions,
+  TngFlowLayoutConnection,
+  TngFlowLayoutDirection,
+  TngFlowLayoutEngine,
+  TngFlowLayoutGraph,
+  TngFlowLayoutNode,
+  TngFlowLayoutOptions,
+  TngFlowLayoutRequestSource,
+  TngFlowLayoutViewportOptions,
+  TngFlowNodesLayoutRequest,
+  TngResolvedFlowLayoutOptions,
+  TngResolvedFlowLayoutViewportOptions,
+} from './lib/types/tng-flow-layout.types';
 export type { TngFlowRevealOptions } from './lib/types/tng-flow-navigation.types';
 export type {
   TngFlowMinimapOptions,

@@ -89,12 +89,16 @@ export const flowEditorDemoConnections: readonly TngFlowConnection[] = Object.fr
     id: 'prompt-to-model',
     source: { nodeId: 'prompt', portId: 'prompt-output' },
     target: { nodeId: 'model', portId: 'model-input' },
+    label: 'Prepared prompt',
+    description: 'Send the prepared prompt to the reasoning model.',
     type: 'bezier',
   },
   {
     id: 'model-to-response',
     source: { nodeId: 'model', portId: 'model-output' },
     target: { nodeId: 'response', portId: 'response-input' },
+    label: 'Generated answer',
+    description: 'Deliver the generated answer to the response step.',
     type: 'bezier',
   },
 ]);

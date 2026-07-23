@@ -38,6 +38,13 @@
         "reportsDirectory": "coverage/libs/tailng-ui/flow",
         "watch": false
       }
+    },
+    "browser-test": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "options": {
+        "command": "vitest run --config libs/tailng-ui/flow/vitest.browser.config.ts"
+      }
     }
   }
 }

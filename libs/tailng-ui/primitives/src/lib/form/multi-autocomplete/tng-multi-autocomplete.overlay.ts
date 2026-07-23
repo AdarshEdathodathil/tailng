@@ -17,6 +17,10 @@ import {
   resolveTngScrollableAncestors,
   type TngOverlayScrollStrategy,
 } from '@tailng-ui/cdk';
+import {
+  clearOverlayOwnerId,
+  stampOverlayOwnerId,
+} from '../../overlay/_shared/tng-overlay-ownership';
 import { TNG_MULTI_AUTOCOMPLETE } from './tng-multi-autocomplete.tokens';
 import type { TngMultiAutocomplete } from './tng-multi-autocomplete';
 
@@ -343,6 +347,7 @@ export class TngMultiAutocompleteOverlay {
     this.setupScrollStrategy(anchorEl);
 
     const panel = this.elRef.nativeElement;
+    stampOverlayOwnerId(panel, this.multi.hostElement);
     if (panel.parentNode !== document.body) {
       document.body.appendChild(panel);
     }
@@ -395,6 +400,7 @@ export class TngMultiAutocompleteOverlay {
     panel.style.zIndex = '';
     panel.style.width = '';
     panel.style.minWidth = '';
+    clearOverlayOwnerId(panel);
     this.clearPortalledThemeVars();
     this.teardownOutsidePointer();
   }

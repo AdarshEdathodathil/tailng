@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import {
   FCreateConnectionEvent,
   FDeleteSelectedEvent,
@@ -12,13 +13,19 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { TngFlowEditorComponent } from './tng-flow-editor.component';
+import { TngFlowConnectionTemplateDirective } from '../connection-template/tng-flow-connection-template.directive';
 import { TngFlowNodeTemplateDirective } from '../node-template/tng-flow-node-template.directive';
 import { createTngFlowPaletteItemEnvelope } from '../palette-item/tng-flow-palette-item.directive';
+import type { TngFlowNodesArrangementRequest } from '../types/tng-flow-arrangement.types';
+import type { TngFlowEditorCommandRequest } from '../types/tng-flow-command.types';
+import type { TngFlowContextMenuRequest } from '../types/tng-flow-context-menu.types';
 import type { TngFlowValidationIssueActivatedEvent } from '../types/tng-flow-events.types';
+import type { TngFlowLayoutEngine } from '../types/tng-flow-layout.types';
 import type { TngFlowPresentation } from '../types/tng-flow-presentation.types';
 import type { TngFlowValidation } from '../types/tng-flow-validation.types';
 import type {
   TngFlowDefinition,
+  TngFlowConnection,
   TngFlowConnectionRejectedEvent,
   TngFlowNode,
   TngFlowNodeCreateRequest,
@@ -127,6 +134,65 @@ class FlowDefinitionHost {
   protected readonly definition = definition;
 }
 
+const labelledConnections: readonly TngFlowConnection[] = [
+  {
+    id: 'custom-to-default',
+    source: { nodeId: 'custom', portId: 'custom-output' },
+    target: { nodeId: 'default', portId: 'default-input' },
+    label: 'A deliberately long approval route label for truncation',
+    description: 'Continue only after the custom tool has approved the prompt.',
+    type: 'bezier',
+  },
+];
+
+@Component({
+  imports: [TngFlowConnectionTemplateDirective, TngFlowEditorComponent],
+  template: `
+    <tng-flow-editor
+      [nodes]="nodes"
+      [connections]="connections"
+      [selection]="selection()"
+      [presentation]="presentation()"
+      [validation]="validation()"
+      [mode]="mode()"
+      [fitOnInit]="false"
+    >
+      <ng-template
+        tngFlowConnection
+        let-connection
+        let-view="view"
+        let-issues="issues"
+        let-mode="mode"
+        let-selected="selected"
+      >
+        <span
+          data-testid="custom-connection-label"
+          [attr.data-connection-id]="connection.id"
+          [attr.data-status]="view.status"
+          [attr.data-validation]="view.validationSeverity"
+          [attr.data-issue-count]="issues.length"
+          [attr.data-mode]="mode"
+          [attr.data-selected]="selected ? '' : null"
+        >
+          {{ connection.label }}
+        </span>
+        <button type="button" data-testid="custom-connection-action">Inspect</button>
+      </ng-template>
+    </tng-flow-editor>
+  `,
+})
+class FlowConnectionTemplateHost {
+  protected readonly nodes = nodes;
+  protected readonly connections = labelledConnections;
+  public readonly mode = signal<'edit' | 'inspect'>('edit');
+  public readonly selection = signal({
+    nodeIds: new Set<string>(),
+    connectionIds: new Set<string>(),
+  });
+  public readonly presentation = signal<TngFlowPresentation>({});
+  public readonly validation = signal<TngFlowValidation>({ issues: [] });
+}
+
 type EditorEventHarness = Readonly<{
   onMoveNodes: (event: FMoveNodesEvent) => void;
   onCreateConnection: (event: FCreateConnectionEvent) => void;
@@ -148,9 +214,374 @@ type EditorEventHarness = Readonly<{
   }) => void;
   onReady: () => void;
   portPositionPercent: (index: number, count: number) => number;
+  onMoveNodes: (event: {
+    nodes: readonly Readonly<{ id: string; position: { x: number; y: number } }>[];
+  }) => void;
 }>;
 
 describe('TngFlowEditorComponent', () => {
+  it('emits application-owned command requests and enforces the mode matrix', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('selection', {
+      nodeIds: new Set(['custom']),
+      connectionIds: new Set<string>(),
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    const requested = vi.fn<(request: TngFlowEditorCommandRequest) => void>();
+    fixture.componentInstance.commandRequested.subscribe(requested);
+
+    expect(
+      fixture.componentInstance.requestCommand('duplicate', 'context-menu', { x: 320, y: 180 }),
+    ).toBe(true);
+    expect(requested).toHaveBeenLastCalledWith({
+      command: 'duplicate',
+      selection: {
+        nodeIds: new Set(['custom']),
+        connectionIds: new Set(),
+      },
+      source: 'context-menu',
+      canvasPosition: { x: 320, y: 180 },
+    });
+
+    fixture.componentRef.setInput('mode', 'inspect');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.requestCommand('copy')).toBe(true);
+    expect(fixture.componentInstance.requestCommand('cut')).toBe(false);
+
+    fixture.componentRef.setInput('mode', 'readonly');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.requestCommand('copy')).toBe(false);
+    expect(requested).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps shortcuts opt-in and honors an explicit command allow-list', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    const requested = vi.fn<(request: TngFlowEditorCommandRequest) => void>();
+    fixture.componentInstance.commandRequested.subscribe(requested);
+    const flow = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('f-flow');
+    if (flow === null) {
+      throw new Error('Expected the flow host to render.');
+    }
+
+    const disabledCopy = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      key: 'c',
+    });
+    flow.dispatchEvent(disabledCopy);
+    expect(disabledCopy.defaultPrevented).toBe(false);
+    expect(requested).not.toHaveBeenCalled();
+
+    fixture.componentRef.setInput('commandShortcuts', ['copy']);
+    fixture.detectChanges();
+    const enabledCopy = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      metaKey: true,
+      key: 'c',
+    });
+    flow.dispatchEvent(enabledCopy);
+    const excludedPaste = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      metaKey: true,
+      key: 'v',
+    });
+    flow.dispatchEvent(excludedPaste);
+
+    expect(enabledCopy.defaultPrevented).toBe(true);
+    expect(excludedPaste.defaultPrevented).toBe(false);
+    expect(requested).toHaveBeenCalledOnce();
+    expect(requested).toHaveBeenCalledWith(
+      expect.objectContaining({ command: 'copy', source: 'keyboard' }),
+    );
+  });
+
+  it.each([
+    ['undo', 'z', { ctrlKey: true }],
+    ['redo', 'z', { metaKey: true, shiftKey: true }],
+    ['redo', 'y', { ctrlKey: true }],
+    ['cut', 'x', { metaKey: true }],
+    ['copy', 'c', { ctrlKey: true }],
+    ['paste', 'v', { metaKey: true }],
+    ['duplicate', 'd', { ctrlKey: true }],
+  ] as const)('maps the %s command shortcut', (command, key, modifiers) => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('commandShortcuts', true);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    const requested = vi.fn<(request: TngFlowEditorCommandRequest) => void>();
+    fixture.componentInstance.commandRequested.subscribe(requested);
+    const flow = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('f-flow');
+    const event = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key,
+      ...modifiers,
+    });
+    flow?.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(requested).toHaveBeenCalledWith(expect.objectContaining({ command }));
+  });
+
+  it('emits selection before a pointer context request for an unselected graph target', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('selection', {
+      nodeIds: new Set(['custom']),
+      connectionIds: new Set<string>(),
+    });
+    fixture.componentRef.setInput('contextMenuEnabled', true);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    const order: string[] = [];
+    let request: TngFlowContextMenuRequest | undefined;
+    fixture.componentInstance.selectionChange.subscribe(() => order.push('selection'));
+    fixture.componentInstance.contextMenuRequested.subscribe((event) => {
+      order.push('context');
+      request = event;
+    });
+    const target = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[data-node-id="default"]',
+    );
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 640,
+      clientY: 360,
+    });
+    target?.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(order).toEqual(['selection', 'context']);
+    expect(request?.target).toEqual({ kind: 'node', nodeId: 'default' });
+    expect(request?.source).toBe('pointer');
+    expect(request?.clientPosition).toEqual({ x: 640, y: 360 });
+    expect(typeof request?.canvasPosition.x).toBe('number');
+    expect(typeof request?.canvasPosition.y).toBe('number');
+    expect(request?.selection).toEqual({
+      nodeIds: new Set(['default']),
+      connectionIds: new Set(),
+    });
+  });
+
+  it('preserves controlled selection for selected, port, and canvas context requests', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    const selection = {
+      nodeIds: new Set(['custom', 'default']),
+      connectionIds: new Set<string>(),
+    };
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('selection', selection);
+    fixture.componentRef.setInput('contextMenuEnabled', true);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    const selected = vi.fn();
+    const requested = vi.fn<(request: TngFlowContextMenuRequest) => void>();
+    fixture.componentInstance.selectionChange.subscribe(selected);
+    fixture.componentInstance.contextMenuRequested.subscribe(requested);
+    const host = fixture.nativeElement as HTMLElement;
+    const selectedNode = host.querySelector<HTMLElement>('[data-node-id="custom"]');
+    const port = host.querySelector<HTMLElement>(
+      '[data-node-id="custom"] [data-port-id="custom-output"]',
+    );
+    const canvas = host.querySelector<HTMLElement>('f-canvas');
+
+    for (const target of [selectedNode, port, canvas]) {
+      target?.dispatchEvent(
+        new MouseEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 100,
+          clientY: 80,
+        }),
+      );
+    }
+
+    expect(selected).not.toHaveBeenCalled();
+    expect(requested).toHaveBeenCalledTimes(3);
+    expect(requested.mock.calls.map(([event]) => event.target)).toEqual([
+      { kind: 'node', nodeId: 'custom' },
+      { kind: 'port', nodeId: 'custom', portId: 'custom-output' },
+      { kind: 'canvas' },
+    ]);
+    for (const [event] of requested.mock.calls) {
+      expect(event.selection).toEqual(selection);
+      expect(event.selection).not.toBe(selection);
+    }
+  });
+
+  it('proposes a selectable connection as the controlled context-menu selection', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('contextMenuEnabled', true);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    const requested = vi.fn<(request: TngFlowContextMenuRequest) => void>();
+    fixture.componentInstance.contextMenuRequested.subscribe(requested);
+    const connection = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[data-connection-id="custom-to-default"]',
+    );
+    connection?.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 200,
+        clientY: 120,
+      }),
+    );
+
+    expect(requested).toHaveBeenCalledOnce();
+    expect(requested.mock.calls[0][0].target).toEqual({
+      kind: 'connection',
+      connectionId: 'custom-to-default',
+    });
+    expect(requested.mock.calls[0][0].selection).toEqual({
+      nodeIds: new Set(),
+      connectionIds: new Set(['custom-to-default']),
+    });
+  });
+
+  it('does not intercept context menus unless enabled or while readonly', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    const requested = vi.fn();
+    fixture.componentInstance.contextMenuRequested.subscribe(requested);
+    const node = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[data-node-id="custom"]',
+    );
+    const disabledEvent = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+    });
+    node?.dispatchEvent(disabledEvent);
+
+    fixture.componentRef.setInput('contextMenuEnabled', true);
+    fixture.componentRef.setInput('mode', 'readonly');
+    fixture.detectChanges();
+    const readonlyEvent = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+    });
+    node?.dispatchEvent(readonlyEvent);
+
+    expect(disabledEvent.defaultPrevented).toBe(false);
+    expect(readonlyEvent.defaultPrevented).toBe(false);
+    expect(requested).not.toHaveBeenCalled();
+  });
+
+  it.each(['inspect', 'readonly'] as const)(
+    'rejects automatic layout requests in %s mode',
+    async (mode) => {
+      const calculate = vi.fn<TngFlowLayoutEngine['calculate']>(() => Promise.resolve([]));
+      const fixture = TestBed.createComponent(TngFlowEditorComponent);
+      fixture.componentRef.setInput('definition', definition);
+      fixture.componentRef.setInput('layoutEngine', { calculate });
+      fixture.componentRef.setInput('mode', mode);
+      fixture.componentRef.setInput('fitOnInit', false);
+      fixture.detectChanges();
+      const harness = fixture.componentInstance as unknown as EditorEventHarness;
+      harness.onReady();
+
+      await expect(fixture.componentInstance.requestAutoLayout()).resolves.toBe(false);
+      expect(calculate).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['inspect', 'readonly'] as const)(
+    'rejects node arrangement requests in %s mode',
+    (mode) => {
+      const fixture = TestBed.createComponent(TngFlowEditorComponent);
+      fixture.componentRef.setInput('definition', definition);
+      fixture.componentRef.setInput('selection', {
+        nodeIds: new Set(['custom', 'default']),
+        connectionIds: new Set<string>(),
+      });
+      fixture.componentRef.setInput('mode', mode);
+      fixture.componentRef.setInput('fitOnInit', false);
+      fixture.detectChanges();
+      const harness = fixture.componentInstance as unknown as EditorEventHarness;
+      harness.onReady();
+      const requested = vi.fn<(request: TngFlowNodesArrangementRequest) => void>();
+      fixture.componentInstance.nodesArrangementRequested.subscribe(requested);
+
+      expect(fixture.componentInstance.requestNodeAlignment('left')).toBe(false);
+      expect(fixture.componentInstance.requestNodeDistribution('horizontal')).toBe(false);
+      expect(requested).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps smart guides opt-in and converts screen thresholds to canvas coordinates', async () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('viewport', { position: { x: 0, y: 0 }, scale: 2 });
+    fixture.componentRef.setInput('smartGuides', {
+      enabled: true,
+      alignmentThreshold: 20,
+      spacingThreshold: 30,
+      disableModifier: 'alt',
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const lines = fixture.debugElement.query(By.css('f-magnetic-lines'));
+    const rects = fixture.debugElement.query(By.css('f-magnetic-rects'));
+    expect(lines.componentInstance.threshold()).toBe(10);
+    expect(rects.componentInstance.alignThreshold()).toBe(10);
+    expect(rects.componentInstance.spacingThreshold()).toBe(15);
+
+    fixture.componentRef.setInput('mode', 'inspect');
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('f-magnetic-lines'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('f-magnetic-rects'))).toBeNull();
+  });
+
+  it('renders and emits controlled intents without mutating a deeply frozen definition', () => {
+    const frozenDefinition = structuredClone(definition);
+    const freezeRecursively = (value: unknown): void => {
+      if (typeof value !== 'object' || value === null || Object.isFrozen(value)) {
+        return;
+      }
+      for (const nested of Object.values(value)) {
+        freezeRecursively(nested);
+      }
+      Object.freeze(value);
+    };
+    freezeRecursively(frozenDefinition);
+    const before = JSON.stringify(frozenDefinition);
+
+    const fixture = TestBed.createComponent(TngFlowEditorComponent<{ summary: string }>);
+    fixture.componentRef.setInput('definition', frozenDefinition);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const moved = vi.fn<(event: TngFlowNodesMovedEvent) => void>();
+    fixture.componentInstance.nodesMoved.subscribe(moved);
+    const harness = fixture.componentInstance as unknown as EditorEventHarness;
+    harness.onMoveNodes(new FMoveNodesEvent([{ id: 'custom', position: { x: 160, y: 192 } }]));
+
+    expect(moved).toHaveBeenCalledWith({
+      nodes: [{ id: 'custom', position: { x: 160, y: 192 } }],
+    });
+    expect(JSON.stringify(frozenDefinition)).toBe(before);
+    expect(frozenDefinition.nodes[0].position).toEqual({ x: 40, y: 80 });
+    expect(Object.isFrozen(frozenDefinition)).toBe(true);
+    expect(Object.isFrozen(frozenDefinition.nodes)).toBe(true);
+    expect(Object.isFrozen(frozenDefinition.connections[0].source)).toBe(true);
+  });
+
   it('renders default nodes, consumer templates, and editor-owned ports', () => {
     const fixture = TestBed.createComponent(FlowEditorHost);
     fixture.detectChanges();
@@ -267,6 +698,94 @@ describe('TngFlowEditorComponent', () => {
     expect(host.querySelector('#custom-to-locked')?.classList).toContain(
       'f-connection-reassign-disabled',
     );
+  });
+
+  it('renders an accessible default connection label without changing the owned path', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('connections', labelledConnections);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const connection = host.querySelector<HTMLElement>('[data-connection-id="custom-to-default"]');
+    const label = connection?.querySelector<HTMLElement>('.tng-flow-editor__connection-label');
+    const content = connection?.querySelector<HTMLElement>('[data-connection-content]');
+
+    expect(connection?.getAttribute('aria-label')).toBe(labelledConnections[0].label);
+    expect(connection?.getAttribute('aria-description')).toBe(labelledConnections[0].description);
+    expect(label?.textContent?.trim()).toBe(labelledConnections[0].label);
+    expect(label?.getAttribute('title')).toBe(labelledConnections[0].label);
+    expect(content?.classList.contains('f-connection-content')).toBe(true);
+    expect(connection?.querySelectorAll('.f-connection-path')).toHaveLength(1);
+    expect(connection?.querySelector('[data-testid="custom-connection-label"]')).toBeNull();
+  });
+
+  it('keeps unlabeled connections backward compatible and gives them endpoint names', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'custom-to-default',
+        source: { nodeId: 'custom', portId: 'custom-output' },
+        target: { nodeId: 'default', portId: 'default-input' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const connection = host.querySelector<HTMLElement>('[data-connection-id="custom-to-default"]');
+
+    expect(connection?.querySelector('[data-connection-content]')).toBeNull();
+    expect(connection?.getAttribute('aria-label')).toBe(
+      'Connection from Custom tool output port Result to Default model input port Prompt',
+    );
+    expect(connection?.querySelectorAll('.f-connection-path')).toHaveLength(1);
+  });
+
+  it('provides runtime, validation, mode, and controlled selection to connection templates', () => {
+    const fixture = TestBed.createComponent(FlowConnectionTemplateHost);
+    fixture.componentInstance.selection.set({
+      nodeIds: new Set(),
+      connectionIds: new Set(['custom-to-default']),
+    });
+    fixture.componentInstance.presentation.set({
+      connections: {
+        'custom-to-default': { status: 'active', highlighted: true },
+      },
+    });
+    fixture.componentInstance.validation.set({
+      issues: [
+        {
+          id: 'route-warning',
+          code: 'review-route',
+          severity: 'warning',
+          message: 'Review the approval route.',
+          target: { kind: 'connection', connectionId: 'custom-to-default' },
+        },
+      ],
+    });
+    fixture.componentInstance.mode.set('inspect');
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const connection = host.querySelector<HTMLElement>('[data-connection-id="custom-to-default"]');
+    const customLabel = connection?.querySelector<HTMLElement>(
+      '[data-testid="custom-connection-label"]',
+    );
+    const content = connection?.querySelector<HTMLElement>('[data-connection-content]');
+
+    expect(customLabel?.textContent?.trim()).toBe(labelledConnections[0].label);
+    expect(customLabel?.getAttribute('data-status')).toBe('active');
+    expect(customLabel?.getAttribute('data-validation')).toBe('warning');
+    expect(customLabel?.getAttribute('data-issue-count')).toBe('1');
+    expect(customLabel?.getAttribute('data-mode')).toBe('inspect');
+    expect(customLabel?.hasAttribute('data-selected')).toBe(true);
+    expect(content?.querySelectorAll('.f-connection-path')).toHaveLength(0);
+    expect(connection?.querySelectorAll('.f-connection-path')).toHaveLength(1);
+    expect(content?.querySelector('tng-flow-validation-badge')).not.toBeNull();
+    expect(content?.querySelector('[data-testid="custom-connection-action"]')).not.toBeNull();
   });
 
   it('projects connection motion and validation onto TailNG data attributes', () => {
@@ -994,5 +1513,237 @@ describe('TngFlowEditorComponent', () => {
       'Overview simplified',
     );
     expect(shell?.querySelector<HTMLElement>('f-minimap')?.style.pointerEvents).toBe('auto');
+  });
+
+  it('places connected endpoints on facing borders in nearest-border mode', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'nearest-border');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'source',
+        type: 'step',
+        name: 'Source',
+        position: { x: 0, y: 0 },
+        ports: [
+          { id: 'out', direction: 'output', kind: 'data', name: 'Start' },
+          { id: 'create-out', direction: 'output', kind: 'data', multiple: true },
+        ],
+      },
+      {
+        id: 'target',
+        type: 'step',
+        name: 'Target',
+        position: { x: 400, y: 0 },
+        ports: [
+          { id: 'in', direction: 'input', kind: 'data', name: 'End' },
+          { id: 'create-in', direction: 'input', kind: 'data', multiple: true },
+        ],
+      },
+    ]);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'source-to-target',
+        source: { nodeId: 'source', portId: 'out' },
+        target: { nodeId: 'target', portId: 'in' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const sourceOut = host.querySelector<HTMLElement>(
+      '[data-node-id="source"] > [data-port-id="out"]',
+    );
+    const targetIn = host.querySelector<HTMLElement>(
+      '[data-node-id="target"] > [data-port-id="in"]',
+    );
+
+    expect(sourceOut?.getAttribute('data-side')).toBe('right');
+    expect(targetIn?.getAttribute('data-side')).toBe('left');
+    expect(sourceOut?.querySelector('.tng-flow-port__label')).toBeNull();
+    expect(targetIn?.querySelector('.tng-flow-port__label')).toBeNull();
+    expect(fixture.componentInstance.useNearestBorderLayout()).toBe(true);
+  });
+
+  it('live-updates nearest-border sides from provisional move positions', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'nearest-border');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'source',
+        type: 'step',
+        name: 'Source',
+        position: { x: 0, y: 0 },
+        ports: [{ id: 'out', direction: 'output', kind: 'data' }],
+      },
+      {
+        id: 'target',
+        type: 'step',
+        name: 'Target',
+        position: { x: 400, y: 0 },
+        ports: [{ id: 'in', direction: 'input', kind: 'data' }],
+      },
+    ]);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'source-to-target',
+        source: { nodeId: 'source', portId: 'out' },
+        target: { nodeId: 'target', portId: 'in' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const editor = fixture.componentInstance as unknown as EditorEventHarness;
+    editor.onMoveNodes({
+      nodes: [{ id: 'target', position: { x: 0, y: 300 } }],
+    });
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(
+      host.querySelector<HTMLElement>('[data-node-id="source"] > [data-port-id="out"]')?.dataset[
+        'side'
+      ],
+    ).toBe('bottom');
+    expect(
+      host.querySelector<HTMLElement>('[data-node-id="target"] > [data-port-id="in"]')?.dataset[
+        'side'
+      ],
+    ).toBe('top');
+    // Declared port sides stay untouched; layout is an editor overlay.
+    expect(
+      fixture.componentInstance.nodes()?.find((node) => node.id === 'source')?.ports?.[0]?.side,
+    ).toBeUndefined();
+  });
+
+  it('equal-spaces mixed input and output endpoints on one nearest border', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'nearest-border');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'hub',
+        type: 'step',
+        name: 'Hub',
+        position: { x: 200, y: 0 },
+        ports: [
+          { id: 'in-from-left', direction: 'input', kind: 'data' },
+          { id: 'out-to-right', direction: 'output', kind: 'data' },
+        ],
+      },
+      {
+        id: 'left',
+        type: 'step',
+        name: 'Left',
+        position: { x: 0, y: 0 },
+        ports: [{ id: 'out', direction: 'output', kind: 'data' }],
+      },
+      {
+        id: 'right',
+        type: 'step',
+        name: 'Right',
+        position: { x: 400, y: 0 },
+        ports: [{ id: 'in', direction: 'input', kind: 'data' }],
+      },
+    ]);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'left-to-hub',
+        source: { nodeId: 'left', portId: 'out' },
+        target: { nodeId: 'hub', portId: 'in-from-left' },
+      },
+      {
+        id: 'hub-to-right',
+        source: { nodeId: 'hub', portId: 'out-to-right' },
+        target: { nodeId: 'right', portId: 'in' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const hubLeft = host.querySelectorAll<HTMLElement>('[data-node-id="hub"] > [data-side="left"]');
+    const hubRight = host.querySelectorAll<HTMLElement>(
+      '[data-node-id="hub"] > [data-side="right"]',
+    );
+
+    expect(hubLeft).toHaveLength(1);
+    expect(hubRight).toHaveLength(1);
+    expect(Number.parseFloat(hubLeft[0].style.top)).toBe(50);
+    expect(Number.parseFloat(hubRight[0].style.top)).toBe(50);
+  });
+
+  it('equal-spaces two inputs that resolve to the same nearest border', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'nearest-border');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'sink',
+        type: 'step',
+        name: 'Sink',
+        position: { x: 400, y: 0 },
+        ports: [
+          { id: 'in-a', direction: 'input', kind: 'data' },
+          { id: 'in-b', direction: 'input', kind: 'data' },
+        ],
+      },
+      {
+        id: 'a',
+        type: 'step',
+        name: 'A',
+        position: { x: 0, y: -40 },
+        ports: [{ id: 'out', direction: 'output', kind: 'data' }],
+      },
+      {
+        id: 'b',
+        type: 'step',
+        name: 'B',
+        position: { x: 0, y: 40 },
+        ports: [{ id: 'out', direction: 'output', kind: 'data' }],
+      },
+    ]);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'a-to-sink',
+        source: { nodeId: 'a', portId: 'out' },
+        target: { nodeId: 'sink', portId: 'in-a' },
+      },
+      {
+        id: 'b-to-sink',
+        source: { nodeId: 'b', portId: 'out' },
+        target: { nodeId: 'sink', portId: 'in-b' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const leftPorts = host.querySelectorAll<HTMLElement>(
+      '[data-node-id="sink"] > [data-side="left"]',
+    );
+    expect(leftPorts).toHaveLength(2);
+    expect(Number.parseFloat(leftPorts[0].style.top)).toBeCloseTo(100 / 3);
+    expect(Number.parseFloat(leftPorts[1].style.top)).toBeCloseTo(200 / 3);
+  });
+
+  it('keeps static-ports labels and declared sides by default', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'labeled',
+        type: 'step',
+        name: 'Labeled',
+        position: { x: 0, y: 0 },
+        ports: [{ id: 'start', direction: 'input', kind: 'data', name: 'Start', side: 'top' }],
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const port = host.querySelector<HTMLElement>('[data-node-id="labeled"] > [data-port-id="start"]');
+    expect(port?.getAttribute('data-side')).toBe('top');
+    expect(port?.querySelector('.tng-flow-port__label')?.textContent).toContain('Start');
+    expect(host.querySelector('f-connection-marker-arrow')).toBeNull();
   });
 });

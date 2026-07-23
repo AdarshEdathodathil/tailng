@@ -25,6 +25,10 @@ import {
   type TngOverlayPlacement,
   type TngOverlayRect,
 } from '@tailng-ui/cdk';
+import {
+  clearOverlayOwnerId,
+  stampOverlayOwnerId,
+} from '../../overlay/_shared/tng-overlay-ownership';
 import type { TngDatepickerAttributeMap } from './datepicker.types';
 
 type TngDatepickerOverlayController = Readonly<{
@@ -486,6 +490,8 @@ export class TngDatepickerOverlay {
     this.setupRepositionListeners();
     this.setupScrollLock(anchor);
 
+    stampOverlayOwnerId(overlay, this.findDatepickerAnchorEl() ?? overlay);
+
     if (overlay.parentNode !== this.ownerDocument.body) {
       this.ownerDocument.body.appendChild(overlay);
     }
@@ -519,6 +525,7 @@ export class TngDatepickerOverlay {
     this.teardownScrollLock();
     this.resolvedPlacement.set(this.resolvePlacement().side === 'top' ? 'top' : 'bottom');
     this.clearPortalledThemeVars();
+    clearOverlayOwnerId(overlay);
     clearFixedPortalledOverlayBaseStyles(overlay);
     overlay.style.maxHeight = '';
     overlay.style.maxWidth = '';
