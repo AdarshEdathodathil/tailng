@@ -12,5 +12,9 @@ import { FCreateConnectionSession } from '@foblex/flow';
   exportAs: 'tngFlowFoblexA11yBridge',
 })
 export class TngFlowFoblexA11yBridgeDirective {
-  public readonly connectionSession = inject(FCreateConnectionSession);
+  /**
+   * Typed as `object` so Foblex does not leak into published `.d.ts` files.
+   * The editor unwraps this to `FCreateConnectionSession` privately.
+   */
+  public readonly connectionSession: object = inject(FCreateConnectionSession);
 }

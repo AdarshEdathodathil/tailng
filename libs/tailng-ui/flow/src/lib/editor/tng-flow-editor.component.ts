@@ -359,7 +359,7 @@ type ContextMenuInvocation = Readonly<{
     {
       provide: F_A11Y_CONFIG,
       useFactory: (config: Readonly<TngFlowKeyboardConfig>): IFA11yResolvedConfig =>
-        config.foblexConfig,
+        config.foblexConfig as IFA11yResolvedConfig,
       deps: [TngFlowKeyboardConfig],
     },
   ],
@@ -409,7 +409,7 @@ export class TngFlowEditorComponent<
   private readonly measuredNodeSizes = signal<ReadonlyMap<string, TngFlowSize>>(new Map());
 
   private get connectionSession(): FCreateConnectionSession {
-    return this.foblexA11yBridge().connectionSession;
+    return this.foblexA11yBridge().connectionSession as FCreateConnectionSession;
   }
 
   public readonly definition = input<TngFlowDefinition<TData, TConnectionData> | null>(null);
