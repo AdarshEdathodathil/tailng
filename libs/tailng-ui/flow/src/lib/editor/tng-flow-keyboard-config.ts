@@ -39,7 +39,11 @@ const TNG_FLOW_A11Y_MESSAGES: IFA11yResolvedConfig['messages'] = {
 export class TngFlowKeyboardConfig {
   private options = DEFAULT_OPTIONS;
 
-  public readonly foblexConfig: IFA11yResolvedConfig;
+  /**
+   * Typed as `object` so Foblex does not leak into published `.d.ts` files.
+   * Providers unwrap this to `IFA11yResolvedConfig` privately.
+   */
+  public readonly foblexConfig: object;
 
   public constructor() {
     const readOptions = (): TngResolvedFlowKeyboardOptions => this.options;
