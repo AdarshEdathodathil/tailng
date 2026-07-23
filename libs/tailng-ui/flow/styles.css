@@ -1261,3 +1261,21 @@ f-flow .f-connection.f-connection-reassign-disabled .f-connection-drag-handle,
 .f-flow .f-connection.f-connection-reassign-disabled .f-connection-drag-handle {
   display: none;
 }
+
+/*
+ * Connection content is pointer-transparent by default so midpoint labels
+ * cannot cover the path or reassignment handles. Explicitly interactive
+ * controls projected by a consumer opt back into hit testing.
+ */
+tng-flow-editor .tng-flow-editor__connection-template :is(input,
+textarea,
+select,
+button,
+a[href],
+audio[controls],
+video[controls],
+summary,
+[contenteditable]:not([contenteditable=false]),
+[tabindex]:not([tabindex="-1"])) {
+  pointer-events: auto;
+}

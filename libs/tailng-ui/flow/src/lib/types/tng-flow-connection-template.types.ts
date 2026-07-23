@@ -9,6 +9,5 @@ export type TngFlowConnectionTemplateContext<TData = unknown> = Readonly<{
   view: TngFlowResolvedConnectionView;
   issues: readonly TngFlowValidationIssue[];
   mode: TngFlowEditorMode;
-  readonly: boolean;
   selected: boolean;
 }>;

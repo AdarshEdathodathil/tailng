@@ -423,6 +423,8 @@ function sanitizeConnection<TConnectionData>(
     id,
     source,
     target,
+    label: optionalString(rawConnection, 'label'),
+    description: optionalString(rawConnection, 'description'),
     data: rawConnection['data'] as TConnectionData | undefined,
     disabled: optionalBoolean(rawConnection, 'disabled'),
     reassignable: optionalBoolean(rawConnection, 'reassignable'),

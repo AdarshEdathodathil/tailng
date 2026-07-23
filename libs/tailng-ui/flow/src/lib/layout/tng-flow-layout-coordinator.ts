@@ -1,3 +1,8 @@
+import {
+  isTngFlowGridEnabled,
+  normalizeTngFlowCoordinate,
+  snapTngFlowPoint,
+} from '../geometry/tng-flow-position';
 import type {
   TngFlowAutoLayoutOptions,
   TngFlowLayoutEngine,
@@ -144,23 +149,16 @@ function findLockedAnchorOffset<TNodeData, TConnectionData>(
 }
 
 function normalizePosition(point: TngFlowPoint, policy: TngFlowLayoutPolicy): TngFlowPoint {
-  const canSnap = policy.snapToGrid && Number.isFinite(policy.gridSize) && policy.gridSize > 0;
-  return {
-    x: normalizeCoordinate(
-      canSnap ? Math.round(point.x / policy.gridSize) * policy.gridSize : point.x,
-    ),
-    y: normalizeCoordinate(
-      canSnap ? Math.round(point.y / policy.gridSize) * policy.gridSize : point.y,
-    ),
-  };
+  return policy.snapToGrid && isTngFlowGridEnabled(policy.gridSize)
+    ? snapTngFlowPoint(point, policy.gridSize)
+    : {
+        x: normalizeTngFlowCoordinate(point.x),
+        y: normalizeTngFlowCoordinate(point.y),
+      };
 }
 
 function translatePoint(point: TngFlowPoint, offset: TngFlowPoint): TngFlowPoint {
   return { x: point.x + offset.x, y: point.y + offset.y };
-}
-
-function normalizeCoordinate(value: number): number {
-  return Math.round(value * 1000) / 1000;
 }
 
 function isFinitePoint(point: TngFlowPoint): boolean {

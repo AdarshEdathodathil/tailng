@@ -13,12 +13,29 @@
   border: 1px solid var(--tng-flow-border-color, var(--tng-semantic-border-default, #e5e7eb));
   border-radius: var(--tng-flow-border-radius, 0.75rem);
   background: var(--tng-flow-background, var(--tng-semantic-background-canvas, #f8fafc));
+  --ff-magnetic-line-color: var(
+    --tng-flow-smart-guide-color,
+    var(--tng-semantic-accent-brand, #2563eb)
+  );
+  --ff-magnetic-rect-fill: var(
+    --tng-flow-smart-guide-spacing-fill,
+    color-mix(in srgb, var(--tng-semantic-accent-brand, #2563eb) 10%, transparent)
+  );
+  --ff-magnetic-rect-border-color: var(
+    --tng-flow-smart-guide-spacing-border,
+    color-mix(in srgb, var(--tng-semantic-accent-brand, #2563eb) 30%, transparent)
+  );
 }
 
 .tng-flow-editor > f-flow {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.tng-flow-editor > f-flow:focus-visible {
+  outline: 2px solid var(--tng-flow-focus-color, var(--tng-semantic-focus-ring, #2563eb));
+  outline-offset: -3px;
 }
 
 .tng-flow-editor > f-flow > f-canvas {
@@ -41,8 +58,14 @@
 .tng-flow-editor__node.f-selected .tng-flow-editor__node-content,
 .tng-flow-editor__node--selected .tng-flow-editor__node-content {
   border-radius: 0.75rem;
-  outline: 2px solid var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
-  outline-offset: 3px;
+  outline-color: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
+  outline-style: solid;
+  outline-width: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
+  outline-offset: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
+}
+
+.tng-flow-editor__connection.f-selected {
+  --ff-connection-width: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
 }
 
 .tng-flow-editor__node[data-validation='error'] .tng-flow-editor__node-content {
@@ -105,8 +128,10 @@
 }
 
 .tng-flow-editor__drag-handle:focus-visible {
-  outline: 2px solid var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
-  outline-offset: 2px;
+  outline-color: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
+  outline-style: solid;
+  outline-width: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
+  outline-offset: calc(2px * var(--tng-flow-focus-ring-compensation, 1));
 }
 
 .tng-flow-editor__port {
@@ -129,6 +154,25 @@
   box-sizing: border-box;
   transform: none;
   pointer-events: all;
+}
+
+.tng-flow-editor .tng-flow-editor__port-socket:focus-visible,
+.tng-flow-editor .tng-flow-editor__port-socket[data-keyboard-connection-target] {
+  border-radius: 999px;
+  outline-color: var(--tng-flow-focus-color, var(--tng-semantic-focus-ring, #2563eb));
+  outline-style: solid;
+  outline-width: calc(4px * var(--tng-flow-focus-ring-compensation, 1));
+  outline-offset: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
+}
+
+.tng-flow-editor .tng-flow-editor__port-socket[data-keyboard-connection-source] {
+  border-radius: 999px;
+  box-shadow: 0 0 0 calc(4px * var(--tng-flow-focus-ring-compensation, 1))
+    color-mix(
+      in srgb,
+      var(--tng-flow-focus-color, var(--tng-semantic-focus-ring, #2563eb)) 35%,
+      transparent
+    );
 }
 
 .tng-flow-editor__controls {
@@ -225,15 +269,48 @@
 }
 
 @media (forced-colors: active) {
+  .tng-flow-editor > f-flow:focus-visible,
+  .tng-flow-editor .tng-flow-editor__port-socket:focus-visible,
+  .tng-flow-editor .tng-flow-editor__port-socket[data-keyboard-connection-target] {
+    outline-color: Highlight;
+  }
+
   .tng-flow-editor__minimap-shell:focus-visible {
     outline: 2px solid Highlight;
     outline-offset: 2px;
     box-shadow: none;
   }
+
+  .tng-flow-editor {
+    --ff-magnetic-line-color: Highlight;
+    --ff-magnetic-rect-fill: transparent;
+    --ff-magnetic-rect-border-color: Highlight;
+  }
+}
+
+.tng-flow-editor__connection-content {
+  display: inline-flex;
+  gap: var(--tng-flow-connection-content-gap, 0.375rem);
+  align-items: center;
+  max-inline-size: calc(
+    var(--tng-flow-connection-label-max-width, 12rem) + var(--tng-flow-connection-badge-space, 2rem)
+  );
+  pointer-events: none;
+}
+
+.tng-flow-editor__connection-label,
+.tng-flow-editor__connection-template {
+  display: block;
+  min-inline-size: 0;
+  max-inline-size: var(--tng-flow-connection-label-max-width, 12rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tng-flow-editor__connection-badge {
   display: inline-flex;
+  flex: 0 0 auto;
   pointer-events: auto;
 }
 

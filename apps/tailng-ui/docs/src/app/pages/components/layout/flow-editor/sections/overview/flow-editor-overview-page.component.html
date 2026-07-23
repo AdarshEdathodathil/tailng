@@ -66,6 +66,7 @@
             [presentation]="presentation"
             [validation]="validation"
             [selection]="plainCssSelection()"
+            [smartGuides]="{ enabled: true, disableModifier: 'alt' }"
             [showMinimap]="true"
             (nodeCreateRequested)="onNodeCreateRequested($event, 'plain-css')"
             (nodesMoved)="onNodesMoved($event, 'plain-css')"
@@ -122,6 +123,7 @@
             [presentation]="presentation"
             [validation]="validation"
             [selection]="tailwindSelection()"
+            [smartGuides]="{ enabled: true, disableModifier: 'alt' }"
             [showMinimap]="true"
             (nodeCreateRequested)="onNodeCreateRequested($event, 'tailwind-css')"
             (nodesMoved)="onNodesMoved($event, 'tailwind-css')"
@@ -196,7 +198,23 @@
   <section id="accessibility-baseline" class="docs-overview-block">
     <h3>Accessibility baseline</h3>
     <ul class="docs-overview-list">
-      <li>The editor installs Foblex keyboard accessibility with <code>withA11y()</code>.</li>
+      <li>
+        The editor installs Foblex keyboard accessibility with <code>withA11y()</code> for spatial,
+        topology, selection, grab/move/drop, cancellation, and controlled deletion behavior.
+      </li>
+      <li>
+        Press <kbd>C</kbd> on one selected node to choose an eligible source and
+        validator-compatible target port with arrows, then confirm with Enter or Space. Port and
+        connection status is announced throughout the operation.
+      </li>
+      <li>
+        Locked and disabled graph items are filtered, focus survives controlled updates, and focus
+        indicators remain visible across the supported zoom range.
+      </li>
+      <li>
+        Native form controls and focusable custom-template controls keep their native keyboard
+        behavior; graph shortcuts do not intercept their events.
+      </li>
       <li>Every connector receives a node-, direction-, and port-aware accessible label.</li>
       <li>Viewport controls have text alternatives and visible keyboard focus.</li>
       <li>Reduced-motion preferences suppress nonessential animation.</li>

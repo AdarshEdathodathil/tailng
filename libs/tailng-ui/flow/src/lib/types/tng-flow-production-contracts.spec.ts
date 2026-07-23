@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
+import { alignTngFlowNodes, distributeTngFlowNodes } from '../../index';
 import type {
   TngFlowArrangementOperation,
   TngFlowConnection,
@@ -7,6 +8,7 @@ import type {
   TngFlowEditorCommandRequest,
   TngFlowLayoutEngine,
   TngFlowLayoutGraph,
+  TngFlowNodeBounds,
   TngFlowNodeMove,
   TngFlowNodesArrangementRequest,
   TngFlowNodesLayoutRequest,
@@ -91,6 +93,11 @@ describe('Flow production public contracts', () => {
   });
 
   it('uses measured bounds for arrangement contracts', () => {
+    const bounds: readonly TngFlowNodeBounds[] = [
+      { id: 'draft', position: { x: 0, y: 0 }, size: { width: 120, height: 60 } },
+      { id: 'review', position: { x: 260, y: 120 }, size: { width: 160, height: 80 } },
+      { id: 'publish', position: { x: 520, y: 40 }, size: { width: 120, height: 60 } },
+    ];
     const operation: TngFlowArrangementOperation = {
       kind: 'align',
       alignment: 'horizontal-center',
@@ -109,6 +116,13 @@ describe('Flow production public contracts', () => {
 
     expect(request.operation).toEqual(operation);
     expect(guides.disableModifier).toBe('alt');
+    expect(alignTngFlowNodes(bounds, 'top')).toEqual([
+      { id: 'publish', position: { x: 520, y: 0 } },
+      { id: 'review', position: { x: 260, y: 0 } },
+    ]);
+    expect(distributeTngFlowNodes(bounds, 'horizontal')).toEqual([
+      { id: 'review', position: { x: 240, y: 120 } },
+    ]);
   });
 
   it('adds label metadata without changing connection identity or endpoints', () => {
@@ -126,5 +140,15 @@ describe('Flow production public contracts', () => {
     expectTypeOf<
       TngFlowConnectionTemplateContext<{ condition: string }>['connection']
     >().toEqualTypeOf<TngFlowConnection<{ condition: string }>>();
+    expectTypeOf<TngFlowConnectionTemplateContext<{ condition: string }>>().toEqualTypeOf<
+      Readonly<{
+        $implicit: TngFlowConnection<{ condition: string }>;
+        connection: TngFlowConnection<{ condition: string }>;
+        view: TngFlowConnectionTemplateContext['view'];
+        issues: TngFlowConnectionTemplateContext['issues'];
+        mode: TngFlowConnectionTemplateContext['mode'];
+        selected: boolean;
+      }>
+    >();
   });
 });

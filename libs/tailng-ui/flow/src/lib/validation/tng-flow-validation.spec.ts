@@ -32,6 +32,19 @@ describe('validateTngFlow', () => {
     expect(validateTngFlow(validNodes, validConnections)).toEqual([]);
   });
 
+  it('preserves additive connection labels and descriptions during analysis', () => {
+    const connection: TngFlowConnection = {
+      ...validConnections[0],
+      label: 'Approved',
+      description: 'Continue when the review is approved.',
+    };
+
+    expect(analyzeTngFlow(validNodes, [connection]).connections[0]).toMatchObject({
+      label: 'Approved',
+      description: 'Continue when the review is approved.',
+    });
+  });
+
   it('scopes reusable port ids to their owning nodes', () => {
     const nodes: readonly TngFlowNode[] = [
       { ...validNodes[0], outputs: [{ id: 'result' }] },

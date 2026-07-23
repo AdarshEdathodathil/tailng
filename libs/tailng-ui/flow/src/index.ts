@@ -1,4 +1,6 @@
 export { TngFlowEditorComponent } from './lib/editor/tng-flow-editor.component';
+export { alignTngFlowNodes, distributeTngFlowNodes } from './lib/arrangement/tng-flow-arrangement';
+export { TngFlowConnectionTemplateDirective } from './lib/connection-template/tng-flow-connection-template.directive';
 export { TngFlowNodeComponent, resolveTngFlowStatusTone } from './lib/node/tng-flow-node.component';
 export type { TngFlowStatusTone } from './lib/node/tng-flow-node.component';
 export { TngFlowPortComponent } from './lib/port/tng-flow-port.component';

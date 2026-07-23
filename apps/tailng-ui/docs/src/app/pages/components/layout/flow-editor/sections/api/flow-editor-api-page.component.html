@@ -2,7 +2,7 @@
   <section class="docs-overview-block">
     <h2 class="docs-overview-title">Flow Editor API</h2>
     <p class="docs-overview-lead">
-      Import the editor, template directive, graph types, event types, and validation helper from
+      Import the editor, template directives, graph types, event types, and validation helper from
       <code>&#64;tailng-ui/flow</code>.
     </p>
   </section>
@@ -88,6 +88,44 @@
             <td>Runs after built-in connection validation for application-specific rules.</td>
           </tr>
           <tr>
+            <td><code>keyboardOptions</code></td>
+            <td><code>TngFlowKeyboardOptions | null</code></td>
+            <td><code>null</code></td>
+            <td>
+              Overrides normal and coarse canvas movement steps and the keys that enter connection
+              authoring. Defaults resolve from the active grid policy and <code>['c']</code>.
+            </td>
+          </tr>
+          <tr>
+            <td><code>smartGuides</code></td>
+            <td><code>TngFlowSmartGuidesOptions | null</code></td>
+            <td><code>null</code></td>
+            <td>
+              Opts into magnetic alignment and spacing guides. Thresholds are screen pixels and
+              <code>disableModifier</code> suppresses guides for the complete drag that starts with
+              that modifier pressed.
+            </td>
+          </tr>
+          <tr>
+            <td><code>commandShortcuts</code></td>
+            <td><code>boolean | readonly TngFlowEditorCommand[]</code></td>
+            <td><code>false</code></td>
+            <td>
+              Opts into all mode-allowed command shortcuts or an explicit allow-list. This affects
+              keyboard interception only; direct <code>requestCommand()</code> calls still follow
+              the active mode.
+            </td>
+          </tr>
+          <tr>
+            <td><code>contextMenuEnabled</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>
+              Replaces the native graph context menu with controlled
+              <code>contextMenuRequested</code> events in edit and inspect modes.
+            </td>
+          </tr>
+          <tr>
             <td><code>readonly</code> <small>(deprecated)</small></td>
             <td><code>boolean</code></td>
             <td><code>false</code></td>
@@ -138,7 +176,10 @@
             <td><code>snapToGrid</code></td>
             <td><code>boolean</code></td>
             <td><code>false</code></td>
-            <td>Snaps node dragging to <code>gridSize</code>.</td>
+            <td>
+              Snaps node movement to <code>gridSize</code>. Multi-node keyboard movement applies one
+              shared snapped delta so relative geometry is preserved.
+            </td>
           </tr>
           <tr>
             <td><code>gridSize</code></td>
@@ -205,9 +246,33 @@
             <td>When unlocked selected nodes are requested for deletion.</td>
           </tr>
           <tr>
+            <td><code>nodesArrangementRequested</code></td>
+            <td><code>TngFlowNodesArrangementRequest</code></td>
+            <td>
+              Once after a successful selected-node alignment or distribution request. Contains
+              position-only moves and never mutates the controlled graph.
+            </td>
+          </tr>
+          <tr>
             <td><code>selectionChange</code></td>
             <td><code>TngFlowSelection</code></td>
             <td>When the user requests a different controlled selection.</td>
+          </tr>
+          <tr>
+            <td><code>commandRequested</code></td>
+            <td><code>TngFlowEditorCommandRequest</code></td>
+            <td>
+              After an enabled shortcut or successful <code>requestCommand()</code> call. The
+              application owns history, clipboard data, validation, ids, and mutation.
+            </td>
+          </tr>
+          <tr>
+            <td><code>contextMenuRequested</code></td>
+            <td><code>TngFlowContextMenuRequest</code></td>
+            <td>
+              After an enabled pointer or keyboard context request, with target, source, client and
+              canvas coordinates, and the proposed controlled selection.
+            </td>
           </tr>
           <tr>
             <td><code>connectionRejected</code></td>
@@ -293,8 +358,9 @@
             <td><code>id</code>, <code>source</code>, <code>target</code></td>
             <td>
               Source and target are <code>TngFlowEndpoint</code> values containing
-              <code>nodeId</code> and <code>portId</code>. Connections also support typed data,
-              disabled, reassignable, selectable, and line type.
+              <code>nodeId</code> and <code>portId</code>. Connections also support
+              <code>label</code>, <code>description</code>, typed data, disabled, reassignable,
+              selectable, and line type.
             </td>
           </tr>
           <tr>
@@ -327,6 +393,14 @@
             <td><code>TngFlowNodeCreateRequest&lt;TData&gt;</code></td>
             <td><code>item</code>, <code>position</code>, <code>source</code></td>
             <td>Controlled request using a top-left canvas position.</td>
+          </tr>
+          <tr>
+            <td><code>TngFlowNodeBounds</code></td>
+            <td><code>id</code>, <code>position</code>, <code>size</code></td>
+            <td>
+              Measured unscaled canvas geometry accepted by the pure alignment and distribution
+              utilities. Optional disabled and locked flags control participation.
+            </td>
           </tr>
         </tbody>
       </table>
@@ -448,6 +522,60 @@
     </div>
   </section>
 
+  <section id="connection-template-context" class="docs-overview-block">
+    <h3>Connection labels and template context</h3>
+    <p>
+      A connection with <code>label</code> receives a default, visually truncated midpoint label
+      while retaining its complete accessible name. <code>description</code> supplies additional
+      accessible and hover context. Add <code>&lt;ng-template tngFlowConnection&gt;</code> to
+      replace only the default label content. Flow Editor retains the path, true-path midpoint
+      shell, validation badge, selection, reassignment, and accessibility behavior.
+    </p>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Context value</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>$implicit</code> / <code>connection</code></td>
+            <td><code>TngFlowConnection&lt;TConnectionData&gt;</code></td>
+            <td>Current application-owned connection record.</td>
+          </tr>
+          <tr>
+            <td><code>view</code></td>
+            <td><code>TngFlowResolvedConnectionView</code></td>
+            <td>Resolved runtime, presentation, selection, and validation state.</td>
+          </tr>
+          <tr>
+            <td><code>issues</code></td>
+            <td><code>readonly TngFlowValidationIssue[]</code></td>
+            <td>Indexed validation issues targeting this connection.</td>
+          </tr>
+          <tr>
+            <td><code>mode</code></td>
+            <td><code>TngFlowEditorMode</code></td>
+            <td>The current edit, inspect, or readonly mode.</td>
+          </tr>
+          <tr>
+            <td><code>selected</code></td>
+            <td><code>boolean</code></td>
+            <td>Current controlled selection state.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The first connection-template contract deliberately omits <code>midpoint</code>. Foblex
+      positions the editor-owned shell at half the true path length for adaptive, Bézier, segmented,
+      and straight connections.
+    </p>
+  </section>
+
   <section id="palette-items" class="docs-overview-block">
     <h3>Palette items</h3>
     <p>
@@ -523,10 +651,74 @@
               Emits a controlled creation request, using viewport center when position is omitted.
             </td>
           </tr>
+          <tr>
+            <td><code>requestCommand(command, source?, canvasPosition?)</code></td>
+            <td>
+              Emits a mode-allowed controlled command request and returns whether it was accepted.
+              Paste and duplicate use the last pointer position or viewport centre when an explicit
+              canvas position is omitted.
+            </td>
+          </tr>
+          <tr>
+            <td><code>requestNodeAlignment(alignment, options?, source?)</code></td>
+            <td>
+              Measures selected rendered nodes and emits one controlled alignment request in edit
+              mode. Returns whether the request was accepted.
+            </td>
+          </tr>
+          <tr>
+            <td><code>requestNodeDistribution(axis, options?, source?)</code></td>
+            <td>
+              Measures selected rendered nodes and emits one controlled equal-gap distribution
+              request in edit mode. Returns whether the request was accepted.
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
     <p>Access these through <code>#editor="tngFlowEditor"</code> or <code>viewChild()</code>.</p>
+  </section>
+
+  <section id="alignment-and-smart-guides" class="docs-overview-block">
+    <h3>Alignment, distribution, and smart guides</h3>
+    <p>
+      <code>alignTngFlowNodes(bounds, alignment, options?)</code> and
+      <code>distributeTngFlowNodes(bounds, axis, options?)</code> are renderer-neutral pure
+      utilities. They accept measured, unscaled bounds and return stable position-only moves without
+      changing the input records. Disabled nodes are ignored; locked nodes are fixed anchors by
+      default or can be excluded with <code>lockedNodes: 'ignore'</code>.
+    </p>
+    <p>
+      Distribution uses equal edge-to-edge gaps for mixed-size nodes. Grid snapping is applied last,
+      so it deterministically wins when an exact guide or computed gap does not fall on the grid.
+      Editor smart-guide thresholds are specified in CSS-screen pixels and converted for the current
+      canvas scale, keeping the magnetic distance consistent at every zoom level.
+    </p>
+    <p>
+      Smart guides are disabled by default and render only in edit mode. A configured suppression
+      modifier is sampled on the initiating pointer down for the entire drag. Locked nodes remain
+      selectable TailNG anchors but are excluded from Foblex's movable selection.
+    </p>
+  </section>
+
+  <section id="commands-and-context-menus" class="docs-overview-block">
+    <h3>Commands and context menus</h3>
+    <p>
+      Command requests carry the current controlled selection and an optional canvas anchor. Copy is
+      available in edit and inspect modes; undo, redo, cut, paste, and duplicate are edit-only.
+      TailNG never reads or writes clipboard payloads and does not maintain history.
+    </p>
+    <p>
+      Context-menu targets distinguish canvas, node, connection, and port requests. Pointer requests
+      expose browser <code>clientPosition</code> coordinates for overlay placement and transformed
+      <code>canvasPosition</code> coordinates for graph actions. Keyboard requests use the active
+      graph element's visual centre or the viewport centre.
+    </p>
+    <p>
+      For an unselected selectable node or connection, <code>selectionChange</code> emits first in
+      the same interaction turn. <code>contextMenuRequested</code> then carries that proposed
+      selection even before the application writes it back.
+    </p>
   </section>
 
   <section id="validation" class="docs-overview-block">
