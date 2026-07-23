@@ -314,7 +314,7 @@ const tooltipTemplateCss = `:host {
   position: absolute;
   transform: translateX(-50%);
   white-space: nowrap;
-  z-index: 20;
+  z-index: var(--tng-tooltip-z-overlay, var(--tng-tooltip-overlay-z-index, var(--tng-z-overlay, 20)));
 }
 
 .tng-tooltip-content[data-side='top'] {

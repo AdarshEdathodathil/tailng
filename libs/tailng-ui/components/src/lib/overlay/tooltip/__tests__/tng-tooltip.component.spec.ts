@@ -1,11 +1,29 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   normalizeTngTooltipDelay,
   shouldCloseTngTooltipForKey,
   TngTooltipComponent,
 } from '../tng-tooltip.component';
+
+const TOOLTIP_Z_INDEX_CHAIN =
+  'var(--tng-tooltip-z-overlay, var(--tng-tooltip-overlay-z-index, var(--tng-z-overlay, 20)))';
+
+const tooltipComponentCss = readFileSync(
+  join(process.cwd(), 'libs/tailng-ui/components/src/lib/overlay/tooltip/tng-tooltip.component.css'),
+  'utf8',
+);
+
+const tooltipThemeContractCss = readFileSync(
+  join(
+    process.cwd(),
+    'libs/tailng-ui/theme/src/lib/component-contracts/utility/tooltip.css',
+  ),
+  'utf8',
+);
 
 function findTrigger(fixture: { nativeElement: HTMLElement }): HTMLButtonElement | null {
   return fixture.nativeElement.querySelector('.tng-tooltip-trigger') as HTMLButtonElement | null;
@@ -61,7 +79,50 @@ class TooltipHostComponent {
   readonly openChanges: boolean[] = [];
 }
 
+@Component({
+  imports: [TngTooltipComponent],
+  template: `<tng-tooltip style="--tng-tooltip-z-overlay: 42" text="Stacked" triggerLabel="Info" />`,
+})
+class TooltipComponentTokenHostComponent {}
+
+@Component({
+  imports: [TngTooltipComponent],
+  template: `<tng-tooltip style="--tng-z-overlay: 99" text="Global stack" triggerLabel="Info" />`,
+})
+class TooltipGlobalTokenHostComponent {}
+
+@Component({
+  imports: [TngTooltipComponent],
+  template: `<tng-tooltip style="--tng-tooltip-overlay-z-index: 55" text="Alias stack" triggerLabel="Info" />`,
+})
+class TooltipAliasTokenHostComponent {}
+
+@Component({
+  imports: [TngTooltipComponent],
+  template: `<tng-tooltip text="Default stack" triggerLabel="Info" />`,
+})
+class TooltipDefaultZIndexHostComponent {}
+
 describe('tng-tooltip component behavior', () => {
+  let tooltipStackStyleElement: HTMLStyleElement | null = null;
+
+  beforeAll(() => {
+    tooltipStackStyleElement = document.createElement('style');
+    // Unlayered selectors so jsdom applies the theme contract tokens reliably.
+    tooltipStackStyleElement.textContent = [
+      `tng-tooltip, [tngTooltip] {
+        --tng-tooltip-z-overlay: var(--tng-tooltip-overlay-z-index, var(--tng-z-overlay, 20));
+      }`,
+      `.tng-tooltip-content { z-index: ${TOOLTIP_Z_INDEX_CHAIN}; }`,
+    ].join('\n');
+    document.head.appendChild(tooltipStackStyleElement);
+  });
+
+  afterAll(() => {
+    tooltipStackStyleElement?.remove();
+    tooltipStackStyleElement = null;
+  });
+
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -260,5 +321,83 @@ describe('tng-tooltip component behavior', () => {
     expect(content?.getAttribute('data-side')).toBe('top');
     expect(content?.style.left).toBe('80px');
     expect(content?.style.top).toBe('90px');
+  });
+
+  it('declares the themed overlay z-index chain in component styles', () => {
+    expect(tooltipComponentCss).toContain(`z-index: ${TOOLTIP_Z_INDEX_CHAIN};`);
+    expect(tooltipThemeContractCss).toContain(
+      '--tng-tooltip-z-overlay:        var(--tng-tooltip-overlay-z-index, var(--tng-z-overlay, 20));',
+    );
+  });
+
+  it('uses the themed z-index chain with the component token', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [TooltipComponentTokenHostComponent],
+    }).createComponent(TooltipComponentTokenHostComponent);
+
+    await settle(fixture);
+
+    const tooltip = fixture.nativeElement.querySelector('tng-tooltip') as HTMLElement | null;
+    const content = findContent(fixture);
+    expect(tooltip).not.toBeNull();
+    expect(content).not.toBeNull();
+    expect(getComputedStyle(content!).zIndex).toBe(TOOLTIP_Z_INDEX_CHAIN);
+    expect(tooltip!.style.getPropertyValue('--tng-tooltip-z-overlay').trim()).toBe('42');
+    expect(getComputedStyle(tooltip!).getPropertyValue('--tng-tooltip-z-overlay').trim()).toBe('42');
+  });
+
+  it('falls back to the global overlay token when the component token is unset', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [TooltipGlobalTokenHostComponent],
+    }).createComponent(TooltipGlobalTokenHostComponent);
+
+    await settle(fixture);
+
+    const tooltip = fixture.nativeElement.querySelector('tng-tooltip') as HTMLElement | null;
+    const content = findContent(fixture);
+    expect(tooltip).not.toBeNull();
+    expect(content).not.toBeNull();
+    expect(getComputedStyle(content!).zIndex).toBe(TOOLTIP_Z_INDEX_CHAIN);
+    expect(tooltip!.style.getPropertyValue('--tng-z-overlay').trim()).toBe('99');
+    expect(getComputedStyle(tooltip!).getPropertyValue('--tng-z-overlay').trim()).toBe('99');
+    expect(getComputedStyle(tooltip!).getPropertyValue('--tng-tooltip-z-overlay').trim()).toBe(
+      'var(--tng-tooltip-overlay-z-index, var(--tng-z-overlay, 20))',
+    );
+  });
+
+  it('keeps the default overlay z-index when no overlay tokens are set', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [TooltipDefaultZIndexHostComponent],
+    }).createComponent(TooltipDefaultZIndexHostComponent);
+
+    await settle(fixture);
+
+    const tooltip = fixture.nativeElement.querySelector('tng-tooltip') as HTMLElement | null;
+    const content = findContent(fixture);
+    expect(tooltip).not.toBeNull();
+    expect(content).not.toBeNull();
+    expect(getComputedStyle(content!).zIndex).toBe(TOOLTIP_Z_INDEX_CHAIN);
+    expect(getComputedStyle(tooltip!).getPropertyValue('--tng-tooltip-z-overlay').trim()).toBe(
+      'var(--tng-tooltip-overlay-z-index, var(--tng-z-overlay, 20))',
+    );
+    expect(getComputedStyle(tooltip!).getPropertyValue('--tng-z-overlay').trim()).toBe('');
+  });
+
+  it('uses the overlay z-index alias token when the primary token is unset', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [TooltipAliasTokenHostComponent],
+    }).createComponent(TooltipAliasTokenHostComponent);
+
+    await settle(fixture);
+
+    const tooltip = fixture.nativeElement.querySelector('tng-tooltip') as HTMLElement | null;
+    const content = findContent(fixture);
+    expect(tooltip).not.toBeNull();
+    expect(content).not.toBeNull();
+    expect(getComputedStyle(content!).zIndex).toBe(TOOLTIP_Z_INDEX_CHAIN);
+    expect(tooltip!.style.getPropertyValue('--tng-tooltip-overlay-z-index').trim()).toBe('55');
+    expect(getComputedStyle(tooltip!).getPropertyValue('--tng-tooltip-overlay-z-index').trim()).toBe(
+      '55',
+    );
   });
 });

@@ -23,6 +23,15 @@ export class HeadlessTooltipStylingPageComponent implements OnDestroy {
     this.codeBlockTheme,
   );
   protected readonly stylingContractCode = [
+    '[tngTooltip] {',
+    '  --tng-tooltip-z-overlay: 1100;',
+    '}',
+    '',
+    '/* or app-wide */',
+    ':root {',
+    '  --tng-z-overlay: 1100;',
+    '}',
+    '',
     '[data-slot="tooltip-trigger"] {',
     '  border-radius: 0.7rem;',
     '  min-height: 2.1rem;',
