@@ -3,6 +3,8 @@ import { TngButtonComponent } from '@tailng-ui/components';
 import {
   TngFlowEditorComponent,
   TngFlowPaletteItemDirective,
+  materializeTngFlowEndpoint,
+  pruneUnusedTngFlowConnectionPorts,
   type TngFlowConnectionCandidate,
   type TngFlowConnectionCreateRequest,
   type TngFlowConnectionReconnectRequest,
@@ -10,7 +12,7 @@ import {
   type TngFlowConnectionsDeleteRequest,
   type TngFlowConnectionValidation,
   type TngFlowDefinition,
-  type TngFlowEndpoint,
+  type TngFlowEndpointMaterializeOptions,
   type TngFlowNode,
   type TngFlowNodeCreateRequest,
   type TngFlowNodePositionChange,
@@ -32,14 +34,33 @@ type BuilderNodeData = Readonly<{
 
 type BuilderDefinition = TngFlowDefinition<BuilderNodeData>;
 type BuilderPaletteItem = TngFlowPaletteItem<BuilderNodeData> & Readonly<{ data: BuilderNodeData }>;
-type MaterializedEndpoint = Readonly<{
-  endpoint: TngFlowEndpoint;
-  nodes: readonly TngFlowNode<BuilderNodeData>[];
-}>;
 
 const createInputPortId = '__builder-create-input__';
 const createOutputPortId = '__builder-create-output__';
 const connectionPortPrefix = 'connection-';
+const endpointMaterializeOptions: TngFlowEndpointMaterializeOptions = {
+  creatorPortIds: {
+    input: createInputPortId,
+    output: createOutputPortId,
+  },
+  connectionPortPrefix,
+  createPort: (portId, direction, portNumber, node) => {
+    const typed = node as TngFlowNode<BuilderNodeData>;
+    const name =
+      direction === 'input'
+        ? portNumber === 1
+          ? 'Input'
+          : `Input ${portNumber}`
+        : (typed.data?.outputs[portNumber - 1]?.name ?? `Output ${portNumber}`);
+    return {
+      id: portId,
+      name,
+      direction,
+      kind: 'data',
+      dataType: 'workflow-payload',
+    };
+  },
+};
 
 const emptySelection = (): TngFlowSelection => ({
   nodeIds: new Set<string>(),
@@ -492,8 +513,18 @@ export class ProfessionalFlowBuilderDemoComponent {
 
   protected createConnection(request: TngFlowConnectionCreateRequest): void {
     const definition = this.definition();
-    const source = this.materializeEndpoint(definition.nodes, request.source, 'output');
-    const target = this.materializeEndpoint(source.nodes, request.target, 'input');
+    const source = materializeTngFlowEndpoint(
+      definition.nodes,
+      request.source,
+      'output',
+      endpointMaterializeOptions,
+    );
+    const target = materializeTngFlowEndpoint(
+      source.nodes,
+      request.target,
+      'input',
+      endpointMaterializeOptions,
+    );
     const id = `builder-connection-${this.nextConnectionId++}`;
     this.commit(
       {
@@ -510,15 +541,28 @@ export class ProfessionalFlowBuilderDemoComponent {
 
   protected reconnectConnection(request: TngFlowConnectionReconnectRequest): void {
     const definition = this.definition();
-    const source = this.materializeEndpoint(definition.nodes, request.source, 'output');
-    const target = this.materializeEndpoint(source.nodes, request.target, 'input');
+    const source = materializeTngFlowEndpoint(
+      definition.nodes,
+      request.source,
+      'output',
+      endpointMaterializeOptions,
+    );
+    const target = materializeTngFlowEndpoint(
+      source.nodes,
+      request.target,
+      'input',
+      endpointMaterializeOptions,
+    );
     const connections = definition.connections.map((connection) =>
       connection.id === request.connectionId
         ? { ...connection, source: source.endpoint, target: target.endpoint }
         : connection,
     );
     this.commit(
-      this.pruneUnusedConnectionPorts({ ...definition, nodes: target.nodes, connections }),
+      pruneUnusedTngFlowConnectionPorts(
+        { ...definition, nodes: target.nodes, connections },
+        endpointMaterializeOptions,
+      ),
       `Updated the ${request.changedEndpoint} endpoint of the connection.`,
     );
   }
@@ -714,16 +758,19 @@ export class ProfessionalFlowBuilderDemoComponent {
     }
     const definition = this.definition();
     this.commit(
-      this.pruneUnusedConnectionPorts({
-        ...definition,
-        nodes: definition.nodes.filter((node) => !nodeIds.has(node.id)),
-        connections: definition.connections.filter(
-          (connection) =>
-            !connectionIds.has(connection.id) &&
-            !nodeIds.has(connection.source.nodeId) &&
-            !nodeIds.has(connection.target.nodeId),
-        ),
-      }),
+      pruneUnusedTngFlowConnectionPorts(
+        {
+          ...definition,
+          nodes: definition.nodes.filter((node) => !nodeIds.has(node.id)),
+          connections: definition.connections.filter(
+            (connection) =>
+              !connectionIds.has(connection.id) &&
+              !nodeIds.has(connection.source.nodeId) &&
+              !nodeIds.has(connection.target.nodeId),
+          ),
+        },
+        endpointMaterializeOptions,
+      ),
       message,
     );
     this.selection.set(emptySelection());
@@ -734,89 +781,6 @@ export class ProfessionalFlowBuilderDemoComponent {
       sourceNodeId === targetNodeId ||
       reachableNodes(targetNodeId, outgoingIndex(this.definition())).has(sourceNodeId)
     );
-  }
-
-  private materializeEndpoint(
-    nodes: readonly TngFlowNode<BuilderNodeData>[],
-    endpoint: TngFlowEndpoint,
-    direction: 'input' | 'output',
-  ): MaterializedEndpoint {
-    const creatorId = direction === 'input' ? createInputPortId : createOutputPortId;
-    if (endpoint.portId !== creatorId) {
-      return { endpoint, nodes };
-    }
-    const node = nodes.find((candidate) => candidate.id === endpoint.nodeId);
-    if (node === undefined) {
-      return { endpoint, nodes };
-    }
-    const portNumber = this.nextConnectionPortNumber(node, direction);
-    const portId = `${connectionPortPrefix}${direction}-${portNumber}`;
-    const portName = this.connectionPortName(node, direction, portNumber);
-    const port = connectedPort(portId, portName, direction);
-    return {
-      endpoint: { nodeId: endpoint.nodeId, portId },
-      nodes: nodes.map((candidate) =>
-        candidate.id === endpoint.nodeId
-          ? { ...candidate, ports: this.insertBeforeCreator(candidate.ports ?? [], port) }
-          : candidate,
-      ),
-    };
-  }
-
-  private insertBeforeCreator(
-    ports: readonly TngFlowPort[],
-    port: TngFlowPort,
-  ): readonly TngFlowPort[] {
-    const creatorIndex = ports.findIndex(
-      (candidate) =>
-        candidate.id === (port.direction === 'input' ? createInputPortId : createOutputPortId),
-    );
-    if (creatorIndex < 0) {
-      return [...ports, port];
-    }
-    return [...ports.slice(0, creatorIndex), port, ...ports.slice(creatorIndex)];
-  }
-
-  private nextConnectionPortNumber(
-    node: TngFlowNode<BuilderNodeData>,
-    direction: 'input' | 'output',
-  ): number {
-    const prefix = `${connectionPortPrefix}${direction}-`;
-    const numbers = (node.ports ?? [])
-      .filter((port) => port.id.startsWith(prefix))
-      .map((port) => Number(port.id.slice(prefix.length)))
-      .filter(Number.isFinite);
-    return Math.max(0, ...numbers) + 1;
-  }
-
-  private connectionPortName(
-    node: TngFlowNode<BuilderNodeData>,
-    direction: 'input' | 'output',
-    portNumber: number,
-  ): string {
-    if (direction === 'input') {
-      return portNumber === 1 ? 'Input' : `Input ${portNumber}`;
-    }
-    return node.data?.outputs[portNumber - 1]?.name ?? `Output ${portNumber}`;
-  }
-
-  private pruneUnusedConnectionPorts(definition: BuilderDefinition): BuilderDefinition {
-    const usedPorts = new Set(
-      definition.connections.flatMap((connection) => [
-        `${connection.source.nodeId}:${connection.source.portId}`,
-        `${connection.target.nodeId}:${connection.target.portId}`,
-      ]),
-    );
-    return {
-      ...definition,
-      nodes: definition.nodes.map((node) => ({
-        ...node,
-        ports: (node.ports ?? []).filter(
-          (port) =>
-            !port.id.startsWith(connectionPortPrefix) || usedPorts.has(`${node.id}:${port.id}`),
-        ),
-      })),
-    };
   }
 
   private syncHistoryDepths(): void {

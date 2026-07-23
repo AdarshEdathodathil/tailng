@@ -181,6 +181,7 @@ const markupCode = `<div class="flow-builder">
   <tng-flow-editor
     #editor="tngFlowEditor"
     flowId="professional-flow-builder"
+    attachmentLayout="nearest-border"
     [definition]="definition()"
     [selection]="selection()"
     [snapToGrid]="true"

@@ -22,6 +22,10 @@ import {
   resolveAnchoredYWhenOffscreen,
   resolveTngScrollableAncestors,
 } from '@tailng-ui/cdk';
+import {
+  clearOverlayOwnerId,
+  stampOverlayOwnerId,
+} from '../../overlay/_shared/tng-overlay-ownership';
 import { TNG_AUTOCOMPLETE } from './tng-autocomplete.tokens';
 import type { TngAutocomplete } from './tng-autocomplete';
 
@@ -391,6 +395,7 @@ export class TngAutocompleteOverlay {
     const anchorEl = this.findAnchorEl();
     this.setupScrollStrategy(anchorEl);
     const panel = this.elRef.nativeElement;
+    stampOverlayOwnerId(panel, this.autocomplete.hostElement);
     if (panel.parentNode !== document.body) {
       document.body.appendChild(panel);
     }
@@ -476,6 +481,7 @@ export class TngAutocompleteOverlay {
     panel.style.minWidth = '';
     panel.style.width = '';
     panel.style.maxWidth = '';
+    clearOverlayOwnerId(panel);
     this.clearPortalledThemeVars();
     this.teardownOutsidePointer();
   }

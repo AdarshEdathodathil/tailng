@@ -214,6 +214,9 @@ type EditorEventHarness = Readonly<{
   }) => void;
   onReady: () => void;
   portPositionPercent: (index: number, count: number) => number;
+  onMoveNodes: (event: {
+    nodes: readonly Readonly<{ id: string; position: { x: number; y: number } }>[];
+  }) => void;
 }>;
 
 describe('TngFlowEditorComponent', () => {
@@ -1510,5 +1513,237 @@ describe('TngFlowEditorComponent', () => {
       'Overview simplified',
     );
     expect(shell?.querySelector<HTMLElement>('f-minimap')?.style.pointerEvents).toBe('auto');
+  });
+
+  it('places connected endpoints on facing borders in nearest-border mode', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'nearest-border');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'source',
+        type: 'step',
+        name: 'Source',
+        position: { x: 0, y: 0 },
+        ports: [
+          { id: 'out', direction: 'output', kind: 'data', name: 'Start' },
+          { id: 'create-out', direction: 'output', kind: 'data', multiple: true },
+        ],
+      },
+      {
+        id: 'target',
+        type: 'step',
+        name: 'Target',
+        position: { x: 400, y: 0 },
+        ports: [
+          { id: 'in', direction: 'input', kind: 'data', name: 'End' },
+          { id: 'create-in', direction: 'input', kind: 'data', multiple: true },
+        ],
+      },
+    ]);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'source-to-target',
+        source: { nodeId: 'source', portId: 'out' },
+        target: { nodeId: 'target', portId: 'in' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const sourceOut = host.querySelector<HTMLElement>(
+      '[data-node-id="source"] > [data-port-id="out"]',
+    );
+    const targetIn = host.querySelector<HTMLElement>(
+      '[data-node-id="target"] > [data-port-id="in"]',
+    );
+
+    expect(sourceOut?.getAttribute('data-side')).toBe('right');
+    expect(targetIn?.getAttribute('data-side')).toBe('left');
+    expect(sourceOut?.querySelector('.tng-flow-port__label')).toBeNull();
+    expect(targetIn?.querySelector('.tng-flow-port__label')).toBeNull();
+    expect(fixture.componentInstance.useNearestBorderLayout()).toBe(true);
+  });
+
+  it('live-updates nearest-border sides from provisional move positions', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'nearest-border');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'source',
+        type: 'step',
+        name: 'Source',
+        position: { x: 0, y: 0 },
+        ports: [{ id: 'out', direction: 'output', kind: 'data' }],
+      },
+      {
+        id: 'target',
+        type: 'step',
+        name: 'Target',
+        position: { x: 400, y: 0 },
+        ports: [{ id: 'in', direction: 'input', kind: 'data' }],
+      },
+    ]);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'source-to-target',
+        source: { nodeId: 'source', portId: 'out' },
+        target: { nodeId: 'target', portId: 'in' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const editor = fixture.componentInstance as unknown as EditorEventHarness;
+    editor.onMoveNodes({
+      nodes: [{ id: 'target', position: { x: 0, y: 300 } }],
+    });
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(
+      host.querySelector<HTMLElement>('[data-node-id="source"] > [data-port-id="out"]')?.dataset[
+        'side'
+      ],
+    ).toBe('bottom');
+    expect(
+      host.querySelector<HTMLElement>('[data-node-id="target"] > [data-port-id="in"]')?.dataset[
+        'side'
+      ],
+    ).toBe('top');
+    // Declared port sides stay untouched; layout is an editor overlay.
+    expect(
+      fixture.componentInstance.nodes()?.find((node) => node.id === 'source')?.ports?.[0]?.side,
+    ).toBeUndefined();
+  });
+
+  it('equal-spaces mixed input and output endpoints on one nearest border', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'nearest-border');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'hub',
+        type: 'step',
+        name: 'Hub',
+        position: { x: 200, y: 0 },
+        ports: [
+          { id: 'in-from-left', direction: 'input', kind: 'data' },
+          { id: 'out-to-right', direction: 'output', kind: 'data' },
+        ],
+      },
+      {
+        id: 'left',
+        type: 'step',
+        name: 'Left',
+        position: { x: 0, y: 0 },
+        ports: [{ id: 'out', direction: 'output', kind: 'data' }],
+      },
+      {
+        id: 'right',
+        type: 'step',
+        name: 'Right',
+        position: { x: 400, y: 0 },
+        ports: [{ id: 'in', direction: 'input', kind: 'data' }],
+      },
+    ]);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'left-to-hub',
+        source: { nodeId: 'left', portId: 'out' },
+        target: { nodeId: 'hub', portId: 'in-from-left' },
+      },
+      {
+        id: 'hub-to-right',
+        source: { nodeId: 'hub', portId: 'out-to-right' },
+        target: { nodeId: 'right', portId: 'in' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const hubLeft = host.querySelectorAll<HTMLElement>('[data-node-id="hub"] > [data-side="left"]');
+    const hubRight = host.querySelectorAll<HTMLElement>(
+      '[data-node-id="hub"] > [data-side="right"]',
+    );
+
+    expect(hubLeft).toHaveLength(1);
+    expect(hubRight).toHaveLength(1);
+    expect(Number.parseFloat(hubLeft[0].style.top)).toBe(50);
+    expect(Number.parseFloat(hubRight[0].style.top)).toBe(50);
+  });
+
+  it('equal-spaces two inputs that resolve to the same nearest border', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'nearest-border');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'sink',
+        type: 'step',
+        name: 'Sink',
+        position: { x: 400, y: 0 },
+        ports: [
+          { id: 'in-a', direction: 'input', kind: 'data' },
+          { id: 'in-b', direction: 'input', kind: 'data' },
+        ],
+      },
+      {
+        id: 'a',
+        type: 'step',
+        name: 'A',
+        position: { x: 0, y: -40 },
+        ports: [{ id: 'out', direction: 'output', kind: 'data' }],
+      },
+      {
+        id: 'b',
+        type: 'step',
+        name: 'B',
+        position: { x: 0, y: 40 },
+        ports: [{ id: 'out', direction: 'output', kind: 'data' }],
+      },
+    ]);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'a-to-sink',
+        source: { nodeId: 'a', portId: 'out' },
+        target: { nodeId: 'sink', portId: 'in-a' },
+      },
+      {
+        id: 'b-to-sink',
+        source: { nodeId: 'b', portId: 'out' },
+        target: { nodeId: 'sink', portId: 'in-b' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const leftPorts = host.querySelectorAll<HTMLElement>(
+      '[data-node-id="sink"] > [data-side="left"]',
+    );
+    expect(leftPorts).toHaveLength(2);
+    expect(Number.parseFloat(leftPorts[0].style.top)).toBeCloseTo(100 / 3);
+    expect(Number.parseFloat(leftPorts[1].style.top)).toBeCloseTo(200 / 3);
+  });
+
+  it('keeps static-ports labels and declared sides by default', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'labeled',
+        type: 'step',
+        name: 'Labeled',
+        position: { x: 0, y: 0 },
+        ports: [{ id: 'start', direction: 'input', kind: 'data', name: 'Start', side: 'top' }],
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const port = host.querySelector<HTMLElement>('[data-node-id="labeled"] > [data-port-id="start"]');
+    expect(port?.getAttribute('data-side')).toBe('top');
+    expect(port?.querySelector('.tng-flow-port__label')?.textContent).toContain('Start');
+    expect(host.querySelector('f-connection-marker-arrow')).toBeNull();
   });
 });

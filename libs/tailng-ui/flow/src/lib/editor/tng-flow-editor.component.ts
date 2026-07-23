@@ -23,6 +23,7 @@ import {
   FA11yAnnouncer,
   F_A11Y_CONFIG,
   FCanvasComponent,
+  FConnectionMarkerArrow,
   FConnectorDirective,
   FFlowComponent,
   FFlowModule,
@@ -40,6 +41,11 @@ import {
 } from './tng-flow-keyboard-config';
 import { alignTngFlowNodes, distributeTngFlowNodes } from '../arrangement/tng-flow-arrangement';
 import { TngFlowConnectionTemplateDirective } from '../connection-template/tng-flow-connection-template.directive';
+import {
+  DEFAULT_TNG_FLOW_NODE_SIZE,
+  resolveTngFlowNearestBorderSides,
+  type TngFlowNearestBorderNode,
+} from '../geometry/tng-flow-nearest-border';
 import {
   isTngFlowGridEnabled,
   snapTngFlowCoordinate,
@@ -102,7 +108,7 @@ import type {
   TngFlowValidationIssueActivatedEvent,
   TngFlowValidationIssueActivationSource,
 } from '../types/tng-flow-events.types';
-import type { TngFlowNodeBounds } from '../types/tng-flow-geometry.types';
+import type { TngFlowNodeBounds, TngFlowSize } from '../types/tng-flow-geometry.types';
 import type { TngFlowKeyboardOptions } from '../types/tng-flow-keyboard.types';
 import type {
   TngFlowAutoLayoutOptions,
@@ -132,6 +138,7 @@ import {
   type TngFlowValidationTarget,
 } from '../types/tng-flow-validation.types';
 import type {
+  TngFlowAttachmentLayout,
   TngFlowConnection,
   TngFlowConnectionCandidate,
   TngFlowConnectionCreatedEvent,
@@ -337,6 +344,7 @@ type ContextMenuInvocation = Readonly<{
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FFlowModule,
+    FConnectionMarkerArrow,
     NgTemplateOutlet,
     TngButtonComponent,
     TngFlowFoblexA11yBridgeDirective,
@@ -395,6 +403,10 @@ export class TngFlowEditorComponent<
   private readonly keyboardConnection = signal<KeyboardConnectionSession | null>(null);
   private readonly currentCanvasScale = signal(1);
   private readonly smartGuidesSuppressedForDrag = signal(false);
+  /** Live positions during drag before the controlled definition catches up. */
+  private readonly provisionalPositions = signal<ReadonlyMap<string, TngFlowPoint>>(new Map());
+  /** Last measured node sizes for nearest-border geometry. */
+  private readonly measuredNodeSizes = signal<ReadonlyMap<string, TngFlowSize>>(new Map());
 
   private get connectionSession(): FCreateConnectionSession {
     return this.foblexA11yBridge().connectionSession;
@@ -410,6 +422,11 @@ export class TngFlowEditorComponent<
   /** @deprecated Use `presentation.nodes`. */
   public readonly nodeViews = input<TngFlowNodeViews<TStatus>>({});
   public readonly mode = input<TngFlowEditorMode>('edit');
+  /**
+   * `static-ports` keeps declared port sides and labels.
+   * `nearest-border` live-assigns connected endpoints to facing borders.
+   */
+  public readonly attachmentLayout = input<TngFlowAttachmentLayout>('static-ports');
   public readonly selection = input<TngFlowSelection>(EMPTY_TNG_FLOW_SELECTION);
   public readonly viewport = input<TngFlowViewport | null>(null);
   public readonly connectionValidator = input<TngFlowConnectionValidator<TData> | null>(null);
@@ -633,11 +650,48 @@ export class TngFlowEditorComponent<
   private readonly connectionValidationIndex = computed(() =>
     createTngFlowConnectionValidationIndex(this.graphConnections()),
   );
+  protected readonly useNearestBorderLayout = computed(
+    () => this.attachmentLayout() === 'nearest-border',
+  );
+  private readonly effectiveNodePositions = computed<ReadonlyMap<string, TngFlowPoint>>(() => {
+    const provisional = this.provisionalPositions();
+    const positions = new Map<string, TngFlowPoint>();
+    for (const node of this.graphNodes()) {
+      positions.set(node.id, provisional.get(node.id) ?? node.position);
+    }
+    return positions;
+  });
+  private readonly nearestBorderNodes = computed<readonly TngFlowNearestBorderNode[]>(() => {
+    const positions = this.effectiveNodePositions();
+    const sizes = this.measuredNodeSizes();
+    return this.graphNodes().map((node) => ({
+      id: node.id,
+      position: positions.get(node.id) ?? node.position,
+      size: sizes.get(node.id) ?? DEFAULT_TNG_FLOW_NODE_SIZE,
+    }));
+  });
+  private readonly nearestBorderSides = computed<ReadonlyMap<string, TngFlowPortSide>>(() => {
+    if (!this.useNearestBorderLayout()) {
+      return new Map();
+    }
+    return resolveTngFlowNearestBorderSides(this.nearestBorderNodes(), this.graphConnections());
+  });
   private readonly portGroupsByNodeId = computed<ReadonlyMap<string, NodePortGroups>>(() => {
+    const nearestSides = this.nearestBorderSides();
+    const useNearest = this.useNearestBorderLayout();
     const entries = this.graphNodes().map((node) => {
       const ports = getTngFlowNodePorts(node);
+      const sideFor = (port: TngFlowPort): TngFlowPortSide => {
+        if (useNearest) {
+          const resolved = nearestSides.get(createTngFlowConnectorId(node.id, port.id));
+          if (resolved !== undefined) {
+            return resolved;
+          }
+        }
+        return port.side ?? (port.direction === 'input' ? 'left' : 'right');
+      };
       const portsForSide = (side: TngFlowPortSide): readonly TngFlowPort[] =>
-        ports.filter((port) => this.portSide(port) === side);
+        ports.filter((port) => sideFor(port) === side);
       return [
         node.id,
         {
@@ -652,6 +706,30 @@ export class TngFlowEditorComponent<
       ] as const;
     });
     return new Map(entries);
+  });
+  private readonly provisionalPositionsSyncEffect = effect(() => {
+    const provisional = this.provisionalPositions();
+    if (provisional.size === 0) {
+      return;
+    }
+    const nodes = this.graphNodes();
+    let remaining: Map<string, TngFlowPoint> | null = null;
+    for (const node of nodes) {
+      const next = provisional.get(node.id);
+      if (
+        next !== undefined &&
+        next.x === node.position.x &&
+        next.y === node.position.y
+      ) {
+        if (remaining === null) {
+          remaining = new Map(provisional);
+        }
+        remaining.delete(node.id);
+      }
+    }
+    if (remaining !== null) {
+      this.provisionalPositions.set(remaining);
+    }
   });
   private readonly connectableTargetsByConnectorId = computed<ReadonlyMap<string, string[]>>(() =>
     this.buildConnectableTargets(),
@@ -1033,12 +1111,18 @@ export class TngFlowEditorComponent<
     return this.portGroupsByNodeId().get(nodeId)?.ports ?? [];
   }
 
-  protected portSide(port: TngFlowPort): TngFlowPortSide {
+  protected portSide(nodeId: string, port: TngFlowPort): TngFlowPortSide {
+    if (this.useNearestBorderLayout()) {
+      const resolved = this.nearestBorderSides().get(createTngFlowConnectorId(nodeId, port.id));
+      if (resolved !== undefined) {
+        return resolved;
+      }
+    }
     return port.side ?? (port.direction === 'input' ? 'left' : 'right');
   }
 
   protected portPositionFor(nodeId: string, port: TngFlowPort): number {
-    const ports = this.portGroupsByNodeId().get(nodeId)?.bySide[this.portSide(port)] ?? [];
+    const ports = this.portGroupsByNodeId().get(nodeId)?.bySide[this.portSide(nodeId, port)] ?? [];
     return this.portPositionPercent(ports.indexOf(port), ports.length);
   }
 
@@ -1052,7 +1136,10 @@ export class TngFlowEditorComponent<
     return ((index + 1) / (count + 1)) * 100;
   }
 
-  protected portLabel(port: TngFlowPort): string {
+  protected portLabel(port: TngFlowPort): string | null {
+    if (this.useNearestBorderLayout()) {
+      return null;
+    }
     const label = (port.name ?? port.label)?.trim();
     return label === undefined || label.length === 0 ? port.id : label;
   }
@@ -1061,9 +1148,11 @@ export class TngFlowEditorComponent<
     const record = this.graphIndex().portsByConnectorId.get(
       createTngFlowConnectorId(endpoint.nodeId, endpoint.portId),
     );
-    return record === undefined
-      ? `${endpoint.nodeId} port ${endpoint.portId}`
-      : `${record.node.name} ${record.port.direction} port ${this.portLabel(record.port)}`;
+    if (record === undefined) {
+      return `${endpoint.nodeId} port ${endpoint.portId}`;
+    }
+    const label = this.portLabel(record.port) ?? record.port.id;
+    return `${record.node.name} ${record.port.direction} port ${label}`;
   }
 
   private normalizeOptionalText(value: string | undefined): string | null {
@@ -1089,7 +1178,8 @@ export class TngFlowEditorComponent<
 
   protected portAriaLabel(node: TngFlowNode<TData>, port: TngFlowPort): string {
     const view = this.viewFor(node.id);
-    return `${node.name}, ${port.direction} port ${this.portLabel(port)}, ${view.status}`;
+    const label = this.portLabel(port) ?? port.id;
+    return `${node.name}, ${port.direction} port ${label}, ${view.status}`;
   }
 
   protected isKeyboardConnectionSource(nodeId: string, portId: string): boolean {
@@ -1164,6 +1254,7 @@ export class TngFlowEditorComponent<
       this.hasFittedInitialNodes = true;
       this.fitToScreen(false);
     }
+    this.refreshMeasuredNodeSizes();
   }
 
   protected onReady(): void {
@@ -1173,6 +1264,7 @@ export class TngFlowEditorComponent<
     if (pendingReveal !== null) {
       queueMicrotask(() => this.performReveal(pendingReveal.target, pendingReveal.options));
     }
+    this.refreshMeasuredNodeSizes();
     this.runInAngular(() => this.ready.emit());
   }
 
@@ -1205,7 +1297,9 @@ export class TngFlowEditorComponent<
       .filter((move) => this.isNodeMovable(nodesById.get(move.id)))
       .map((move) => ({ id: move.id, position: this.toPoint(move.position) }));
     if (moves.length > 0) {
-      this.emitNodeMoves(this.normalizeMovePositions(moves, nodesById), nodesById);
+      const normalized = this.normalizeMovePositions(moves, nodesById);
+      this.applyProvisionalPositions(normalized);
+      this.emitNodeMoves(normalized, nodesById);
     }
   }
 
@@ -1835,6 +1929,56 @@ export class TngFlowEditorComponent<
     const position = this.finitePoint({ x: event.clientX, y: event.clientY });
     if (position !== undefined) {
       this.lastPointerClientPosition = position;
+    }
+    if (this.nodePointerSessionActive && this.useNearestBorderLayout()) {
+      this.sampleProvisionalPositionsFromDom();
+    }
+  }
+
+  private applyProvisionalPositions(
+    moves: readonly Readonly<{ id: string; position: TngFlowPoint }>[],
+  ): void {
+    if (!this.useNearestBorderLayout() || moves.length === 0) {
+      return;
+    }
+    const next = new Map(this.provisionalPositions());
+    for (const move of moves) {
+      next.set(move.id, move.position);
+    }
+    this.provisionalPositions.set(next);
+  }
+
+  private sampleProvisionalPositionsFromDom(): void {
+    const host = this.flowHost();
+    if (host === null) {
+      return;
+    }
+    const selectedIds = this.sanitizedSelection().nodeIds;
+    if (selectedIds.size === 0) {
+      return;
+    }
+    const next = new Map(this.provisionalPositions());
+    let changed = false;
+    for (const nodeId of selectedIds) {
+      const element = host.querySelector<HTMLElement>(`[data-node-id="${CSS.escape(nodeId)}"]`);
+      if (element === null) {
+        continue;
+      }
+      const rect = element.getBoundingClientRect();
+      const canvasPoint = this.screenToCanvas({ x: rect.left, y: rect.top });
+      const previous = next.get(nodeId);
+      if (
+        previous === undefined ||
+        previous.x !== canvasPoint.x ||
+        previous.y !== canvasPoint.y
+      ) {
+        next.set(nodeId, canvasPoint);
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.provisionalPositions.set(next);
+      this.changeDetectorRef.detectChanges();
     }
   }
 
@@ -2562,11 +2706,38 @@ export class TngFlowEditorComponent<
     }
     return Object.freeze({
       id: node.id,
-      position: this.toPoint(node.position),
+      position: this.toPoint(this.effectiveNodePositions().get(node.id) ?? node.position),
       size: Object.freeze({ width, height }),
       disabled: node.disabled,
       locked: node.locked,
     });
+  }
+
+  private refreshMeasuredNodeSizes(): void {
+    if (!this.useNearestBorderLayout()) {
+      return;
+    }
+    const measured = this.measureNodeBoundsFor(this.graphNodes());
+    if (measured === null) {
+      return;
+    }
+    const previous = this.measuredNodeSizes();
+    let changed = previous.size !== measured.length;
+    const next = new Map<string, TngFlowSize>();
+    for (const bounds of measured) {
+      next.set(bounds.id, bounds.size);
+      const prior = previous.get(bounds.id);
+      if (
+        prior === undefined ||
+        prior.width !== bounds.size.width ||
+        prior.height !== bounds.size.height
+      ) {
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.measuredNodeSizes.set(next);
+    }
   }
 
   private completeLayoutConnections(

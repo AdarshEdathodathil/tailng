@@ -438,6 +438,34 @@ application decides whether to open an inspector or take another action.
 
 The editor host has a default height of `36rem`; override the host height in the consuming component when needed.
 
+## Nearest-border attachment layout
+
+By default the editor uses `attachmentLayout="static-ports"`: declared `port.side` values and
+port labels render as authored.
+
+Set `attachmentLayout="nearest-border"` for flowchart-style edges:
+
+- Connected endpoints are live-assigned to facing node borders from relative node positions.
+- Sockets on one border are equal-spaced with the existing `(i+1)/(n+1)` rule, and a border may
+  host both incoming and outgoing endpoints.
+- Port labels are hidden; connections render start and end arrow markers.
+- Sides update while nodes move (provisional positions) without mutating `definition.ports[].side`.
+
+Equal spacing of multiple edges on one border requires **one unique port per connection endpoint**.
+Sharing a single `multiple: true` port stacks edges on one socket. Use
+`materializeTngFlowEndpoint` / `materializeTngFlowConnectionEndpoints` and
+`pruneUnusedTngFlowConnectionPorts` when creator ports should expand into unique endpoints
+(see the professional flow builder demo).
+
+```html
+<tng-flow-editor
+  attachmentLayout="nearest-border"
+  [definition]="workflow()"
+  [selection]="selection()"
+  (connectionCreateRequested)="createConnection($event)"
+/>
+```
+
 ## Keyboard interaction
 
 - Arrow keys navigate spatially across nodes and connections; `Command/Ctrl + Arrow` follows graph

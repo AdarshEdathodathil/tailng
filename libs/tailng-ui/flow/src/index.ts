@@ -24,7 +24,28 @@ export {
   areTngFlowSelectionsEqual,
   sanitizeTngFlowSelection,
 } from './lib/model/tng-flow-selection';
+export {
+  isTngFlowCreatorPort,
+  materializeTngFlowConnectionEndpoints,
+  materializeTngFlowEndpoint,
+  pruneUnusedTngFlowConnectionPorts,
+} from './lib/model/tng-flow-endpoint-materialize';
 export type {
+  TngFlowEndpointMaterializeOptions,
+  TngFlowMaterializedEndpointResult,
+} from './lib/model/tng-flow-endpoint-materialize';
+export {
+  DEFAULT_TNG_FLOW_NODE_SIZE,
+  resolveTngFlowFacingSides,
+  resolveTngFlowNearestBorderSides,
+  tngFlowBoundsToNearestBorderNode,
+} from './lib/geometry/tng-flow-nearest-border';
+export type {
+  TngFlowNearestBorderFacingSides,
+  TngFlowNearestBorderNode,
+} from './lib/geometry/tng-flow-nearest-border';
+export type {
+  TngFlowAttachmentLayout,
   TngFlowConnection,
   TngFlowConnectionCandidate,
   TngFlowConnectionCreateRequest,

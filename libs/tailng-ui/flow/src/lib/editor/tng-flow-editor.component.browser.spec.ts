@@ -1360,4 +1360,95 @@ describe('TngFlowEditorComponent browser contracts', () => {
       expect(document.activeElement).toBe(control);
     }
   });
+
+  it('attaches nearest-border connections to facing sides with distinct multi-edge sockets', async () => {
+    const nearestBorderDefinition: TngFlowDefinition = Object.freeze({
+      id: 'nearest-border-browser',
+      nodes: Object.freeze([
+        Object.freeze({
+          id: 'source',
+          type: 'step',
+          name: 'Source',
+          position: Object.freeze({ x: 40, y: 120 }),
+          ports: Object.freeze([
+            Object.freeze({ id: 'out-a', direction: 'output', kind: 'data' }),
+            Object.freeze({ id: 'out-b', direction: 'output', kind: 'data' }),
+          ]),
+        }),
+        Object.freeze({
+          id: 'target',
+          type: 'step',
+          name: 'Target',
+          position: Object.freeze({ x: 440, y: 120 }),
+          ports: Object.freeze([
+            Object.freeze({ id: 'in-a', direction: 'input', kind: 'data' }),
+            Object.freeze({ id: 'in-b', direction: 'input', kind: 'data' }),
+          ]),
+        }),
+      ]),
+      connections: Object.freeze([
+        Object.freeze({
+          id: 'edge-a',
+          source: Object.freeze({ nodeId: 'source', portId: 'out-a' }),
+          target: Object.freeze({ nodeId: 'target', portId: 'in-a' }),
+          type: 'bezier' as TngFlowConnectionType,
+        }),
+        Object.freeze({
+          id: 'edge-b',
+          source: Object.freeze({ nodeId: 'source', portId: 'out-b' }),
+          target: Object.freeze({ nodeId: 'target', portId: 'in-b' }),
+          type: 'bezier' as TngFlowConnectionType,
+        }),
+      ]),
+    });
+
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', nearestBorderDefinition);
+    fixture.componentRef.setInput('attachmentLayout', 'nearest-border');
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('showControls', false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    const host = fixture.nativeElement as HTMLElement;
+    await waitForRenderedConnectionPaths(host);
+
+    const sourcePorts = host.querySelectorAll<HTMLElement>(
+      '[data-node-id="source"] > [data-side="right"]',
+    );
+    const targetPorts = host.querySelectorAll<HTMLElement>(
+      '[data-node-id="target"] > [data-side="left"]',
+    );
+    expect(sourcePorts).toHaveLength(2);
+    expect(targetPorts).toHaveLength(2);
+    expect(sourcePorts[0].style.top).not.toBe(sourcePorts[1].style.top);
+    expect(host.querySelector('.tng-flow-port__label')).toBeNull();
+    expect(host.querySelectorAll('marker[id*="f-connection-marker-"]').length).toBeGreaterThanOrEqual(
+      2,
+    );
+    expect(
+      host.querySelector('path.f-connection-path[marker-start], path.f-connection-path[marker-end]') ??
+        host.querySelector('[marker-start], [marker-end]'),
+    ).not.toBeNull();
+
+    const editor = fixture.componentInstance as unknown as {
+      onMoveNodes: (event: {
+        nodes: readonly Readonly<{ id: string; position: { x: number; y: number } }>[];
+      }) => void;
+    };
+    editor.onMoveNodes({
+      nodes: [{ id: 'target', position: { x: 40, y: 420 } }],
+    });
+    fixture.detectChanges();
+    await nextPaint();
+    await waitForRenderedConnectionPaths(host);
+
+    expect(
+      host.querySelectorAll<HTMLElement>('[data-node-id="source"] > [data-side="bottom"]').length,
+    ).toBe(2);
+    expect(
+      host.querySelectorAll<HTMLElement>('[data-node-id="target"] > [data-side="top"]').length,
+    ).toBe(2);
+  });
 });

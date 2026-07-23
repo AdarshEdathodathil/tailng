@@ -55,7 +55,12 @@
       (fCanvasChange)="onViewportChange($event)"
     >
       @if (canEdit()) {
-        <f-connection-for-create />
+        <f-connection-for-create>
+          @if (useNearestBorderLayout()) {
+            <f-connection-marker-arrow type="f-connection-marker-start-all-states" />
+            <f-connection-marker-arrow type="f-connection-marker-end-all-states" />
+          }
+        </f-connection-for-create>
       }
 
       <ng-container ngProjectAs="[fConnections]">
@@ -86,6 +91,10 @@
             [attr.data-animated]="view.animated ? '' : null"
             (dblclick)="onConnectionDoubleClick($event, connection.id)"
           >
+            @if (useNearestBorderLayout()) {
+              <f-connection-marker-arrow type="f-connection-marker-start-all-states" />
+              <f-connection-marker-arrow type="f-connection-marker-end-all-states" />
+            }
             @let template = connectionTemplate()?.templateRef;
             @let label = connectionLabel(connection);
             @let issues = connectionIssues(connection.id);
@@ -189,7 +198,7 @@
           </div>
 
           @for (port of portsFor(node.id); track port.id) {
-            @let side = portSide(port);
+            @let side = portSide(node.id, port);
             @let position = portPositionFor(node.id, port);
             <span
               class="tng-flow-editor__port tng-flow-editor__port--{{

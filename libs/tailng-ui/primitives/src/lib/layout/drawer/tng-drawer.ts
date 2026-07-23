@@ -10,6 +10,10 @@ import {
   output,
 } from '@angular/core';
 import { createScrollLockManager, createTngIdFactory } from '@tailng-ui/cdk';
+import {
+  isOwnedOverlayTarget,
+  TNG_OVERLAY_LAYER_ID_ATTR,
+} from '../../overlay/_shared/tng-overlay-ownership';
 
 const createDrawerContainerId = createTngIdFactory('tng-drawer-container');
 const createDrawerId = createTngIdFactory('tng-drawer');
@@ -540,6 +544,9 @@ export class TngDrawer {
   @HostBinding('attr.id')
   protected readonly id = this.resolvedId;
 
+  @HostBinding(`attr.${TNG_OVERLAY_LAYER_ID_ATTR}`)
+  protected readonly overlayLayerIdAttr = this.resolvedId;
+
   @HostBinding('attr.role')
   protected get roleAttr(): TngDrawerRole {
     return this.role();
@@ -1032,6 +1039,10 @@ export class TngDrawer {
     }
 
     if (this.isScrollbarPointerDown(event, target)) {
+      return;
+    }
+
+    if (isOwnedOverlayTarget(event.target, this.resolvedId, event.composedPath())) {
       return;
     }
 

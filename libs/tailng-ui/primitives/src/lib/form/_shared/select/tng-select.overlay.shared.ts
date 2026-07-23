@@ -22,6 +22,10 @@ import {
   resolveTngScrollableAncestors,
 } from '@tailng-ui/cdk';
 
+import {
+  clearOverlayOwnerId,
+  stampOverlayOwnerId,
+} from '../../../overlay/_shared/tng-overlay-ownership';
 import type { TngSelectHostApi } from './tng-select.host-api';
 import { TNG_SELECT_HOST } from './tng-select.tokens.shared';
 
@@ -96,8 +100,6 @@ const PORTALLED_SELECT_THEME_VARS = [
   '--tng-semantic-focus-ring',
 ] as const;
 
-const TNG_OVERLAY_LAYER_ID_ATTR = 'data-tng-overlay-layer-id';
-const TNG_OVERLAY_OWNER_ID_ATTR = 'data-tng-overlay-owner-id';
 const createSelectOverlayLockId = createTngIdFactory('tng-select-overlay-lock');
 
 function rectFromClientRect(r: DOMRect | ClientRect): MaybeRect {
@@ -110,10 +112,6 @@ function viewportRect(): MaybeRect {
 
 function isInside(target: EventTarget | null, container: HTMLElement): boolean {
   return !!target && target instanceof Node && container.contains(target);
-}
-
-function resolveOverlayOwnerId(host: HTMLElement): string | null {
-  return host.closest<HTMLElement>(`[${TNG_OVERLAY_LAYER_ID_ATTR}]`)?.getAttribute(TNG_OVERLAY_LAYER_ID_ATTR) ?? null;
 }
 
 /**
@@ -369,10 +367,7 @@ export class TngSelectOverlay {
     const anchorEl = this.findAnchorEl();
     this.setupScrollStrategy(anchorEl);
     const panel = this.elRef.nativeElement;
-    const ownerId = resolveOverlayOwnerId(this.host.hostElement);
-    if (ownerId !== null) {
-      panel.setAttribute(TNG_OVERLAY_OWNER_ID_ATTR, ownerId);
-    }
+    stampOverlayOwnerId(panel, this.host.hostElement);
 
     if (panel.parentNode !== document.body) {
       document.body.appendChild(panel);
@@ -457,7 +452,7 @@ export class TngSelectOverlay {
     panel.style.width = '';
     panel.style.minWidth = '';
     panel.style.maxWidth = '';
-    panel.removeAttribute(TNG_OVERLAY_OWNER_ID_ATTR);
+    clearOverlayOwnerId(panel);
     this.clearPortalledThemeVars();
     this.teardownOutsidePointer();
   }

@@ -708,6 +708,70 @@ describe('tng-drawer behavior blocks B-T', () => {
 
       expect(findDrawer(fixture).getAttribute('data-state')).toBe('open');
     });
+
+    it('exposes data-tng-overlay-layer-id equal to the drawer id', () => {
+      const fixture = TestBed.configureTestingModule({ imports: [DrawerHostComponent] }).createComponent(
+        DrawerHostComponent,
+      );
+      fixture.detectChanges();
+
+      const drawer = findDrawer(fixture);
+      expect(drawer.getAttribute('data-tng-overlay-layer-id')).toBe(drawer.getAttribute('id'));
+      expect(drawer.getAttribute('data-tng-overlay-layer-id')).toBeTruthy();
+    });
+
+    it('pointerdown on a body-portalled overlay owned by the drawer does not close', () => {
+      const fixture = TestBed.configureTestingModule({ imports: [DrawerHostComponent] }).createComponent(
+        DrawerHostComponent,
+      );
+      fixture.componentInstance.defaultOpened.set(true);
+      fixture.detectChanges();
+
+      const drawer = findDrawer(fixture);
+      const layerId = drawer.getAttribute('data-tng-overlay-layer-id');
+      expect(layerId).toBeTruthy();
+
+      const panel = document.createElement('div');
+      panel.setAttribute('data-slot', 'select-overlay');
+      panel.setAttribute('data-tng-overlay-owner-id', layerId as string);
+      const option = document.createElement('button');
+      option.setAttribute('data-testid', 'owned-option');
+      option.textContent = 'Option';
+      panel.appendChild(option);
+      document.body.appendChild(panel);
+
+      try {
+        pointerdown(option);
+        fixture.detectChanges();
+        expect(findDrawer(fixture).getAttribute('data-state')).toBe('open');
+      } finally {
+        panel.remove();
+      }
+    });
+
+    it('pointerdown on a body-portalled overlay with a different owner id closes the drawer', () => {
+      const fixture = TestBed.configureTestingModule({ imports: [DrawerHostComponent] }).createComponent(
+        DrawerHostComponent,
+      );
+      fixture.componentInstance.defaultOpened.set(true);
+      fixture.detectChanges();
+
+      const panel = document.createElement('div');
+      panel.setAttribute('data-slot', 'select-overlay');
+      panel.setAttribute('data-tng-overlay-owner-id', 'other-layer');
+      const option = document.createElement('button');
+      option.textContent = 'Option';
+      panel.appendChild(option);
+      document.body.appendChild(panel);
+
+      try {
+        pointerdown(option);
+        fixture.detectChanges();
+        expect(findDrawer(fixture).getAttribute('data-state')).toBe('closed');
+      } finally {
+        panel.remove();
+      }
+    });
   });
 
   describe('H) Escape close behavior', () => {

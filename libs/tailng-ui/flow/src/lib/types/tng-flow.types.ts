@@ -20,6 +20,11 @@ export type TngFlowConnectionType = 'adaptive-curve' | 'bezier' | 'segment' | 's
 export type TngFlowPortDirection = 'input' | 'output';
 export type TngFlowPortKind = 'control' | 'data' | 'error';
 export type TngFlowPortSide = 'bottom' | 'left' | 'right' | 'top';
+/**
+ * `static-ports` keeps declared port sides and labels.
+ * `nearest-border` live-assigns connected endpoints to facing borders and hides port labels.
+ */
+export type TngFlowAttachmentLayout = 'nearest-border' | 'static-ports';
 export type TngFlowEditorMode = 'edit' | 'inspect' | 'readonly';
 export type TngFlowDeleteRequestSource = 'api' | 'context-menu' | 'keyboard';
 export type TngFlowNodeCreateSource = 'api' | 'keyboard' | 'pointer';
