@@ -175,6 +175,17 @@
     );
 }
 
+.tng-flow-editor[data-attachment-layout='custom-points']
+  .tng-flow-editor__port[data-custom-point]:not([data-custom-point-visible]) {
+  visibility: hidden;
+}
+
+.tng-flow-editor[data-attachment-layout='custom-points']
+  .tng-flow-editor__port[data-custom-point]:not([data-custom-point-visible])
+  .tng-flow-editor__port-socket {
+  pointer-events: none;
+}
+
 .tng-flow-editor__controls {
   position: absolute;
   z-index: 10;

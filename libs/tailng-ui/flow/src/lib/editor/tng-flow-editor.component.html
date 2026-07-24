@@ -8,6 +8,7 @@
   [attr.data-mode]="effectiveMode()"
   [attr.data-readonly]="effectiveMode() === 'readonly' ? '' : null"
   [attr.data-validation]="validationSeverity()"
+  [attr.data-attachment-layout]="attachmentLayout()"
   [style.--tng-flow-focus-ring-compensation]="focusRingCompensation()"
 >
   <f-flow
@@ -56,10 +57,10 @@
     >
       @if (canEdit()) {
         <f-connection-for-create>
-          @if (useNearestBorderLayout()) {
+          @if (useArrowMarkers()) {
             <f-connection-marker-arrow type="f-connection-marker-start-all-states" />
           }
-          @if (useNearestBorderLayout()) {
+          @if (useArrowMarkers()) {
             <f-connection-marker-arrow type="f-connection-marker-end-all-states" />
           }
         </f-connection-for-create>
@@ -93,10 +94,10 @@
             [attr.data-animated]="view.animated ? '' : null"
             (dblclick)="onConnectionDoubleClick($event, connection.id)"
           >
-            @if (useNearestBorderLayout()) {
+            @if (useArrowMarkers()) {
               <f-connection-marker-arrow type="f-connection-marker-start-all-states" />
             }
-            @if (useNearestBorderLayout()) {
+            @if (useArrowMarkers()) {
               <f-connection-marker-arrow type="f-connection-marker-end-all-states" />
             }
             @let template = connectionTemplate()?.templateRef;
@@ -211,6 +212,13 @@
               [attr.data-direction]="port.direction"
               [attr.data-port-id]="port.id"
               [attr.data-side]="side"
+              [attr.data-custom-point]="isCustomPointPort(port) ? '' : null"
+              [attr.data-custom-point-visible]="
+                isCustomPointPort(port) && isCustomPointVisible(node.id, port) ? '' : null
+              "
+              [attr.data-custom-point-connected]="
+                isCustomPointPort(port) && isCustomPointConnected(node.id, port.id) ? '' : null
+              "
               [style.bottom]="side === 'bottom' ? '-0.375rem' : null"
               [style.left]="
                 side === 'left'

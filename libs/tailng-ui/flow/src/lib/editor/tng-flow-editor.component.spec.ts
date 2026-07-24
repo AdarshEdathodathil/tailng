@@ -16,6 +16,7 @@ import { TngFlowEditorComponent } from './tng-flow-editor.component';
 import { TngFlowConnectionTemplateDirective } from '../connection-template/tng-flow-connection-template.directive';
 import { TngFlowNodeTemplateDirective } from '../node-template/tng-flow-node-template.directive';
 import { createTngFlowPaletteItemEnvelope } from '../palette-item/tng-flow-palette-item.directive';
+import { createTngFlowConnectorId } from '../model/tng-flow-connector-id';
 import type { TngFlowNodesArrangementRequest } from '../types/tng-flow-arrangement.types';
 import type { TngFlowEditorCommandRequest } from '../types/tng-flow-command.types';
 import type { TngFlowContextMenuRequest } from '../types/tng-flow-context-menu.types';
@@ -26,6 +27,7 @@ import type { TngFlowValidation } from '../types/tng-flow-validation.types';
 import type {
   TngFlowDefinition,
   TngFlowConnection,
+  TngFlowConnectionCreateRequest,
   TngFlowConnectionRejectedEvent,
   TngFlowNode,
   TngFlowNodeCreateRequest,
@@ -1745,5 +1747,247 @@ describe('TngFlowEditorComponent', () => {
     expect(port?.getAttribute('data-side')).toBe('top');
     expect(port?.querySelector('.tng-flow-port__label')?.textContent).toContain('Start');
     expect(host.querySelector('f-connection-marker-arrow')).toBeNull();
+  });
+
+  it('synthesizes a custom-points grid and shows idle outputs only on the selected node', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'custom-points');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'source',
+        type: 'step',
+        name: 'Source',
+        position: { x: 0, y: 0 },
+        ports: [],
+      },
+      {
+        id: 'target',
+        type: 'step',
+        name: 'Target',
+        position: { x: 320, y: 0 },
+        ports: [],
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const customPorts = host.querySelectorAll<HTMLElement>(
+      '[data-node-id="source"] > [data-custom-point]',
+    );
+    expect(customPorts.length).toBe(24);
+    expect(
+      [...customPorts].filter((port) => port.hasAttribute('data-custom-point-visible')),
+    ).toHaveLength(0);
+    expect(host.querySelector('f-connection-marker-arrow')).not.toBeNull();
+    expect(fixture.componentInstance.useCustomPointsLayout()).toBe(true);
+    expect(fixture.componentInstance.useArrowMarkers()).toBe(true);
+
+    fixture.componentRef.setInput('selection', {
+      nodeIds: new Set(['source']),
+      connectionIds: new Set(),
+    });
+    fixture.detectChanges();
+
+    const visibleOnSource = [
+      ...host.querySelectorAll<HTMLElement>(
+        '[data-node-id="source"] > [data-custom-point-visible]',
+      ),
+    ];
+    expect(visibleOnSource).toHaveLength(12);
+    expect(visibleOnSource.every((port) => port.getAttribute('data-direction') === 'output')).toBe(
+      true,
+    );
+    expect(
+      host.querySelectorAll('[data-node-id="target"] > [data-custom-point-visible]'),
+    ).toHaveLength(0);
+  });
+
+  it('limits custom-points visibility to the source and valid target inputs while connecting', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'custom-points');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'source',
+        type: 'step',
+        name: 'Source',
+        position: { x: 0, y: 0 },
+        ports: [],
+      },
+      {
+        id: 'target',
+        type: 'step',
+        name: 'Target',
+        position: { x: 320, y: 0 },
+        ports: [],
+      },
+      {
+        id: 'other',
+        type: 'step',
+        name: 'Other',
+        position: { x: 640, y: 0 },
+        ports: [],
+      },
+    ]);
+    fixture.componentRef.setInput('connectionValidator', (candidate) =>
+      candidate.target.nodeId === 'other'
+        ? { valid: false, code: 'blocked', reason: 'Other is not a valid target.' }
+        : { valid: true },
+    );
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const sourceOutId = createTngFlowConnectorId('source', 'custom-point-out-right-1');
+    const editor = fixture.componentInstance as unknown as {
+      pointerConnectionSourceId: { set: (value: string | null) => void };
+      isCustomPointVisible: (
+        nodeId: string,
+        port: { id: string; direction: 'input' | 'output'; kind: 'data' },
+      ) => boolean;
+    };
+    editor.pointerConnectionSourceId.set(sourceOutId);
+
+    const sampleOut = {
+      id: 'custom-point-out-right-0',
+      direction: 'output' as const,
+      kind: 'data' as const,
+    };
+    const sampleIn = {
+      id: 'custom-point-in-left-0',
+      direction: 'input' as const,
+      kind: 'data' as const,
+    };
+
+    expect(editor.isCustomPointVisible('source', sampleOut)).toBe(true);
+    expect(editor.isCustomPointVisible('target', sampleIn)).toBe(true);
+    expect(editor.isCustomPointVisible('other', sampleOut)).toBe(false);
+    expect(editor.isCustomPointVisible('other', sampleIn)).toBe(false);
+
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const visibleOn = (nodeId: string): HTMLElement[] =>
+      [...host.querySelectorAll<HTMLElement>(`[data-node-id="${nodeId}"] > [data-custom-point-visible]`)];
+
+    expect(visibleOn('source').every((port) => port.getAttribute('data-direction') === 'output')).toBe(
+      true,
+    );
+    expect(visibleOn('source').length).toBe(12);
+    expect(visibleOn('target').every((port) => port.getAttribute('data-direction') === 'input')).toBe(
+      true,
+    );
+    expect(visibleOn('target').length).toBe(12);
+    expect(visibleOn('other')).toHaveLength(0);
+  });
+
+  it('emits custom-point endpoint ids on connection create', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    const created: TngFlowConnectionCreateRequest[] = [];
+    fixture.componentRef.setInput('attachmentLayout', 'custom-points');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'source',
+        type: 'step',
+        name: 'Source',
+        position: { x: 0, y: 0 },
+        ports: [],
+      },
+      {
+        id: 'target',
+        type: 'step',
+        name: 'Target',
+        position: { x: 320, y: 0 },
+        ports: [],
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentInstance.connectionCreateRequested.subscribe((request) => created.push(request));
+    fixture.detectChanges();
+
+    (
+      fixture.componentInstance as unknown as {
+        onCreateConnection: (event: {
+          sourceId: string;
+          targetId: string;
+          dropPosition: { x: number; y: number };
+        }) => void;
+      }
+    ).onCreateConnection({
+      sourceId: createTngFlowConnectorId('source', 'custom-point-out-right-1'),
+      targetId: createTngFlowConnectorId('target', 'custom-point-in-left-1'),
+      dropPosition: { x: 10, y: 10 },
+    });
+
+    expect(created).toEqual([
+      {
+        source: { nodeId: 'source', portId: 'custom-point-out-right-1' },
+        target: { nodeId: 'target', portId: 'custom-point-in-left-1' },
+      },
+    ]);
+  });
+
+  it('keeps custom-point sides fixed when a node moves', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('attachmentLayout', 'custom-points');
+    fixture.componentRef.setInput('nodes', [
+      {
+        id: 'source',
+        type: 'step',
+        name: 'Source',
+        position: { x: 0, y: 0 },
+        ports: [
+          {
+            id: 'custom-point-out-right-1',
+            direction: 'output',
+            kind: 'data',
+            side: 'right',
+          },
+        ],
+      },
+      {
+        id: 'target',
+        type: 'step',
+        name: 'Target',
+        position: { x: 320, y: 0 },
+        ports: [
+          {
+            id: 'custom-point-in-left-1',
+            direction: 'input',
+            kind: 'data',
+            side: 'left',
+          },
+        ],
+      },
+    ]);
+    fixture.componentRef.setInput('connections', [
+      {
+        id: 'edge',
+        source: { nodeId: 'source', portId: 'custom-point-out-right-1' },
+        target: { nodeId: 'target', portId: 'custom-point-in-left-1' },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const sourcePort = host.querySelector<HTMLElement>(
+      '[data-node-id="source"] > [data-port-id="custom-point-out-right-1"]',
+    );
+    expect(sourcePort?.getAttribute('data-side')).toBe('right');
+
+    (
+      fixture.componentInstance as unknown as {
+        provisionalPositions: { set: (value: Map<string, { x: number; y: number }>) => void };
+      }
+    ).provisionalPositions.set(new Map([['source', { x: 0, y: 400 }]]));
+    fixture.detectChanges();
+
+    expect(
+      host
+        .querySelector<HTMLElement>(
+          '[data-node-id="source"] > [data-port-id="custom-point-out-right-1"]',
+        )
+        ?.getAttribute('data-side'),
+    ).toBe('right');
   });
 });

@@ -170,7 +170,7 @@
           ariaLabel="Professional workflow creation canvas"
           [definition]="definition()"
           [selection]="selection()"
-          attachmentLayout="nearest-border"
+          attachmentLayout="custom-points"
           [snapToGrid]="snapToGrid()"
           [gridSize]="16"
           [zoomMinimum]="0.18"
@@ -246,7 +246,7 @@
 
         <section class="professional-flow-builder__inspector-section">
           <header>
-            <h6>Dynamic connection ports</h6>
+            <h6>Attached border points</h6>
             <span>{{ connectedPorts(node).length }}</span>
           </header>
           <ul class="professional-flow-builder__ports">
@@ -257,7 +257,7 @@
               </li>
             } @empty {
               <li class="professional-flow-builder__ports-empty">
-                Ports appear here after you connect this step.
+                Ports appear here after you connect this step at a border point.
               </li>
             }
           </ul>

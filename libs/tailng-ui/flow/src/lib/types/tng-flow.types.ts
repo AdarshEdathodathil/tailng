@@ -22,9 +22,11 @@ export type TngFlowPortKind = 'control' | 'data' | 'error';
 export type TngFlowPortSide = 'bottom' | 'left' | 'right' | 'top';
 /**
  * `static-ports` keeps declared port sides and labels.
- * `nearest-border` live-assigns connected endpoints to facing borders and hides port labels.
+ * `nearest-border` live-assigns each connected endpoint to its size-normalized exit
+ * border (diagonal mixes allowed) and hides port labels.
+ * `custom-points` shows a fixed 3-per-side border grid; the user picks start/end slots.
  */
-export type TngFlowAttachmentLayout = 'nearest-border' | 'static-ports';
+export type TngFlowAttachmentLayout = 'custom-points' | 'nearest-border' | 'static-ports';
 export type TngFlowEditorMode = 'edit' | 'inspect' | 'readonly';
 export type TngFlowDeleteRequestSource = 'api' | 'context-menu' | 'keyboard';
 export type TngFlowNodeCreateSource = 'api' | 'keyboard' | 'pointer';

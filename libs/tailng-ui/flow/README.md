@@ -445,7 +445,8 @@ port labels render as authored.
 
 Set `attachmentLayout="nearest-border"` for flowchart-style edges:
 
-- Connected endpoints are live-assigned to facing node borders from relative node positions.
+- Connected endpoints are live-assigned to each node’s size-normalized exit border from the
+  center-to-center ray (diagonal mixes such as source `right` + target `top` are allowed).
 - Sockets on one border are equal-spaced with the existing `(i+1)/(n+1)` rule, and a border may
   host both incoming and outgoing endpoints.
 - Port labels are hidden; connections render start and end arrow markers.
@@ -454,8 +455,7 @@ Set `attachmentLayout="nearest-border"` for flowchart-style edges:
 Equal spacing of multiple edges on one border requires **one unique port per connection endpoint**.
 Sharing a single `multiple: true` port stacks edges on one socket. Use
 `materializeTngFlowEndpoint` / `materializeTngFlowConnectionEndpoints` and
-`pruneUnusedTngFlowConnectionPorts` when creator ports should expand into unique endpoints
-(see the professional flow builder demo).
+`pruneUnusedTngFlowConnectionPorts` when creator ports should expand into unique endpoints.
 
 ```html
 <tng-flow-editor
@@ -464,6 +464,45 @@ Sharing a single `multiple: true` port stacks edges on one socket. Use
   [selection]="selection()"
   (connectionCreateRequested)="createConnection($event)"
 />
+```
+
+## Custom-points attachment layout
+
+Set `attachmentLayout="custom-points"` for explicit point→point wiring on a fixed border grid:
+
+- Each node gets **3 sockets per side** at 25% / 50% / 75% (12 out + 12 in synthetic ports).
+- Port ids follow `custom-point-out-{side}-{index}` and `custom-point-in-{side}-{index}`
+  (`index` 0..2). The editor synthesizes the grid for connect/render; persist chosen slots with
+  `ensureTngFlowCustomPointPorts` on create/reconnect, and
+  `pruneUnusedTngFlowCustomPointPorts` when edges are removed.
+- Idle: unlabeled **output** custom-points appear only on the **selected** node (nothing selected →
+  no start sockets). Connected custom-point endpoints stay visible.
+- During connect: the source node’s outputs stay visible; **input** custom-points appear on all
+  valid targets (ports that pass connectability validation). Other nodes’ custom-points hide.
+- Sides stay fixed (no nearest-border reassignment). Port labels are hidden; connections render
+  start and end arrow markers.
+
+```html
+<tng-flow-editor
+  attachmentLayout="custom-points"
+  [definition]="workflow()"
+  [selection]="selection()"
+  (connectionCreateRequested)="createConnection($event)"
+/>
+```
+
+```ts
+createConnection(request: TngFlowConnectionCreateRequest): void {
+  const nodes = ensureTngFlowCustomPointPorts(this.definition().nodes, [
+    request.source,
+    request.target,
+  ]);
+  this.definition.set({
+    ...this.definition(),
+    nodes,
+    connections: [...this.definition().connections, { id: crypto.randomUUID(), ...request }],
+  });
+}
 ```
 
 ## Keyboard interaction
