@@ -21,14 +21,14 @@ function createHarness(): DemoHarness {
 }
 
 describe('ProfessionalFlowBuilderDemoComponent', () => {
-  it('materializes dedicated ports when a connection is created', () => {
+  it('ensures custom-point ports when a connection is created', () => {
     const harness = createHarness();
 
     harness.createConnection({
-      source: { nodeId: 'welcome-email', portId: '__builder-create-output__' },
+      source: { nodeId: 'welcome-email', portId: 'custom-point-out-right-1' },
       target: {
         nodeId: 'manual-review-notification',
-        portId: '__builder-create-input__',
+        portId: 'custom-point-in-left-0',
       },
     });
 
@@ -38,27 +38,27 @@ describe('ProfessionalFlowBuilderDemoComponent', () => {
     const targetNode = definition.nodes.find((node) => node.id === 'manual-review-notification');
 
     expect(connection).toMatchObject({
-      source: { nodeId: 'welcome-email', portId: 'connection-output-1' },
+      source: { nodeId: 'welcome-email', portId: 'custom-point-out-right-1' },
       target: {
         nodeId: 'manual-review-notification',
-        portId: 'connection-input-2',
+        portId: 'custom-point-in-left-0',
       },
     });
     expect(sourceNode && harness.connectedPorts(sourceNode).map((port) => port.id)).toContain(
-      'connection-output-1',
+      'custom-point-out-right-1',
     );
     expect(targetNode && harness.connectedPorts(targetNode).map((port) => port.id)).toContain(
-      'connection-input-2',
+      'custom-point-in-left-0',
     );
   });
 
-  it('removes automatically-created ports when their connection is deleted', () => {
+  it('removes unused custom-point ports when their connection is deleted', () => {
     const harness = createHarness();
     harness.createConnection({
-      source: { nodeId: 'welcome-email', portId: '__builder-create-output__' },
+      source: { nodeId: 'welcome-email', portId: 'custom-point-out-right-1' },
       target: {
         nodeId: 'manual-review-notification',
-        portId: '__builder-create-input__',
+        portId: 'custom-point-in-left-0',
       },
     });
     const connectionId = harness.definition().connections.at(-1)?.id;
@@ -74,10 +74,10 @@ describe('ProfessionalFlowBuilderDemoComponent', () => {
 
     expect(definition.connections).toHaveLength(4);
     expect(sourceNode && harness.connectedPorts(sourceNode).map((port) => port.id)).not.toContain(
-      'connection-output-1',
+      'custom-point-out-right-1',
     );
     expect(targetNode && harness.connectedPorts(targetNode).map((port) => port.id)).not.toContain(
-      'connection-input-2',
+      'custom-point-in-left-0',
     );
   });
 });

@@ -4,14 +4,12 @@ const componentCode = `import { Component, signal } from '@angular/core';
 import {
   TngFlowEditorComponent,
   TngFlowPaletteItemDirective,
+  ensureTngFlowCustomPointPorts,
   type TngFlowConnectionCreateRequest,
   type TngFlowDefinition,
-  type TngFlowEndpoint,
-  type TngFlowNode,
   type TngFlowNodeCreateRequest,
   type TngFlowNodePositionChange,
   type TngFlowPaletteItem,
-  type TngFlowPort,
   type TngFlowSelection,
 } from '@tailng-ui/flow';
 
@@ -19,32 +17,6 @@ type NodeData = Readonly<{
   acceptsInput: boolean;
   createsOutput: boolean;
 }>;
-
-const CREATE_INPUT = '__create-input__';
-const CREATE_OUTPUT = '__create-output__';
-
-function creatorPorts(data: NodeData): readonly TngFlowPort[] {
-  return [
-    ...(data.acceptsInput
-      ? [{
-          id: CREATE_INPUT,
-          name: 'Connect to node',
-          direction: 'input' as const,
-          kind: 'data' as const,
-          multiple: true,
-        }]
-      : []),
-    ...(data.createsOutput
-      ? [{
-          id: CREATE_OUTPUT,
-          name: 'Create connection',
-          direction: 'output' as const,
-          kind: 'data' as const,
-          multiple: true,
-        }]
-      : []),
-  ];
-}
 
 const palette: readonly TngFlowPaletteItem<NodeData>[] = [
   {
@@ -100,7 +72,7 @@ export class FlowBuilderComponent {
           name: request.item.name,
           position: request.position,
           data,
-          ports: creatorPorts(data),
+          ports: [],
         },
       ],
     }));
@@ -117,47 +89,23 @@ export class FlowBuilderComponent {
 
   connect(request: TngFlowConnectionCreateRequest): void {
     const flow = this.definition();
-    const source = this.materializePort(flow.nodes, request.source, 'output');
-    const target = this.materializePort(source.nodes, request.target, 'input');
+    const nodes = ensureTngFlowCustomPointPorts(flow.nodes, [
+      request.source,
+      request.target,
+    ]);
     this.definition.set({
       ...flow,
-      nodes: target.nodes,
+      nodes,
       connections: [
         ...flow.connections,
         {
           id: 'connection-' + this.sequence++,
-          source: source.endpoint,
-          target: target.endpoint,
+          source: request.source,
+          target: request.target,
           type: 'bezier',
         },
       ],
     });
-  }
-
-  private materializePort(
-    nodes: readonly TngFlowNode<NodeData>[],
-    endpoint: TngFlowEndpoint,
-    direction: 'input' | 'output',
-  ): Readonly<{ endpoint: TngFlowEndpoint; nodes: readonly TngFlowNode<NodeData>[] }> {
-    const creatorId = direction === 'input' ? CREATE_INPUT : CREATE_OUTPUT;
-    if (endpoint.portId !== creatorId) {
-      return { endpoint, nodes };
-    }
-    const portId = direction + '-' + crypto.randomUUID();
-    const port: TngFlowPort = {
-      id: portId,
-      name: direction === 'input' ? 'Input' : 'Output',
-      direction,
-      kind: 'data',
-    };
-    return {
-      endpoint: { nodeId: endpoint.nodeId, portId },
-      nodes: nodes.map((node) =>
-        node.id === endpoint.nodeId
-          ? { ...node, ports: [port, ...(node.ports ?? [])] }
-          : node,
-      ),
-    };
   }
 }`;
 
@@ -181,7 +129,7 @@ const markupCode = `<div class="flow-builder">
   <tng-flow-editor
     #editor="tngFlowEditor"
     flowId="professional-flow-builder"
-    attachmentLayout="nearest-border"
+    attachmentLayout="custom-points"
     [definition]="definition()"
     [selection]="selection()"
     [snapToGrid]="true"
@@ -207,43 +155,27 @@ const cssCode = `.flow-builder {
   gap: 0.5rem;
   padding: 1rem;
   border-right: 1px solid var(--tng-semantic-border-default);
+  background: var(--tng-semantic-background-subtle);
 }
 
 .flow-builder__palette button {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.15rem;
   padding: 0.75rem;
+  text-align: left;
   border: 1px solid var(--tng-semantic-border-default);
   border-radius: 0.75rem;
   background: var(--tng-semantic-background-surface);
-  cursor: grab;
-  text-align: left;
+  cursor: pointer;
 }
 
-tng-flow-editor {
-  display: block;
-  min-height: 38rem;
+.flow-builder__palette strong {
+  font-size: 0.875rem;
 }
 
-/* Put these creator-port rules in global styles.css because the sockets are
-   rendered inside tng-flow-editor. */
-.flow-builder .tng-flow-editor__port[data-port-id='__create-input__'],
-.flow-builder .tng-flow-editor__port[data-port-id='__create-output__'] {
-  opacity: 0;
-}
-
-.flow-builder
-  .tng-flow-editor__node:hover
-  .tng-flow-editor__port[data-port-id='__create-output__'],
-.flow-builder
-  .tng-flow-editor__port[data-port-id='__create-input__']:has(.f-connector-connectable) {
-  opacity: 1;
-}
-
-.flow-builder
-  .tng-flow-editor__port[data-port-id^='__create-']
-  .tng-flow-port__socket::after {
-  content: '+';
+.flow-builder__palette span {
+  font-size: 0.75rem;
+  color: var(--tng-semantic-text-muted);
 }`;
 
 export const professionalFlowBuilderDemoCodeTabs: readonly DocsExampleCodeTab[] = Object.freeze([
@@ -265,7 +197,7 @@ export const professionalFlowBuilderDemoCodeTabs: readonly DocsExampleCodeTab[] 
     value: 'css',
     label: 'CSS',
     language: 'css',
-    title: 'styles.css',
+    title: 'flow-builder.component.css',
     code: cssCode,
   },
 ]);

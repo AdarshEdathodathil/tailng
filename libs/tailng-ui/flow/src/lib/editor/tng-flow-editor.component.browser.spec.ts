@@ -1451,4 +1451,112 @@ describe('TngFlowEditorComponent browser contracts', () => {
       host.querySelectorAll<HTMLElement>('[data-node-id="target"] > [data-side="top"]').length,
     ).toBe(2);
   });
+
+  it('renders custom-points connections with fixed sides and arrow markers', async () => {
+    const customPointsDefinition: TngFlowDefinition = Object.freeze({
+      id: 'custom-points-browser',
+      nodes: Object.freeze([
+        Object.freeze({
+          id: 'source',
+          type: 'step',
+          name: 'Source',
+          position: Object.freeze({ x: 40, y: 120 }),
+          ports: Object.freeze([
+            Object.freeze({
+              id: 'custom-point-out-right-1',
+              direction: 'output',
+              kind: 'data',
+              side: 'right',
+            }),
+          ]),
+        }),
+        Object.freeze({
+          id: 'target',
+          type: 'step',
+          name: 'Target',
+          position: Object.freeze({ x: 440, y: 120 }),
+          ports: Object.freeze([
+            Object.freeze({
+              id: 'custom-point-in-left-1',
+              direction: 'input',
+              kind: 'data',
+              side: 'left',
+            }),
+          ]),
+        }),
+      ]),
+      connections: Object.freeze([
+        Object.freeze({
+          id: 'edge',
+          source: Object.freeze({
+            nodeId: 'source',
+            portId: 'custom-point-out-right-1',
+          }),
+          target: Object.freeze({
+            nodeId: 'target',
+            portId: 'custom-point-in-left-1',
+          }),
+          type: 'bezier' as TngFlowConnectionType,
+        }),
+      ]),
+    });
+
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', customPointsDefinition);
+    fixture.componentRef.setInput('attachmentLayout', 'custom-points');
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('showControls', false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    const host = fixture.nativeElement as HTMLElement;
+    await waitForRenderedConnectionPaths(host);
+
+    const sourcePort = host.querySelector<HTMLElement>(
+      '[data-node-id="source"] > [data-port-id="custom-point-out-right-1"]',
+    );
+    const targetPort = host.querySelector<HTMLElement>(
+      '[data-node-id="target"] > [data-port-id="custom-point-in-left-1"]',
+    );
+    expect(sourcePort?.getAttribute('data-side')).toBe('right');
+    expect(targetPort?.getAttribute('data-side')).toBe('left');
+    expect(sourcePort?.hasAttribute('data-custom-point-connected')).toBe(true);
+    expect(targetPort?.hasAttribute('data-custom-point-connected')).toBe(true);
+    expect(host.querySelector('.tng-flow-port__label')).toBeNull();
+    expect(host.querySelectorAll('marker[id*="f-connection-marker-"]').length).toBeGreaterThanOrEqual(
+      2,
+    );
+    expect(
+      host.querySelector('path.f-connection-path[marker-start], path.f-connection-path[marker-end]') ??
+        host.querySelector('[marker-start], [marker-end]'),
+    ).not.toBeNull();
+
+    const editor = fixture.componentInstance as unknown as {
+      onMoveNodes: (event: {
+        nodes: readonly Readonly<{ id: string; position: { x: number; y: number } }>[];
+      }) => void;
+    };
+    editor.onMoveNodes({
+      nodes: [{ id: 'source', position: { x: 40, y: 420 } }],
+    });
+    fixture.detectChanges();
+    await nextPaint();
+    await waitForRenderedConnectionPaths(host);
+
+    expect(
+      host
+        .querySelector<HTMLElement>(
+          '[data-node-id="source"] > [data-port-id="custom-point-out-right-1"]',
+        )
+        ?.getAttribute('data-side'),
+    ).toBe('right');
+    expect(
+      host
+        .querySelector<HTMLElement>(
+          '[data-node-id="target"] > [data-port-id="custom-point-in-left-1"]',
+        )
+        ?.getAttribute('data-side'),
+    ).toBe('left');
+  });
 });

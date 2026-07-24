@@ -35,6 +35,19 @@ export type {
   TngFlowMaterializedEndpointResult,
 } from './lib/model/tng-flow-endpoint-materialize';
 export {
+  TNG_FLOW_CUSTOM_POINTS_PER_SIDE,
+  TNG_FLOW_CUSTOM_POINT_PREFIX,
+  createTngFlowCustomPointGrid,
+  createTngFlowCustomPointId,
+  createTngFlowCustomPointPort,
+  ensureTngFlowCustomPointPorts,
+  isTngFlowCustomPointPortId,
+  mergeTngFlowCustomPointPorts,
+  parseTngFlowCustomPointId,
+  pruneUnusedTngFlowCustomPointPorts,
+} from './lib/model/tng-flow-custom-point';
+export type { TngFlowCustomPointSlot } from './lib/model/tng-flow-custom-point';
+export {
   DEFAULT_TNG_FLOW_NODE_SIZE,
   resolveTngFlowFacingSides,
   resolveTngFlowNearestBorderSides,

@@ -24,9 +24,11 @@ export type TngFlowNearestBorderFacingSides = Readonly<{
 }>;
 
 /**
- * Picks facing borders for a source→target pair from node centers.
- * Dominant axis wins; on equal |Δx| and |Δy|, horizontal wins; on a zero delta,
- * the pair defaults to source `right` / target `left`.
+ * Picks attachment sides for a source→target pair from node centers.
+ * Each endpoint independently uses the size-normalized exit side of the
+ * center-to-center ray, so diagonal mixes (e.g. source `right` + target `top`)
+ * are allowed. On equal normalized |Δx| and |Δy|, horizontal wins; coincident
+ * centers default to source `right` / target `left`.
  */
 export function resolveTngFlowFacingSides(
   source: TngFlowNearestBorderNode,
@@ -34,24 +36,15 @@ export function resolveTngFlowFacingSides(
 ): TngFlowNearestBorderFacingSides {
   const sourceCenter = nodeCenter(source);
   const targetCenter = nodeCenter(target);
-  const dx = targetCenter.x - sourceCenter.x;
-  const dy = targetCenter.y - sourceCenter.y;
-  const absDx = Math.abs(dx);
-  const absDy = Math.abs(dy);
 
-  if (absDx === 0 && absDy === 0) {
+  if (sourceCenter.x === targetCenter.x && sourceCenter.y === targetCenter.y) {
     return { sourceSide: 'right', targetSide: 'left' };
   }
 
-  if (absDx >= absDy) {
-    return dx >= 0
-      ? { sourceSide: 'right', targetSide: 'left' }
-      : { sourceSide: 'left', targetSide: 'right' };
-  }
-
-  return dy >= 0
-    ? { sourceSide: 'bottom', targetSide: 'top' }
-    : { sourceSide: 'top', targetSide: 'bottom' };
+  return {
+    sourceSide: exitSide(source, targetCenter),
+    targetSide: exitSide(target, sourceCenter),
+  };
 }
 
 /**
@@ -93,6 +86,31 @@ export function tngFlowBoundsToNearestBorderNode(
     position: bounds.position,
     size: bounds.size,
   };
+}
+
+/**
+ * Border where the ray from the node's center toward `toward` exits the node rect.
+ * Half-width / half-height normalize so wide and tall nodes pick the true exit edge.
+ */
+function exitSide(node: TngFlowNearestBorderNode, toward: TngFlowPoint): TngFlowPortSide {
+  const center = nodeCenter(node);
+  const size = node.size ?? DEFAULT_TNG_FLOW_NODE_SIZE;
+  const halfWidth = size.width / 2;
+  const halfHeight = size.height / 2;
+  const dx = toward.x - center.x;
+  const dy = toward.y - center.y;
+
+  if (dx === 0 && dy === 0) {
+    return 'right';
+  }
+
+  const tx = halfWidth === 0 ? Number.POSITIVE_INFINITY : Math.abs(dx) / halfWidth;
+  const ty = halfHeight === 0 ? Number.POSITIVE_INFINITY : Math.abs(dy) / halfHeight;
+
+  if (tx >= ty) {
+    return dx >= 0 ? 'right' : 'left';
+  }
+  return dy >= 0 ? 'bottom' : 'top';
 }
 
 function nodeCenter(node: TngFlowNearestBorderNode): TngFlowPoint {

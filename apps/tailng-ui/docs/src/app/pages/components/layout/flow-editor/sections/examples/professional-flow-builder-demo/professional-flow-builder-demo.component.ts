@@ -3,8 +3,12 @@ import { TngButtonComponent } from '@tailng-ui/components';
 import {
   TngFlowEditorComponent,
   TngFlowPaletteItemDirective,
-  materializeTngFlowEndpoint,
-  pruneUnusedTngFlowConnectionPorts,
+  createTngFlowCustomPointId,
+  createTngFlowCustomPointPort,
+  ensureTngFlowCustomPointPorts,
+  isTngFlowCustomPointPortId,
+  parseTngFlowCustomPointId,
+  pruneUnusedTngFlowCustomPointPorts,
   type TngFlowConnectionCandidate,
   type TngFlowConnectionCreateRequest,
   type TngFlowConnectionReconnectRequest,
@@ -12,7 +16,6 @@ import {
   type TngFlowConnectionsDeleteRequest,
   type TngFlowConnectionValidation,
   type TngFlowDefinition,
-  type TngFlowEndpointMaterializeOptions,
   type TngFlowNode,
   type TngFlowNodeCreateRequest,
   type TngFlowNodePositionChange,
@@ -34,33 +37,6 @@ type BuilderNodeData = Readonly<{
 
 type BuilderDefinition = TngFlowDefinition<BuilderNodeData>;
 type BuilderPaletteItem = TngFlowPaletteItem<BuilderNodeData> & Readonly<{ data: BuilderNodeData }>;
-
-const createInputPortId = '__builder-create-input__';
-const createOutputPortId = '__builder-create-output__';
-const connectionPortPrefix = 'connection-';
-const endpointMaterializeOptions: TngFlowEndpointMaterializeOptions = {
-  creatorPortIds: {
-    input: createInputPortId,
-    output: createOutputPortId,
-  },
-  connectionPortPrefix,
-  createPort: (portId, direction, portNumber, node) => {
-    const typed = node as TngFlowNode<BuilderNodeData>;
-    const name =
-      direction === 'input'
-        ? portNumber === 1
-          ? 'Input'
-          : `Input ${portNumber}`
-        : (typed.data?.outputs[portNumber - 1]?.name ?? `Output ${portNumber}`);
-    return {
-      id: portId,
-      name,
-      direction,
-      kind: 'data',
-      dataType: 'workflow-payload',
-    };
-  },
-};
 
 const emptySelection = (): TngFlowSelection => ({
   nodeIds: new Set<string>(),
@@ -211,54 +187,24 @@ function paletteItem(blueprintId: string): BuilderPaletteItem {
   return item;
 }
 
-function connectionCreatorPortsFor(data: BuilderNodeData): readonly TngFlowPort[] {
-  const inputCreator: readonly TngFlowPort[] = data.acceptsInput
-    ? [
-        {
-          id: createInputPortId,
-          name: 'Connect to this step',
-          direction: 'input',
-          kind: 'data',
-          dataType: 'workflow-payload',
-          multiple: true,
-        },
-      ]
-    : [];
-  const outputCreator: readonly TngFlowPort[] =
-    data.outputs.length > 0
-      ? [
-          {
-            id: createOutputPortId,
-            name: 'Create connection',
-            direction: 'output',
-            kind: 'data',
-            dataType: 'workflow-payload',
-            multiple: true,
-          },
-        ]
-      : [];
-  return [...inputCreator, ...outputCreator];
-}
-
-function isConnectionCreatorPort(port: TngFlowPort): boolean {
-  return port.id === createInputPortId || port.id === createOutputPortId;
-}
-
-function connectedPort(id: string, name: string, direction: 'input' | 'output'): TngFlowPort {
-  return {
-    id,
-    name,
-    direction,
-    kind: 'data',
-    dataType: 'workflow-payload',
-  };
+function customPointPort(
+  direction: 'input' | 'output',
+  side: 'left' | 'right' | 'top' | 'bottom',
+  index: number,
+): TngFlowPort {
+  const id = createTngFlowCustomPointId(direction, side, index);
+  const slot = parseTngFlowCustomPointId(id);
+  if (slot === undefined) {
+    throw new Error(`Invalid custom point id: ${id}`);
+  }
+  return createTngFlowCustomPointPort(slot);
 }
 
 function withConnectedPorts(
   node: TngFlowNode<BuilderNodeData>,
   ports: readonly TngFlowPort[],
 ): TngFlowNode<BuilderNodeData> {
-  return { ...node, ports: [...ports, ...(node.ports ?? [])] };
+  return { ...node, ports: [...ports] };
 }
 
 function createNode(
@@ -277,7 +223,7 @@ function createNode(
     description: item.description,
     icon: item.icon,
     position,
-    ports: connectionCreatorPortsFor(data),
+    ports: [],
     data,
   };
 }
@@ -287,57 +233,72 @@ const starterDefinition = Object.freeze({
   name: 'Customer onboarding automation',
   nodes: [
     withConnectedPorts(createNode('incoming-webhook', paletteItem('webhook'), { x: 70, y: 220 }), [
-      connectedPort('connection-output-1', 'Event', 'output'),
+      customPointPort('output', 'right', 1),
     ]),
     withConnectedPorts(
       createNode('normalize-profile', paletteItem('transform'), { x: 380, y: 220 }),
-      [
-        connectedPort('connection-input-1', 'Input', 'input'),
-        connectedPort('connection-output-1', 'Result', 'output'),
-      ],
+      [customPointPort('input', 'left', 1), customPointPort('output', 'right', 1)],
     ),
     withConnectedPorts(
       createNode('check-eligibility', paletteItem('condition'), { x: 690, y: 220 }),
       [
-        connectedPort('connection-input-1', 'Input', 'input'),
-        connectedPort('connection-output-1', 'Yes', 'output'),
-        connectedPort('connection-output-2', 'No', 'output'),
+        customPointPort('input', 'left', 1),
+        customPointPort('output', 'right', 0),
+        customPointPort('output', 'right', 2),
       ],
     ),
     withConnectedPorts(createNode('welcome-email', paletteItem('send-email'), { x: 1010, y: 70 }), [
-      connectedPort('connection-input-1', 'Input', 'input'),
+      customPointPort('input', 'left', 1),
     ]),
     withConnectedPorts(
       createNode('manual-review-notification', paletteItem('notification'), {
         x: 1010,
         y: 370,
       }),
-      [connectedPort('connection-input-1', 'Input', 'input')],
+      [customPointPort('input', 'left', 1)],
     ),
   ],
   connections: [
     {
       id: 'webhook-to-transform',
-      source: { nodeId: 'incoming-webhook', portId: 'connection-output-1' },
-      target: { nodeId: 'normalize-profile', portId: 'connection-input-1' },
+      source: { nodeId: 'incoming-webhook', portId: createTngFlowCustomPointId('output', 'right', 1) },
+      target: {
+        nodeId: 'normalize-profile',
+        portId: createTngFlowCustomPointId('input', 'left', 1),
+      },
       type: 'bezier',
     },
     {
       id: 'transform-to-condition',
-      source: { nodeId: 'normalize-profile', portId: 'connection-output-1' },
-      target: { nodeId: 'check-eligibility', portId: 'connection-input-1' },
+      source: {
+        nodeId: 'normalize-profile',
+        portId: createTngFlowCustomPointId('output', 'right', 1),
+      },
+      target: {
+        nodeId: 'check-eligibility',
+        portId: createTngFlowCustomPointId('input', 'left', 1),
+      },
       type: 'bezier',
     },
     {
       id: 'eligible-to-email',
-      source: { nodeId: 'check-eligibility', portId: 'connection-output-1' },
-      target: { nodeId: 'welcome-email', portId: 'connection-input-1' },
+      source: {
+        nodeId: 'check-eligibility',
+        portId: createTngFlowCustomPointId('output', 'right', 0),
+      },
+      target: { nodeId: 'welcome-email', portId: createTngFlowCustomPointId('input', 'left', 1) },
       type: 'bezier',
     },
     {
       id: 'review-to-notification',
-      source: { nodeId: 'check-eligibility', portId: 'connection-output-2' },
-      target: { nodeId: 'manual-review-notification', portId: 'connection-input-1' },
+      source: {
+        nodeId: 'check-eligibility',
+        portId: createTngFlowCustomPointId('output', 'right', 2),
+      },
+      target: {
+        nodeId: 'manual-review-notification',
+        portId: createTngFlowCustomPointId('input', 'left', 1),
+      },
       type: 'bezier',
     },
   ],
@@ -436,7 +397,7 @@ export class ProfessionalFlowBuilderDemoComponent {
   protected readonly snapToGrid = signal(true);
   protected readonly published = signal(false);
   protected readonly eventMessage = signal(
-    'Ready — drag from the + handle to a node; connection ports are created automatically.',
+    'Ready — select a step, then drag from a border point to a valid target point.',
   );
   protected readonly undoDepth = signal(0);
   protected readonly redoDepth = signal(0);
@@ -513,26 +474,18 @@ export class ProfessionalFlowBuilderDemoComponent {
 
   protected createConnection(request: TngFlowConnectionCreateRequest): void {
     const definition = this.definition();
-    const source = materializeTngFlowEndpoint(
-      definition.nodes,
+    const nodes = ensureTngFlowCustomPointPorts(definition.nodes, [
       request.source,
-      'output',
-      endpointMaterializeOptions,
-    );
-    const target = materializeTngFlowEndpoint(
-      source.nodes,
       request.target,
-      'input',
-      endpointMaterializeOptions,
-    );
+    ]);
     const id = `builder-connection-${this.nextConnectionId++}`;
     this.commit(
       {
         ...definition,
-        nodes: target.nodes,
+        nodes,
         connections: [
           ...definition.connections,
-          { id, source: source.endpoint, target: target.endpoint, type: 'bezier' },
+          { id, source: request.source, target: request.target, type: 'bezier' },
         ],
       },
       `Connected ${this.nodeName(request.source.nodeId)} to ${this.nodeName(request.target.nodeId)}.`,
@@ -541,28 +494,17 @@ export class ProfessionalFlowBuilderDemoComponent {
 
   protected reconnectConnection(request: TngFlowConnectionReconnectRequest): void {
     const definition = this.definition();
-    const source = materializeTngFlowEndpoint(
-      definition.nodes,
+    const nodes = ensureTngFlowCustomPointPorts(definition.nodes, [
       request.source,
-      'output',
-      endpointMaterializeOptions,
-    );
-    const target = materializeTngFlowEndpoint(
-      source.nodes,
       request.target,
-      'input',
-      endpointMaterializeOptions,
-    );
+    ]);
     const connections = definition.connections.map((connection) =>
       connection.id === request.connectionId
-        ? { ...connection, source: source.endpoint, target: target.endpoint }
+        ? { ...connection, source: request.source, target: request.target }
         : connection,
     );
     this.commit(
-      pruneUnusedTngFlowConnectionPorts(
-        { ...definition, nodes: target.nodes, connections },
-        endpointMaterializeOptions,
-      ),
+      pruneUnusedTngFlowCustomPointPorts({ ...definition, nodes, connections }),
       `Updated the ${request.changedEndpoint} endpoint of the connection.`,
     );
   }
@@ -603,7 +545,7 @@ export class ProfessionalFlowBuilderDemoComponent {
       id,
       name: `${selected.name} copy`,
       position: { x: selected.position.x + 48, y: selected.position.y + 48 },
-      ports: selected.data === undefined ? [] : connectionCreatorPortsFor(selected.data),
+      ports: [],
     };
     this.commit(
       { ...this.definition(), nodes: [...this.definition().nodes, copy] },
@@ -725,11 +667,15 @@ export class ProfessionalFlowBuilderDemoComponent {
   }
 
   protected portSummary(port: TngFlowPort): string {
+    const slot = parseTngFlowCustomPointId(port.id);
+    if (slot !== undefined) {
+      return `${slot.direction} · ${slot.side} · ${slot.index + 1}`;
+    }
     return `${port.direction} · ${port.name ?? port.id}`;
   }
 
   protected connectedPorts(node: TngFlowNode<BuilderNodeData>): readonly TngFlowPort[] {
-    return (node.ports ?? []).filter((port) => !isConnectionCreatorPort(port));
+    return (node.ports ?? []).filter((port) => isTngFlowCustomPointPortId(port.id));
   }
 
   private commit(next: BuilderDefinition, message: string): void {
@@ -758,19 +704,16 @@ export class ProfessionalFlowBuilderDemoComponent {
     }
     const definition = this.definition();
     this.commit(
-      pruneUnusedTngFlowConnectionPorts(
-        {
-          ...definition,
-          nodes: definition.nodes.filter((node) => !nodeIds.has(node.id)),
-          connections: definition.connections.filter(
-            (connection) =>
-              !connectionIds.has(connection.id) &&
-              !nodeIds.has(connection.source.nodeId) &&
-              !nodeIds.has(connection.target.nodeId),
-          ),
-        },
-        endpointMaterializeOptions,
-      ),
+      pruneUnusedTngFlowCustomPointPorts({
+        ...definition,
+        nodes: definition.nodes.filter((node) => !nodeIds.has(node.id)),
+        connections: definition.connections.filter(
+          (connection) =>
+            !connectionIds.has(connection.id) &&
+            !nodeIds.has(connection.source.nodeId) &&
+            !nodeIds.has(connection.target.nodeId),
+        ),
+      }),
       message,
     );
     this.selection.set(emptySelection());

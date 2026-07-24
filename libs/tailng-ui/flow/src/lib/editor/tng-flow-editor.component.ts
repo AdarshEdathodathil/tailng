@@ -57,9 +57,16 @@ import {
 } from '../layout/tng-flow-layout-coordinator';
 import { TNG_FLOW_LAYOUT_ENGINE } from '../layout/tng-flow-layout.provider';
 import { resolveTngFlowCapabilities } from '../model/tng-flow-capabilities';
-import { createTngFlowConnectorId } from '../model/tng-flow-connector-id';
+import { createTngFlowConnectorId, parseTngFlowConnectorId } from '../model/tng-flow-connector-id';
+import {
+  TNG_FLOW_CUSTOM_POINTS_PER_SIDE,
+  isTngFlowCustomPointPortId,
+  mergeTngFlowCustomPointPorts,
+  parseTngFlowCustomPointId,
+} from '../model/tng-flow-custom-point';
 import {
   createTngFlowConnectionCandidate,
+  createTngFlowGraphIndex,
   getTngFlowNodePorts,
   type TngFlowGraphIndex,
   type TngFlowPortRecord,
@@ -407,6 +414,8 @@ export class TngFlowEditorComponent<
   private readonly provisionalPositions = signal<ReadonlyMap<string, TngFlowPoint>>(new Map());
   /** Last measured node sizes for nearest-border geometry. */
   private readonly measuredNodeSizes = signal<ReadonlyMap<string, TngFlowSize>>(new Map());
+  /** Active pointer-connect source connector id while Foblex is in connections-dragging. */
+  private readonly pointerConnectionSourceId = signal<string | null>(null);
 
   private get connectionSession(): FCreateConnectionSession {
     return this.foblexA11yBridge().connectionSession as FCreateConnectionSession;
@@ -424,7 +433,9 @@ export class TngFlowEditorComponent<
   public readonly mode = input<TngFlowEditorMode>('edit');
   /**
    * `static-ports` keeps declared port sides and labels.
-   * `nearest-border` live-assigns connected endpoints to facing borders.
+   * `nearest-border` live-assigns each connected endpoint to its exit border
+   * (diagonal mixes allowed).
+   * `custom-points` synthesizes a fixed 3-per-side border grid for point→point wiring.
    */
   public readonly attachmentLayout = input<TngFlowAttachmentLayout>('static-ports');
   public readonly selection = input<TngFlowSelection>(EMPTY_TNG_FLOW_SELECTION);
@@ -604,9 +615,17 @@ export class TngFlowEditorComponent<
     return String(1 / Math.max(0.01, this.effectiveCanvasScale()));
   });
 
-  private readonly graphIndex = computed<TngFlowGraphIndex<TData, TConnectionData>>(
-    () => this.analysis().index,
-  );
+  private readonly graphIndex = computed<TngFlowGraphIndex<TData, TConnectionData>>(() => {
+    const base = this.analysis().index;
+    if (this.attachmentLayout() !== 'custom-points') {
+      return base;
+    }
+    const nodes = this.graphNodes().map((node) => ({
+      ...node,
+      ports: mergeTngFlowCustomPointPorts(getTngFlowNodePorts(node)),
+    }));
+    return createTngFlowGraphIndex(nodes, this.graphConnections());
+  });
   private readonly issueIndex = computed(() => createTngFlowIssueIndex(this.resolvedValidation()));
   private readonly sanitizedSelection = computed(() =>
     this.canSelect()
@@ -653,6 +672,40 @@ export class TngFlowEditorComponent<
   protected readonly useNearestBorderLayout = computed(
     () => this.attachmentLayout() === 'nearest-border',
   );
+  protected readonly useCustomPointsLayout = computed(
+    () => this.attachmentLayout() === 'custom-points',
+  );
+  protected readonly useArrowMarkers = computed(
+    () => this.useNearestBorderLayout() || this.useCustomPointsLayout(),
+  );
+  private readonly connectedCustomPointConnectorIds = computed(() => {
+    if (!this.useCustomPointsLayout()) {
+      return new Set<string>();
+    }
+    const connected = new Set<string>();
+    for (const connection of this.graphConnections()) {
+      for (const endpoint of [connection.source, connection.target]) {
+        if (isTngFlowCustomPointPortId(endpoint.portId)) {
+          connected.add(createTngFlowConnectorId(endpoint.nodeId, endpoint.portId));
+        }
+      }
+    }
+    return connected;
+  });
+  private readonly activeCustomPointConnectSourceId = computed(() => {
+    if (!this.useCustomPointsLayout()) {
+      return null;
+    }
+    const pointerSource = this.pointerConnectionSourceId();
+    if (pointerSource !== null) {
+      return pointerSource;
+    }
+    const session = this.keyboardConnection();
+    if (session?.phase === 'target') {
+      return session.sourceConnectorId;
+    }
+    return null;
+  });
   private readonly effectiveNodePositions = computed<ReadonlyMap<string, TngFlowPoint>>(() => {
     const provisional = this.provisionalPositions();
     const positions = new Map<string, TngFlowPoint>();
@@ -679,8 +732,11 @@ export class TngFlowEditorComponent<
   private readonly portGroupsByNodeId = computed<ReadonlyMap<string, NodePortGroups>>(() => {
     const nearestSides = this.nearestBorderSides();
     const useNearest = this.useNearestBorderLayout();
+    const useCustomPoints = this.useCustomPointsLayout();
     const entries = this.graphNodes().map((node) => {
-      const ports = getTngFlowNodePorts(node);
+      const ports = useCustomPoints
+        ? mergeTngFlowCustomPointPorts(getTngFlowNodePorts(node))
+        : getTngFlowNodePorts(node);
       const sideFor = (port: TngFlowPort): TngFlowPortSide => {
         if (useNearest) {
           const resolved = nearestSides.get(createTngFlowConnectorId(node.id, port.id));
@@ -772,6 +828,32 @@ export class TngFlowEditorComponent<
     this.graphConnections();
     this.effectiveMode();
     this.syncKeyboardFocusAfterRender();
+  });
+  private readonly pointerConnectionSyncEffect = afterRenderEffect((onCleanup) => {
+    if (!this.useCustomPointsLayout()) {
+      this.pointerConnectionSourceId.set(null);
+      return;
+    }
+    const flow = this.hostElement.nativeElement.querySelector('f-flow');
+    if (flow === null) {
+      return;
+    }
+    let wasDragging = flow.classList.contains('f-connections-dragging');
+    const sync = (): void => {
+      const dragging = flow.classList.contains('f-connections-dragging');
+      if (dragging) {
+        this.pointerConnectionSourceId.set(this.connectionSession.sourceId ?? null);
+      } else if (wasDragging) {
+        this.pointerConnectionSourceId.set(null);
+      }
+      wasDragging = dragging;
+    };
+    if (wasDragging) {
+      sync();
+    }
+    const observer = new MutationObserver(sync);
+    observer.observe(flow, { attributes: true, attributeFilter: ['class'] });
+    onCleanup(() => observer.disconnect());
   });
   private readonly minimapSyncEffect = afterRenderEffect(() => {
     if (!this.showMinimap()) {
@@ -1122,11 +1204,20 @@ export class TngFlowEditorComponent<
   }
 
   protected portPositionFor(nodeId: string, port: TngFlowPort): number {
+    if (this.useCustomPointsLayout()) {
+      const slot = parseTngFlowCustomPointId(port.id);
+      if (slot !== undefined) {
+        return this.portPositionPercent(slot.index, TNG_FLOW_CUSTOM_POINTS_PER_SIDE);
+      }
+    }
     const ports = this.portGroupsByNodeId().get(nodeId)?.bySide[this.portSide(nodeId, port)] ?? [];
     return this.portPositionPercent(ports.indexOf(port), ports.length);
   }
 
   protected nodeMinHeight(nodeId: string): number {
+    if (this.useCustomPointsLayout()) {
+      return 112;
+    }
     const groups = this.portGroupsByNodeId().get(nodeId);
     const portCount = Math.max(groups?.bySide.left.length ?? 0, groups?.bySide.right.length ?? 0);
     return Math.max(112, 56 + portCount * 30);
@@ -1137,11 +1228,39 @@ export class TngFlowEditorComponent<
   }
 
   protected portLabel(port: TngFlowPort): string | null {
-    if (this.useNearestBorderLayout()) {
+    if (this.useNearestBorderLayout() || this.useCustomPointsLayout()) {
       return null;
     }
     const label = (port.name ?? port.label)?.trim();
     return label === undefined || label.length === 0 ? port.id : label;
+  }
+
+  protected isCustomPointPort(port: TngFlowPort): boolean {
+    return isTngFlowCustomPointPortId(port.id);
+  }
+
+  protected isCustomPointConnected(nodeId: string, portId: string): boolean {
+    return this.connectedCustomPointConnectorIds().has(createTngFlowConnectorId(nodeId, portId));
+  }
+
+  protected isCustomPointVisible(nodeId: string, port: TngFlowPort): boolean {
+    if (!this.useCustomPointsLayout() || !isTngFlowCustomPointPortId(port.id)) {
+      return true;
+    }
+    const connectorId = createTngFlowConnectorId(nodeId, port.id);
+    if (this.connectedCustomPointConnectorIds().has(connectorId)) {
+      return true;
+    }
+    const sourceConnectorId = this.activeCustomPointConnectSourceId();
+    if (sourceConnectorId === null) {
+      return port.direction === 'output' && this.isNodeSelected(nodeId);
+    }
+    const sourceEndpoint = parseTngFlowConnectorId(sourceConnectorId);
+    if (port.direction === 'output') {
+      return sourceEndpoint?.nodeId === nodeId;
+    }
+    const accepted = this.connectableTargetsByConnectorId().get(sourceConnectorId) ?? [];
+    return accepted.includes(connectorId);
   }
 
   private connectionEndpointAriaLabel(endpoint: TngFlowEndpoint): string {

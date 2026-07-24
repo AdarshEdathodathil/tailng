@@ -53,7 +53,7 @@ describe('resolveTngFlowFacingSides', () => {
     ).toEqual({ sourceSide: 'top', targetSide: 'bottom' });
   });
 
-  it('uses the dominant axis on a clear diagonal', () => {
+  it('keeps opposite pairs on a strong single-axis offset for equal squares', () => {
     expect(
       resolveTngFlowFacingSides(source, {
         id: 'target',
@@ -71,7 +71,26 @@ describe('resolveTngFlowFacingSides', () => {
     ).toEqual({ sourceSide: 'bottom', targetSide: 'top' });
   });
 
-  it('prefers horizontal on an equal |Δx| and |Δy| tie', () => {
+  it('allows diagonal mixes when node aspects disagree on the exit axis', () => {
+    // Tall source (prefers horizontal on a 45° ray) + wide target (prefers vertical).
+    const tallSource = {
+      id: 'source',
+      position: { x: 0, y: 0 },
+      size: { width: 100, height: 200 },
+    };
+    const wideTarget = {
+      id: 'target',
+      position: { x: 50, y: 150 },
+      size: { width: 200, height: 100 },
+    };
+
+    expect(resolveTngFlowFacingSides(tallSource, wideTarget)).toEqual({
+      sourceSide: 'right',
+      targetSide: 'top',
+    });
+  });
+
+  it('prefers horizontal on an equal normalized |Δx| and |Δy| tie', () => {
     expect(
       resolveTngFlowFacingSides(source, {
         id: 'target',
@@ -91,7 +110,7 @@ describe('resolveTngFlowFacingSides', () => {
     ).toEqual({ sourceSide: 'right', targetSide: 'left' });
   });
 
-  it('uses node size when computing centers', () => {
+  it('uses node size when computing centers and exit sides', () => {
     expect(
       resolveTngFlowFacingSides(
         {
@@ -121,7 +140,7 @@ describe('resolveTngFlowFacingSides', () => {
 });
 
 describe('resolveTngFlowNearestBorderSides', () => {
-  it('maps only connected endpoints to facing sides', () => {
+  it('maps only connected endpoints to exit sides', () => {
     const sides = resolveTngFlowNearestBorderSides(
       [
         { id: 'a', position: { x: 0, y: 0 }, size: { width: 100, height: 100 } },
@@ -141,7 +160,7 @@ describe('resolveTngFlowNearestBorderSides', () => {
     expect(sides.has(createTngFlowConnectorId('a', 'create-out'))).toBe(false);
   });
 
-  it('places mixed in and out endpoints from separate connections on shared facing sides', () => {
+  it('places mixed in and out endpoints from separate connections on shared exit sides', () => {
     const sides = resolveTngFlowNearestBorderSides(
       [
         { id: 'hub', position: { x: 200, y: 0 }, size: { width: 100, height: 100 } },
@@ -164,6 +183,25 @@ describe('resolveTngFlowNearestBorderSides', () => {
 
     expect(sides.get(createTngFlowConnectorId('hub', 'in-from-left'))).toBe('left');
     expect(sides.get(createTngFlowConnectorId('hub', 'out-to-right'))).toBe('right');
+  });
+
+  it('maps diagonal-mix sides onto connected endpoints', () => {
+    const sides = resolveTngFlowNearestBorderSides(
+      [
+        { id: 'a', position: { x: 0, y: 0 }, size: { width: 100, height: 200 } },
+        { id: 'b', position: { x: 50, y: 150 }, size: { width: 200, height: 100 } },
+      ],
+      [
+        {
+          id: 'a-to-b',
+          source: { nodeId: 'a', portId: 'out' },
+          target: { nodeId: 'b', portId: 'in' },
+        },
+      ],
+    );
+
+    expect(sides.get(createTngFlowConnectorId('a', 'out'))).toBe('right');
+    expect(sides.get(createTngFlowConnectorId('b', 'in'))).toBe('top');
   });
 
   it('skips connections whose nodes are missing', () => {
