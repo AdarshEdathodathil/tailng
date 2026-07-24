@@ -5,6 +5,10 @@
 }
 
 .tng-flow-editor {
+  --_ring: calc(1px * var(--tng-flow-focus-ring-compensation, 1));
+  --_accent: var(--tng-semantic-accent-brand, #2563eb);
+  --_focus: var(--tng-flow-focus-color, var(--tng-semantic-focus-ring, #2563eb));
+  --_select: var(--tng-flow-selection-color, var(--_accent));
   position: relative;
   width: 100%;
   height: 100%;
@@ -13,17 +17,14 @@
   border: 1px solid var(--tng-flow-border-color, var(--tng-semantic-border-default, #e5e7eb));
   border-radius: var(--tng-flow-border-radius, 0.75rem);
   background: var(--tng-flow-background, var(--tng-semantic-background-canvas, #f8fafc));
-  --ff-magnetic-line-color: var(
-    --tng-flow-smart-guide-color,
-    var(--tng-semantic-accent-brand, #2563eb)
-  );
+  --ff-magnetic-line-color: var(--tng-flow-smart-guide-color, var(--_accent));
   --ff-magnetic-rect-fill: var(
     --tng-flow-smart-guide-spacing-fill,
-    color-mix(in srgb, var(--tng-semantic-accent-brand, #2563eb) 10%, transparent)
+    color-mix(in srgb, var(--_accent) 10%, transparent)
   );
   --ff-magnetic-rect-border-color: var(
     --tng-flow-smart-guide-spacing-border,
-    color-mix(in srgb, var(--tng-semantic-accent-brand, #2563eb) 30%, transparent)
+    color-mix(in srgb, var(--_accent) 30%, transparent)
   );
 }
 
@@ -34,7 +35,7 @@
 }
 
 .tng-flow-editor > f-flow:focus-visible {
-  outline: 2px solid var(--tng-flow-focus-color, var(--tng-semantic-focus-ring, #2563eb));
+  outline: 2px solid var(--_focus);
   outline-offset: -3px;
 }
 
@@ -58,14 +59,12 @@
 .tng-flow-editor__node.f-selected .tng-flow-editor__node-content,
 .tng-flow-editor__node--selected .tng-flow-editor__node-content {
   border-radius: 0.75rem;
-  outline-color: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
-  outline-style: solid;
-  outline-width: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
-  outline-offset: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
+  outline: calc(3 * var(--_ring)) solid var(--_select);
+  outline-offset: calc(3 * var(--_ring));
 }
 
 .tng-flow-editor__connection.f-selected {
-  --ff-connection-width: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
+  --ff-connection-width: calc(3 * var(--_ring));
 }
 
 .tng-flow-editor__node[data-validation='error'] .tng-flow-editor__node-content {
@@ -128,10 +127,8 @@
 }
 
 .tng-flow-editor__drag-handle:focus-visible {
-  outline-color: var(--tng-flow-selection-color, var(--tng-semantic-accent-brand, #2563eb));
-  outline-style: solid;
-  outline-width: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
-  outline-offset: calc(2px * var(--tng-flow-focus-ring-compensation, 1));
+  outline: calc(3 * var(--_ring)) solid var(--_select);
+  outline-offset: calc(2 * var(--_ring));
 }
 
 .tng-flow-editor__port {
@@ -159,20 +156,14 @@
 .tng-flow-editor .tng-flow-editor__port-socket:focus-visible,
 .tng-flow-editor .tng-flow-editor__port-socket[data-keyboard-connection-target] {
   border-radius: 999px;
-  outline-color: var(--tng-flow-focus-color, var(--tng-semantic-focus-ring, #2563eb));
-  outline-style: solid;
-  outline-width: calc(4px * var(--tng-flow-focus-ring-compensation, 1));
-  outline-offset: calc(3px * var(--tng-flow-focus-ring-compensation, 1));
+  outline: calc(4 * var(--_ring)) solid var(--_focus);
+  outline-offset: calc(3 * var(--_ring));
 }
 
 .tng-flow-editor .tng-flow-editor__port-socket[data-keyboard-connection-source] {
   border-radius: 999px;
-  box-shadow: 0 0 0 calc(4px * var(--tng-flow-focus-ring-compensation, 1))
-    color-mix(
-      in srgb,
-      var(--tng-flow-focus-color, var(--tng-semantic-focus-ring, #2563eb)) 35%,
-      transparent
-    );
+  box-shadow: 0 0 0 calc(4 * var(--_ring))
+    color-mix(in srgb, var(--_focus) 35%, transparent);
 }
 
 .tng-flow-editor[data-attachment-layout='custom-points']
