@@ -8,6 +8,13 @@ import {
   type TngFlowPortRecord,
 } from '../model/tng-flow-graph';
 import type {
+  TngFlowConnectionLabelOptions,
+  TngFlowConnectionLabelPlacement,
+  TngFlowConnectionMarker,
+  TngFlowConnectionPathType,
+  TngFlowConnectionRouting,
+} from '../types/tng-flow-connection.types';
+import type {
   TngFlowStructuralIssueCode,
   TngFlowValidationIssue,
   TngFlowValidationSeverity,
@@ -48,6 +55,24 @@ const CONNECTION_TYPES: readonly TngFlowConnectionType[] = [
   'bezier',
   'segment',
   'straight',
+];
+const CONNECTION_PATH_TYPES: readonly TngFlowConnectionPathType[] = [
+  'adaptive',
+  'bezier',
+  'orthogonal',
+  'orthogonal-rounded',
+  'straight',
+];
+const CONNECTION_MARKERS: readonly TngFlowConnectionMarker[] = [
+  'arrow',
+  'circle',
+  'diamond',
+  'none',
+];
+const CONNECTION_LABEL_PLACEMENTS: readonly TngFlowConnectionLabelPlacement[] = [
+  'center',
+  'end',
+  'start',
 ];
 const PORT_DIRECTIONS: readonly TngFlowPortDirection[] = ['input', 'output'];
 const PORT_KINDS: readonly TngFlowPortKind[] = ['control', 'data', 'error'];
@@ -93,9 +118,76 @@ function optionalBoolean(record: UnknownRecord, key: string): boolean | undefine
   return typeof value === 'boolean' ? value : undefined;
 }
 
+function optionalFiniteNumber(record: UnknownRecord, key: string): number | undefined {
+  const value = record[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function sanitizeConnectionRouting(value: unknown): TngFlowConnectionRouting | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const rawType = value['type'];
+  const type =
+    typeof rawType === 'string' &&
+    CONNECTION_PATH_TYPES.includes(rawType as TngFlowConnectionPathType)
+      ? (rawType as TngFlowConnectionPathType)
+      : undefined;
+  const rawWaypoints = value['waypoints'];
+  const waypoints = Array.isArray(rawWaypoints)
+    ? rawWaypoints
+        .filter(
+          (point): point is UnknownRecord =>
+            isRecord(point) &&
+            typeof point['x'] === 'number' &&
+            Number.isFinite(point['x']) &&
+            typeof point['y'] === 'number' &&
+            Number.isFinite(point['y']),
+        )
+        .map((point) => ({ x: point['x'] as number, y: point['y'] as number }))
+    : undefined;
+  const offset = optionalFiniteNumber(value, 'offset');
+  const radius = optionalFiniteNumber(value, 'radius');
+  return type === undefined &&
+    offset === undefined &&
+    radius === undefined &&
+    waypoints === undefined
+    ? undefined
+    : { type, offset, radius, waypoints };
+}
+
+function sanitizeConnectionMarker(value: unknown): TngFlowConnectionMarker | undefined {
+  return typeof value === 'string' && CONNECTION_MARKERS.includes(value as TngFlowConnectionMarker)
+    ? (value as TngFlowConnectionMarker)
+    : undefined;
+}
+
+function sanitizeConnectionLabelOptions(value: unknown): TngFlowConnectionLabelOptions | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const rawPlacement = value['placement'];
+  const placement =
+    typeof rawPlacement === 'string' &&
+    CONNECTION_LABEL_PLACEMENTS.includes(rawPlacement as TngFlowConnectionLabelPlacement)
+      ? (rawPlacement as TngFlowConnectionLabelPlacement)
+      : undefined;
+  const offset = optionalFiniteNumber(value, 'offset');
+  const offsetX = optionalFiniteNumber(value, 'offsetX');
+  const offsetY = optionalFiniteNumber(value, 'offsetY');
+  return placement === undefined &&
+    offset === undefined &&
+    offsetX === undefined &&
+    offsetY === undefined
+    ? undefined
+    : { placement, offset, offsetX, offsetY };
+}
+
 function optionalStringArray(record: UnknownRecord, key: string): readonly string[] | undefined {
   const value = record[key];
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : undefined;
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : undefined;
 }
 
 function sanitizePort(
@@ -130,7 +222,8 @@ function sanitizePort(
 
   const rawDirection = rawPort['direction'];
   const direction =
-    typeof rawDirection === 'string' && PORT_DIRECTIONS.includes(rawDirection as TngFlowPortDirection)
+    typeof rawDirection === 'string' &&
+    PORT_DIRECTIONS.includes(rawDirection as TngFlowPortDirection)
       ? (rawDirection as TngFlowPortDirection)
       : fallbackDirection;
   if (direction === undefined) {
@@ -250,13 +343,7 @@ function sanitizeNode<TNodeData>(
 
   const id = typeof rawNode['id'] === 'string' ? rawNode['id'].trim() : '';
   if (id.length === 0) {
-    addIssue(
-      issues,
-      'empty-node-id',
-      'A node has an empty id.',
-      { kind: 'flow' },
-      String(index),
-    );
+    addIssue(issues, 'empty-node-id', 'A node has an empty id.', { kind: 'flow' }, String(index));
     return undefined;
   }
   const ports = sanitizePorts(rawNode, id, issues);
@@ -429,6 +516,10 @@ function sanitizeConnection<TConnectionData>(
     disabled: optionalBoolean(rawConnection, 'disabled'),
     reassignable: optionalBoolean(rawConnection, 'reassignable'),
     selectable: optionalBoolean(rawConnection, 'selectable'),
+    routing: sanitizeConnectionRouting(rawConnection['routing']),
+    sourceMarker: sanitizeConnectionMarker(rawConnection['sourceMarker']),
+    targetMarker: sanitizeConnectionMarker(rawConnection['targetMarker']),
+    labelOptions: sanitizeConnectionLabelOptions(rawConnection['labelOptions']),
     type,
   };
 }
@@ -449,9 +540,7 @@ function sanitizeConnections<TConnectionData>(
   }
   const ids = new Set<string>();
   return value
-    .map((connection, index) =>
-      sanitizeConnection<TConnectionData>(connection, index, ids, issues),
-    )
+    .map((connection, index) => sanitizeConnection<TConnectionData>(connection, index, ids, issues))
     .filter(
       (connection): connection is TngFlowConnection<TConnectionData> => connection !== undefined,
     );
@@ -470,7 +559,9 @@ function resolveConnection<TNodeData, TConnectionData>(
   connection: TngFlowConnection<TConnectionData>,
   nodeIndex: TngFlowGraphIndex<TNodeData, never>,
   issues: TngFlowValidationIssue[],
-): Readonly<{ source: TngFlowPortRecord<TNodeData>; target: TngFlowPortRecord<TNodeData> }> | undefined {
+):
+  | Readonly<{ source: TngFlowPortRecord<TNodeData>; target: TngFlowPortRecord<TNodeData> }>
+  | undefined {
   const sourceNode = nodeIndex.nodesById.get(connection.source.nodeId);
   const targetNode = nodeIndex.nodesById.get(connection.target.nodeId);
   if (sourceNode === undefined) {

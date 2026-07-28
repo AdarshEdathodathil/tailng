@@ -143,6 +143,66 @@ ports: [
 The supported sides are `top`, `right`, `bottom`, and `left`. Ports sharing a side are distributed
 evenly along that border.
 
+## Connection routing and execution state
+
+Routing is persisted with the connection while status and motion stay in presentation state:
+
+```ts
+const editorOptions: TngFlowEditorOptions = {
+  defaultConnection: RECOMMENDED_TNG_FLOW_CONNECTION_OPTIONS,
+  connectionWaypointsEnabled: true,
+  motionPreference: 'system',
+};
+
+const definition: TngFlowDefinition = {
+  id: 'document-review',
+  nodes,
+  connections: [
+    {
+      id: 'validate-to-review',
+      source: { nodeId: 'validate', portId: 'invalid' },
+      target: { nodeId: 'review', portId: 'input' },
+      label: 'Invalid',
+      routing: {
+        type: 'orthogonal-rounded',
+        offset: 24,
+        radius: 16,
+        waypoints: [{ x: 520, y: 240 }],
+      },
+      sourceMarker: 'circle',
+      targetMarker: 'arrow',
+      labelOptions: { placement: 'center', offset: -8 },
+    },
+  ],
+};
+
+const presentation: TngFlowPresentation = {
+  connections: {
+    'validate-to-review': {
+      status: 'active',
+      motion: 'flow',
+      motionSpeed: 'normal',
+      motionDirection: 'forward',
+      message: 'Sending the document for manual review',
+    },
+  },
+};
+```
+
+```html
+<tng-flow-editor
+  [definition]="definition"
+  [presentation]="presentation"
+  [options]="editorOptions"
+  (connectionWaypointsChange)="updateWaypoints($event)"
+/>
+```
+
+Supported path types are `straight`, `bezier`, `orthogonal`, `orthogonal-rounded`, and `adaptive`.
+Definitions without routing remain Bézier for compatibility. Waypoint changes are controlled
+events: create a new definition snapshot with the returned points rather than mutating the supplied
+connection.
+
 ## Palette and node creation
 
 Use the headless `TngFlowPaletteItemDirective` on native buttons. A drag emits a controlled
@@ -379,12 +439,13 @@ const approvedRoute: TngFlowConnection = {
 };
 ```
 
-Import `TngFlowConnectionTemplateDirective` when the application needs custom connection content:
+Import `TngFlowConnectionLabelTemplateDirective` when the application needs custom connection
+label content (`TngFlowConnectionTemplateDirective` and `tngFlowConnection` remain supported):
 
 ```html
 <tng-flow-editor [definition]="workflow()" [selection]="selection()">
   <ng-template
-    tngFlowConnection
+    tngFlowConnectionLabel
     let-connection
     let-view="view"
     let-issues="issues"

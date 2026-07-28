@@ -109,6 +109,7 @@
 
 /* Stable TailNG presentation tokens. Foblex selectors below remain an internal bridge. */
 tng-flow-editor {
+  --tng-flow-connection-color: var(--tng-semantic-foreground-secondary, var(--ff-color-connection));
   --tng-flow-node-error-border: var(--tng-semantic-accent-danger, #dc2626);
   --tng-flow-node-warning-border: var(--tng-semantic-accent-warning, #d97706);
   --tng-flow-node-info-border: var(--tng-semantic-accent-info, #0284c7);
@@ -120,10 +121,35 @@ tng-flow-editor {
   --tng-flow-connection-info-color: var(--tng-semantic-accent-info, #0284c7);
   --tng-flow-connection-active-color: var(--tng-semantic-accent-brand, #2563eb);
   --tng-flow-connection-success-color: var(--tng-semantic-accent-success, #16a34a);
-  --tng-flow-connection-motion-duration-slow: 1.8s;
-  --tng-flow-connection-motion-duration-normal: 1s;
-  --tng-flow-connection-motion-duration-fast: 0.55s;
+  --tng-flow-connection-disabled-color: var(
+    --tng-semantic-foreground-muted,
+    var(--ff-color-connection-muted)
+  );
+  --tng-flow-connection-width: 2px;
+  --tng-flow-connection-selected-width: 3px;
+  --tng-flow-connection-hit-width: 14px;
+  --tng-flow-connection-dash-size: 8;
+  --tng-flow-connection-dash-gap: 6;
+  --tng-flow-connection-flow-duration-slow: 1.8s;
+  --tng-flow-connection-flow-duration-normal: 1s;
+  --tng-flow-connection-flow-duration-fast: 0.55s;
+  --tng-flow-connection-motion-duration-slow: var(--tng-flow-connection-flow-duration-slow);
+  --tng-flow-connection-motion-duration-normal: var(--tng-flow-connection-flow-duration-normal);
+  --tng-flow-connection-motion-duration-fast: var(--tng-flow-connection-flow-duration-fast);
   --tng-flow-connection-motion-reduced-width: 3px;
+  --tng-flow-connection-label-background: var(--tng-semantic-background-surface, #fff);
+  --tng-flow-connection-label-color: var(--tng-semantic-foreground-secondary, #475569);
+  --tng-flow-connection-label-border: var(--tng-semantic-border-default, #e2e8f0);
+  --tng-flow-connection-waypoint-fill: var(--tng-semantic-background-surface, #fff);
+  --tng-flow-connection-waypoint-stroke: var(--tng-semantic-accent-brand, #2563eb);
+  --ff-connection-color: var(--tng-flow-connection-color);
+  --ff-connection-width: var(--tng-flow-connection-width);
+  --ff-connection-hit-width: var(--tng-flow-connection-hit-width);
+  --ff-connection-content-background-color: var(--tng-flow-connection-label-background);
+  --ff-connection-content-color: var(--tng-flow-connection-label-color);
+  --ff-connection-content-border-color: var(--tng-flow-connection-label-border);
+  --ff-color-waypoint-fill: var(--tng-flow-connection-waypoint-fill);
+  --ff-color-waypoint-stroke: var(--tng-flow-connection-waypoint-stroke);
   --tng-flow-validation-badge-size: 1.25rem;
   --tng-flow-minimap-background: var(--tng-semantic-background-surface, #fff);
   --tng-flow-minimap-border: var(--tng-semantic-border-default, rgb(0 0 0 / 16%));
@@ -190,7 +216,7 @@ tng-flow-editor {
   }
 
   .tng-flow-editor__connection[data-status='disabled'] {
-    --ff-connection-color: var(--ff-color-connection-muted);
+    --ff-connection-color: var(--tng-flow-connection-disabled-color);
     opacity: 0.55;
   }
 
@@ -207,7 +233,7 @@ tng-flow-editor {
   }
 
   .tng-flow-editor__connection[data-highlighted] {
-    --ff-connection-width: 3px;
+    --ff-connection-width: var(--tng-flow-connection-selected-width);
   }
 
   .tng-flow-editor__connection[data-dimmed] {
@@ -217,7 +243,7 @@ tng-flow-editor {
   .tng-flow-editor__connection[data-motion='flow'] .f-connection-path {
     animation: tng-flow-connection-forward var(--tng-flow-connection-motion-duration-normal) linear
       infinite;
-    stroke-dasharray: 8 6;
+    stroke-dasharray: var(--tng-flow-connection-dash-size) var(--tng-flow-connection-dash-gap);
   }
 
   .tng-flow-editor__connection[data-motion='flow'][data-motion-speed='slow'] .f-connection-path {
@@ -231,6 +257,31 @@ tng-flow-editor {
   .tng-flow-editor__connection[data-motion='flow'][data-motion-direction='reverse']
     .f-connection-path {
     animation-name: tng-flow-connection-reverse;
+  }
+
+  .tng-flow-editor__connection[data-motion='pulse'] .f-connection-path {
+    animation: tng-flow-connection-pulse var(--tng-flow-connection-motion-duration-normal)
+      ease-in-out infinite;
+  }
+
+  .tng-flow-editor__connection[data-motion='pulse'][data-motion-speed='slow'] .f-connection-path {
+    animation-duration: var(--tng-flow-connection-motion-duration-slow);
+  }
+
+  .tng-flow-editor__connection[data-motion='pulse'][data-motion-speed='fast'] .f-connection-path {
+    animation-duration: var(--tng-flow-connection-motion-duration-fast);
+  }
+
+  .tng-flow-editor__connection-marker path {
+    fill: var(--ff-marker-color, var(--ff-connection-color));
+  }
+
+  .tng-flow-editor[data-motion-preference='disabled']
+    .tng-flow-editor__connection:is([data-motion='flow'], [data-motion='pulse'])
+    .f-connection-path {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-width: var(--tng-flow-connection-motion-reduced-width);
   }
 }
 
@@ -246,11 +297,32 @@ tng-flow-editor {
   }
 }
 
+@keyframes tng-flow-connection-pulse {
+  50% {
+    opacity: 0.48;
+    stroke-width: var(--tng-flow-connection-motion-reduced-width);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  tng-flow-editor .tng-flow-editor__connection[data-motion='flow'] .f-connection-path {
+  tng-flow-editor
+    .tng-flow-editor:not([data-motion-preference='enabled'])
+    .tng-flow-editor__connection:is([data-motion='flow'], [data-motion='pulse'])
+    .f-connection-path {
     animation: none;
     stroke-dasharray: none;
     stroke-width: var(--tng-flow-connection-motion-reduced-width);
+  }
+}
+
+@media (forced-colors: active) {
+  tng-flow-editor .tng-flow-editor__connection {
+    --ff-connection-color: CanvasText;
+    --ff-connection-selected-color: Highlight;
+  }
+
+  tng-flow-editor .tng-flow-editor__connection[data-validation='error'] {
+    --ff-connection-color: Mark;
   }
 }
 

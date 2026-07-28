@@ -14,7 +14,23 @@ describe('resolveTngFlowConnectionView', () => {
       motion: 'none',
       motionSpeed: 'normal',
       motionDirection: 'forward',
+      message: null,
       animated: false,
+    });
+  });
+
+  it('normalizes pulse motion and accessible runtime messages', () => {
+    expect(
+      resolveTngFlowConnectionView(
+        connection,
+        false,
+        { motion: 'pulse', message: ' Waiting for approval ' },
+        [],
+      ),
+    ).toMatchObject({
+      motion: 'pulse',
+      message: 'Waiting for approval',
+      animated: true,
     });
   });
 

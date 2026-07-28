@@ -52,6 +52,8 @@ import {
   flowEditorDemoConnections,
   flowEditorDemoNodes,
 } from '../../../flow-editor-demo.data';
+import { connectionRoutingDemoCodeTabs } from '../connection-routing-demo/connection-routing-demo-code.data';
+import { ConnectionRoutingDemoComponent } from '../connection-routing-demo/connection-routing-demo.component';
 import { documentReviewDemoCodeTabs } from '../document-review-demo/document-review-demo-code.data';
 import { DocumentReviewDemoComponent } from '../document-review-demo/document-review-demo.component';
 import { professionalFlowBuilderDemoCodeTabs } from '../professional-flow-builder-demo/professional-flow-builder-demo-code.data';
@@ -359,6 +361,7 @@ const linearWorkflowDefinition: TngFlowDefinition = Object.freeze({
     DocumentReviewDemoComponent,
     ProfessionalFlowBuilderDemoComponent,
     TimedExecutionDemoComponent,
+    ConnectionRoutingDemoComponent,
     DocsExampleTabsSectionComponent,
     DocsExampleVariantDirective,
   ],
@@ -415,6 +418,7 @@ export class FlowEditorExamplesPageComponent implements OnDestroy {
   protected readonly documentReviewDemoCodeTabs = documentReviewDemoCodeTabs;
   protected readonly professionalFlowBuilderDemoCodeTabs = professionalFlowBuilderDemoCodeTabs;
   protected readonly timedExecutionDemoCodeTabs = timedExecutionDemoCodeTabs;
+  protected readonly connectionRoutingDemoCodeTabs = connectionRoutingDemoCodeTabs;
   protected readonly validateConnection = (
     candidate: TngFlowConnectionCandidate,
   ): TngFlowConnectionValidation => {

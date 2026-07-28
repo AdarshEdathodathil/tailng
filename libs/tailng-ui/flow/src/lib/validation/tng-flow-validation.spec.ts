@@ -32,16 +32,34 @@ describe('validateTngFlow', () => {
     expect(validateTngFlow(validNodes, validConnections)).toEqual([]);
   });
 
-  it('preserves additive connection labels and descriptions during analysis', () => {
+  it('preserves additive connection labels, routing, markers, and descriptions during analysis', () => {
     const connection: TngFlowConnection = {
       ...validConnections[0],
       label: 'Approved',
       description: 'Continue when the review is approved.',
+      routing: {
+        type: 'orthogonal-rounded',
+        offset: 24,
+        radius: 12,
+        waypoints: [{ x: 160, y: 80 }],
+      },
+      sourceMarker: 'circle',
+      targetMarker: 'diamond',
+      labelOptions: { placement: 'end', offset: -6, offsetX: 4, offsetY: -2 },
     };
 
     expect(analyzeTngFlow(validNodes, [connection]).connections[0]).toMatchObject({
       label: 'Approved',
       description: 'Continue when the review is approved.',
+      routing: {
+        type: 'orthogonal-rounded',
+        offset: 24,
+        radius: 12,
+        waypoints: [{ x: 160, y: 80 }],
+      },
+      sourceMarker: 'circle',
+      targetMarker: 'diamond',
+      labelOptions: { placement: 'end', offset: -6, offsetX: 4, offsetY: -2 },
     });
   });
 
