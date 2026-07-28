@@ -1,6 +1,9 @@
 export { TngFlowEditorComponent } from './lib/editor/tng-flow-editor.component';
 export { alignTngFlowNodes, distributeTngFlowNodes } from './lib/arrangement/tng-flow-arrangement';
-export { TngFlowConnectionTemplateDirective } from './lib/connection-template/tng-flow-connection-template.directive';
+export {
+  TngFlowConnectionTemplateDirective,
+  TngFlowConnectionTemplateDirective as TngFlowConnectionLabelTemplateDirective,
+} from './lib/connection-template/tng-flow-connection-template.directive';
 export { TngFlowNodeComponent, resolveTngFlowStatusTone } from './lib/node/tng-flow-node.component';
 export type { TngFlowStatusTone } from './lib/node/tng-flow-node.component';
 export { TngFlowPortComponent } from './lib/port/tng-flow-port.component';
@@ -8,6 +11,31 @@ export { TngFlowValidationBadgeComponent } from './lib/validation-badge/tng-flow
 export { TngFlowNodeTemplateDirective } from './lib/node-template/tng-flow-node-template.directive';
 export type { TngFlowNodeTemplateContext } from './lib/node-template/tng-flow-node-template.directive';
 export { TngFlowPaletteItemDirective } from './lib/palette-item/tng-flow-palette-item.directive';
+export {
+  DEFAULT_TNG_FLOW_CONNECTION_OPTIONS,
+  RECOMMENDED_TNG_FLOW_CONNECTION_OPTIONS,
+} from './lib/types/tng-flow-connection.types';
+export type {
+  TngFlowConnectionLabelOptions,
+  TngFlowConnectionLabelPlacement,
+  TngFlowConnectionAriaContext,
+  TngFlowConnectionAriaLabelFactory,
+  TngFlowConnectionMarker,
+  TngFlowConnectionPathType,
+  TngFlowConnectionRouting,
+  TngFlowConnectionWaypointsChange,
+  TngFlowDefaultConnectionOptions,
+  TngFlowDefaultConnectionRouting,
+  TngFlowEditorConnectionOptions,
+  TngFlowEditorOptions,
+  TngFlowMotionPreference,
+} from './lib/types/tng-flow-connection.types';
+export {
+  resolveTngFlowConnectionOptions,
+  tngFlowLabelPlacementPosition,
+  tngFlowPathTypeToRendererType,
+} from './lib/model/tng-flow-connection-options';
+export type { TngResolvedFlowConnectionOptions } from './lib/model/tng-flow-connection-options';
 export {
   provideTngFlowLayoutEngine,
   TNG_FLOW_LAYOUT_ENGINE,
@@ -122,7 +150,10 @@ export type {
   TngFlowEditorCommandShortcuts,
   TngFlowEditorCommandSource,
 } from './lib/types/tng-flow-command.types';
-export type { TngFlowConnectionTemplateContext } from './lib/types/tng-flow-connection-template.types';
+export type {
+  TngFlowConnectionTemplateContext,
+  TngFlowConnectionTemplateContext as TngFlowConnectionLabelTemplateContext,
+} from './lib/types/tng-flow-connection-template.types';
 export type {
   TngFlowContextMenuRequest,
   TngFlowContextMenuSource,

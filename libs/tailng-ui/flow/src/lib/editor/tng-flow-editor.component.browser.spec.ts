@@ -7,12 +7,14 @@ import { TngFlowConnectionTemplateDirective } from '../connection-template/tng-f
 import { TngFlowNodeTemplateDirective } from '../node-template/tng-flow-node-template.directive';
 import type { TngFlowNodesArrangementRequest } from '../types/tng-flow-arrangement.types';
 import type { TngFlowEditorCommandRequest } from '../types/tng-flow-command.types';
+import type { TngFlowConnectionPathType } from '../types/tng-flow-connection.types';
 import type { TngFlowContextMenuRequest } from '../types/tng-flow-context-menu.types';
 import type {
   TngFlowLayoutEngine,
   TngFlowLayoutGraph,
   TngFlowNodesLayoutRequest,
 } from '../types/tng-flow-layout.types';
+import type { TngFlowPresentation } from '../types/tng-flow-presentation.types';
 import type {
   TngFlowConnectionCandidate,
   TngFlowConnectionType,
@@ -205,6 +207,13 @@ const connectionGeometries: readonly TngFlowConnectionType[] = [
   'segment',
   'straight',
 ];
+const routedConnectionTypes: readonly TngFlowConnectionPathType[] = [
+  'straight',
+  'bezier',
+  'orthogonal',
+  'orthogonal-rounded',
+  'adaptive',
+];
 
 function createConnectionGeometryDefinition(targetOffset = 0): TngFlowDefinition {
   return {
@@ -239,6 +248,115 @@ function createConnectionGeometryDefinition(targetOffset = 0): TngFlowDefinition
   };
 }
 
+function createRoutedConnectionDefinition(): TngFlowDefinition {
+  return {
+    id: 'tailng-routing-geometries',
+    nodes: routedConnectionTypes.flatMap((pathType, index) => {
+      const y = 24 + index * 125;
+      return [
+        {
+          id: `${pathType}-routing-source`,
+          type: 'source',
+          name: `${pathType} routing source`,
+          position: { x: 32, y },
+          ports: [{ id: 'output', direction: 'output', kind: 'control' }],
+        },
+        {
+          id: `${pathType}-routing-target`,
+          type: 'target',
+          name: `${pathType} routing target`,
+          position: { x: 540, y: y + 52 },
+          ports: [{ id: 'input', direction: 'input', kind: 'control' }],
+        },
+      ];
+    }),
+    connections: routedConnectionTypes.map((pathType) => ({
+      id: `${pathType}-routing-connection`,
+      source: { nodeId: `${pathType}-routing-source`, portId: 'output' },
+      target: { nodeId: `${pathType}-routing-target`, portId: 'input' },
+      label: pathType,
+      routing: {
+        type: pathType,
+        offset: 24,
+        radius: pathType === 'orthogonal-rounded' ? 16 : 0,
+        waypoints:
+          pathType === 'orthogonal-rounded'
+            ? [
+                { x: 330, y: 420 },
+                { x: 390, y: 460 },
+              ]
+            : undefined,
+      },
+      targetMarker: 'arrow',
+    })),
+  };
+}
+
+function createPerformanceDefinition(connectionCount: number): TngFlowDefinition {
+  const targetCount = 10;
+  const sourceCount = Math.ceil(connectionCount / targetCount);
+  const sources = Array.from({ length: sourceCount }, (_, index) => ({
+    id: `performance-source-${index}`,
+    type: 'source',
+    name: `Source ${index + 1}`,
+    position: { x: 24 + (index % 5) * 180, y: 24 + Math.floor(index / 5) * 132 },
+    ports: [
+      {
+        id: 'output',
+        direction: 'output' as const,
+        kind: 'data' as const,
+        multiple: true,
+      },
+    ],
+  }));
+  const targets = Array.from({ length: targetCount }, (_, index) => ({
+    id: `performance-target-${index}`,
+    type: 'target',
+    name: `Target ${index + 1}`,
+    position: { x: 1120, y: 24 + index * 132 },
+    ports: [
+      {
+        id: 'input',
+        direction: 'input' as const,
+        kind: 'data' as const,
+        multiple: true,
+      },
+    ],
+  }));
+  return {
+    id: `performance-${connectionCount}`,
+    nodes: [...sources, ...targets],
+    connections: Array.from({ length: connectionCount }, (_, index) => ({
+      id: `performance-connection-${index}`,
+      source: {
+        nodeId: `performance-source-${Math.floor(index / targetCount)}`,
+        portId: 'output',
+      },
+      target: {
+        nodeId: `performance-target-${index % targetCount}`,
+        portId: 'input',
+      },
+      routing: { type: 'orthogonal-rounded' as const, radius: 8, offset: 16 },
+    })),
+  };
+}
+
+function createPerformancePresentation(animatedCount: number): TngFlowPresentation {
+  return {
+    connections: Object.fromEntries(
+      Array.from({ length: animatedCount }, (_, index) => [
+        `performance-connection-${index}`,
+        {
+          status: 'active',
+          motion: 'flow',
+          motionSpeed: 'normal',
+          motionDirection: 'forward',
+        },
+      ]),
+    ),
+  };
+}
+
 @Component({
   imports: [TngFlowConnectionTemplateDirective, TngFlowEditorComponent],
   template: `
@@ -249,7 +367,7 @@ function createConnectionGeometryDefinition(targetOffset = 0): TngFlowDefinition
       [fitOnInit]="false"
       [showControls]="false"
     >
-      <ng-template tngFlowConnection let-connection>
+      <ng-template tngFlowConnectionLabel let-connection>
         <span data-testid="browser-custom-connection-label">{{ connection.label }}</span>
       </ng-template>
     </tng-flow-editor>
@@ -264,6 +382,31 @@ class BrowserConnectionTemplateHost {
   };
 }
 
+@Component({
+  imports: [TngFlowEditorComponent],
+  template: `
+    <tng-flow-editor
+      [definition]="definition"
+      [presentation]="presentation"
+      [connectionOptions]="connectionOptions()"
+      [fitOnInit]="false"
+    />
+  `,
+})
+class BrowserMotionHost {
+  public readonly connectionOptions = signal({ motionPreference: 'disabled' as const });
+  protected readonly definition = definition;
+  protected readonly presentation = {
+    connections: {
+      'start-to-finish': {
+        status: 'warning' as const,
+        motion: 'pulse' as const,
+        message: 'Waiting for approval',
+      },
+    },
+  };
+}
+
 function nextPaint(): Promise<void> {
   return new Promise((resolvePaint) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolvePaint()));
@@ -271,7 +414,7 @@ function nextPaint(): Promise<void> {
 }
 
 async function waitForRenderedConnectionPaths(host: HTMLElement): Promise<void> {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
     const paths = host.querySelectorAll<SVGPathElement>('[data-connection-id] .f-connection-path');
     if (
       paths.length > 0 &&
@@ -349,6 +492,16 @@ const protectedGraphKeys: readonly string[] = [
   'Enter',
   'Escape',
 ];
+const performanceScenarios = [
+  { name: '100 static connections', connectionCount: 100, animatedCount: 0 },
+  { name: '100 animated connections', connectionCount: 100, animatedCount: 100 },
+  { name: '300 static connections', connectionCount: 300, animatedCount: 0 },
+  {
+    name: '50 animated within a 300-connection graph',
+    connectionCount: 300,
+    animatedCount: 50,
+  },
+] as const;
 
 describe('TngFlowEditorComponent browser contracts', () => {
   it('keeps default labels at the true midpoint of all geometries while moving and zooming', async () => {
@@ -428,6 +581,120 @@ describe('TngFlowEditorComponent browser contracts', () => {
       expectContentAtPathMidpoint(connection);
     }
   });
+
+  it('renders every TailNG path type with resolved geometry, labels, markers, and waypoints', async () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', createRoutedConnectionDefinition());
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('showControls', false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    const host = fixture.nativeElement as HTMLElement;
+    await waitForRenderedConnectionPaths(host);
+    const rendererTypes: Readonly<Record<TngFlowConnectionPathType, string>> = {
+      straight: 'straight',
+      bezier: 'bezier',
+      orthogonal: 'segment',
+      'orthogonal-rounded': 'segment',
+      adaptive: 'adaptive-curve',
+    };
+
+    for (const pathType of routedConnectionTypes) {
+      const connection = host.querySelector<HTMLElement>(
+        `[data-connection-id="${pathType}-routing-connection"]`,
+      );
+      const path = connection?.querySelector<SVGPathElement>('.f-connection-path');
+      expect(connection?.getAttribute('data-path-type')).toBe(pathType);
+      expect(connection?.getAttribute('data-f-connection-type')).toBe(rendererTypes[pathType]);
+      expect(path?.getAttribute('d')?.length).toBeGreaterThan(5);
+      expect(connection?.querySelector('f-connection-marker-arrow')).not.toBeNull();
+      expect(connection?.querySelector('[data-label-placement="center"]')).not.toBeNull();
+    }
+
+    const straightPath = host
+      .querySelector('[data-connection-id="straight-routing-connection"] .f-connection-path')
+      ?.getAttribute('d');
+    const bezierPath = host
+      .querySelector('[data-connection-id="bezier-routing-connection"] .f-connection-path')
+      ?.getAttribute('d');
+    const orthogonalPath = host
+      .querySelector('[data-connection-id="orthogonal-routing-connection"] .f-connection-path')
+      ?.getAttribute('d');
+    const roundedPath = host
+      .querySelector(
+        '[data-connection-id="orthogonal-rounded-routing-connection"] .f-connection-path',
+      )
+      ?.getAttribute('d');
+
+    expect(straightPath).not.toMatch(/[CQ]/u);
+    expect(bezierPath).toMatch(/C/u);
+    expect(orthogonalPath).not.toMatch(/[CQ]/u);
+    expect(roundedPath).toMatch(/Q/u);
+    expect(
+      host.querySelector(
+        '[data-connection-id="orthogonal-rounded-routing-connection"] f-connection-waypoints',
+      ),
+    ).not.toBeNull();
+  });
+
+  it('applies pulse motion and honors the programmatic reduced-motion fallback', async () => {
+    const fixture = TestBed.createComponent(BrowserMotionHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    const host = fixture.nativeElement as HTMLElement;
+    await waitForRenderedConnectionPaths(host);
+    const connection = host.querySelector<HTMLElement>('[data-connection-id="start-to-finish"]');
+    const path = connection?.querySelector<SVGPathElement>('.f-connection-path');
+
+    expect(connection?.getAttribute('data-motion')).toBe('pulse');
+    expect(connection?.getAttribute('aria-description')).toContain('Waiting for approval');
+    expect(getComputedStyle(path!).animationName).toBe('none');
+    expect(getComputedStyle(path!).strokeDasharray).toBe('none');
+
+    fixture.componentInstance.connectionOptions.set({ motionPreference: 'enabled' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    const enabledPath = host.querySelector<SVGPathElement>(
+      '[data-connection-id="start-to-finish"] .f-connection-path',
+    );
+    expect(host.querySelector('.tng-flow-editor')?.getAttribute('data-motion-preference')).toBe(
+      'enabled',
+    );
+    expect(getComputedStyle(enabledPath!).animationName).toBe('tng-flow-connection-pulse');
+  });
+
+  it.each(performanceScenarios)(
+    'renders $name within the large-graph budget',
+    async ({ connectionCount, animatedCount }) => {
+      const fixture = TestBed.createComponent(TngFlowEditorComponent);
+      fixture.componentRef.setInput('definition', createPerformanceDefinition(connectionCount));
+      fixture.componentRef.setInput('presentation', createPerformancePresentation(animatedCount));
+      fixture.componentRef.setInput('fitOnInit', false);
+      fixture.componentRef.setInput('showControls', false);
+
+      const renderStarted = performance.now();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const host = fixture.nativeElement as HTMLElement;
+      await waitForRenderedConnectionPaths(host);
+      const renderDuration = performance.now() - renderStarted;
+
+      expect(host.querySelectorAll('[data-connection-id]')).toHaveLength(connectionCount);
+      expect(host.querySelectorAll('[data-motion="flow"]')).toHaveLength(animatedCount);
+      expect(renderDuration).toBeLessThan(10_000);
+
+      const frameStarted = performance.now();
+      await nextPaint();
+      expect(performance.now() - frameStarted).toBeLessThan(2_500);
+    },
+    15_000,
+  );
 
   it('keeps custom labels truncated, accessible, selected, and path-safe on all geometries', async () => {
     const fixture = TestBed.createComponent(BrowserConnectionTemplateHost);
@@ -1424,12 +1691,13 @@ describe('TngFlowEditorComponent browser contracts', () => {
     expect(targetPorts).toHaveLength(2);
     expect(sourcePorts[0].style.top).not.toBe(sourcePorts[1].style.top);
     expect(host.querySelector('.tng-flow-port__label')).toBeNull();
-    expect(host.querySelectorAll('marker[id*="f-connection-marker-"]').length).toBeGreaterThanOrEqual(
-      2,
-    );
     expect(
-      host.querySelector('path.f-connection-path[marker-start], path.f-connection-path[marker-end]') ??
-        host.querySelector('[marker-start], [marker-end]'),
+      host.querySelectorAll('marker[id*="f-connection-marker-"]').length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      host.querySelector(
+        'path.f-connection-path[marker-start], path.f-connection-path[marker-end]',
+      ) ?? host.querySelector('[marker-start], [marker-end]'),
     ).not.toBeNull();
 
     const editor = fixture.componentInstance as unknown as {
@@ -1524,12 +1792,13 @@ describe('TngFlowEditorComponent browser contracts', () => {
     expect(sourcePort?.hasAttribute('data-custom-point-connected')).toBe(true);
     expect(targetPort?.hasAttribute('data-custom-point-connected')).toBe(true);
     expect(host.querySelector('.tng-flow-port__label')).toBeNull();
-    expect(host.querySelectorAll('marker[id*="f-connection-marker-"]').length).toBeGreaterThanOrEqual(
-      2,
-    );
     expect(
-      host.querySelector('path.f-connection-path[marker-start], path.f-connection-path[marker-end]') ??
-        host.querySelector('[marker-start], [marker-end]'),
+      host.querySelectorAll('marker[id*="f-connection-marker-"]').length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      host.querySelector(
+        'path.f-connection-path[marker-start], path.f-connection-path[marker-end]',
+      ) ?? host.querySelector('[marker-start], [marker-end]'),
     ).not.toBeNull();
 
     const editor = fixture.componentInstance as unknown as {

@@ -1,11 +1,22 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import { alignTngFlowNodes, distributeTngFlowNodes } from '../../index';
+import {
+  DEFAULT_TNG_FLOW_CONNECTION_OPTIONS,
+  RECOMMENDED_TNG_FLOW_CONNECTION_OPTIONS,
+  alignTngFlowNodes,
+  distributeTngFlowNodes,
+  resolveTngFlowConnectionOptions,
+} from '../../index';
 import type {
   TngFlowArrangementOperation,
   TngFlowConnection,
+  TngFlowConnectionPathType,
+  TngFlowConnectionRouting,
+  TngFlowConnectionWaypointsChange,
   TngFlowConnectionTemplateContext,
   TngFlowContextMenuRequest,
   TngFlowEditorCommandRequest,
+  TngFlowEditorConnectionOptions,
+  TngFlowEditorOptions,
   TngFlowLayoutEngine,
   TngFlowLayoutGraph,
   TngFlowNodeBounds,
@@ -150,5 +161,48 @@ describe('Flow production public contracts', () => {
         selected: boolean;
       }>
     >();
+  });
+
+  it('exports renderer-neutral connection routing, defaults, and controlled waypoint events', () => {
+    const routing: TngFlowConnectionRouting = {
+      type: 'orthogonal-rounded',
+      offset: 24,
+      radius: 12,
+      waypoints: [{ x: 320, y: 180 }],
+    };
+    const options: TngFlowEditorConnectionOptions = {
+      defaultConnection: RECOMMENDED_TNG_FLOW_CONNECTION_OPTIONS,
+      waypointsEnabled: true,
+      motionPreference: 'system',
+    };
+    const editorOptions: TngFlowEditorOptions = {
+      defaultConnection: {
+        routing: { type: 'orthogonal-rounded', offset: 24, radius: 12 },
+        marker: 'arrow',
+        labelPlacement: 'center',
+      },
+      connectionSelectionEnabled: true,
+      connectionReassignmentEnabled: true,
+      connectionWaypointsEnabled: true,
+    };
+    const connection: TngFlowConnection = {
+      id: 'routed',
+      source: { nodeId: 'source', portId: 'output' },
+      target: { nodeId: 'target', portId: 'input' },
+      routing,
+    };
+    const change: TngFlowConnectionWaypointsChange = {
+      connectionId: connection.id,
+      previousWaypoints: routing.waypoints ?? [],
+      waypoints: [{ x: 360, y: 220 }],
+    };
+
+    expect(DEFAULT_TNG_FLOW_CONNECTION_OPTIONS.routing.type).toBe('bezier');
+    expect(resolveTngFlowConnectionOptions(connection, options).routing.type).toBe(
+      'orthogonal-rounded',
+    );
+    expect(change.waypoints).toEqual([{ x: 360, y: 220 }]);
+    expect(editorOptions.defaultConnection?.marker).toBe('arrow');
+    expectTypeOf(routing.type).toEqualTypeOf<TngFlowConnectionPathType | undefined>();
   });
 });

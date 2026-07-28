@@ -72,6 +72,27 @@
     </app-docs-example-tabs-section>
   </section>
 
+  <section id="connection-routing-and-execution" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Connection routing and execution states"
+      description="Choose a persisted path shape, radius, offset, markers, label, and waypoints, then apply transient status and motion without changing the workflow structure."
+      ariaLabel="Connection routing and execution state demo"
+      tabListAriaLabel="Connection routing demo"
+      defaultValue="interactive"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="interactive"
+        label="Interactive lab"
+        panelTitle="Connection routing and execution state laboratory"
+        [codeTabs]="connectionRoutingDemoCodeTabs"
+      >
+        <app-connection-routing-demo />
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
   <section id="branch-and-merge-workflow" class="docs-overview-block">
     <app-docs-example-tabs-section
       heading="Branch and merge workflow"

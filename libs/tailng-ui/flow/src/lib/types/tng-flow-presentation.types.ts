@@ -12,15 +12,13 @@ export type TngFlowConnectionStatus =
   | 'error'
   | 'disabled';
 
-export type TngFlowConnectionMotion = 'none' | 'flow';
+export type TngFlowConnectionMotion = 'none' | 'flow' | 'pulse';
 
 export type TngFlowConnectionMotionSpeed = 'slow' | 'normal' | 'fast';
 
 export type TngFlowConnectionMotionDirection = 'forward' | 'reverse';
 
-export type TngFlowNodePresentation<
-  TStatus extends string = TngFlowNodeStatus,
-> = Readonly<{
+export type TngFlowNodePresentation<TStatus extends string = TngFlowNodeStatus> = Readonly<{
   status?: TStatus;
   progress?: number | null;
   statusMessage?: string | null;
@@ -35,6 +33,7 @@ export type TngFlowConnectionPresentation = Readonly<{
   motion?: TngFlowConnectionMotion;
   motionSpeed?: TngFlowConnectionMotionSpeed;
   motionDirection?: TngFlowConnectionMotionDirection;
+  message?: string | null;
   /** @deprecated Use `motion: 'flow'` instead. */
   animated?: boolean;
 }>;
@@ -46,9 +45,7 @@ export type TngFlowPresentation<TStatus extends string = TngFlowNodeStatus> = Re
 
 export const EMPTY_TNG_FLOW_PRESENTATION: TngFlowPresentation = Object.freeze({});
 
-export type TngFlowResolvedNodeView<
-  TStatus extends string = TngFlowNodeStatus,
-> = Readonly<{
+export type TngFlowResolvedNodeView<TStatus extends string = TngFlowNodeStatus> = Readonly<{
   selected: boolean;
   disabled: boolean;
   locked: boolean;
@@ -72,6 +69,7 @@ export type TngFlowResolvedConnectionView = Readonly<{
   motion: TngFlowConnectionMotion;
   motionSpeed: TngFlowConnectionMotionSpeed;
   motionDirection: TngFlowConnectionMotionDirection;
+  message: string | null;
   /** @deprecated Use `motion !== 'none'` instead. */
   animated: boolean;
 }>;

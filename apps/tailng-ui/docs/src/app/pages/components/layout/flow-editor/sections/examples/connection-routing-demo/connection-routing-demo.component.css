@@ -1,0 +1,93 @@
+:host {
+  display: block;
+}
+
+.connection-routing-demo {
+  overflow: hidden;
+  border: 1px solid var(--tng-semantic-border-default, #e2e8f0);
+  border-radius: 1rem;
+  background: var(--tng-semantic-background-surface, #fff);
+  box-shadow: 0 24px 60px rgb(15 23 42 / 8%);
+}
+
+.connection-routing-demo__intro {
+  padding: 1rem 1.25rem;
+  background:
+    radial-gradient(circle at 90% 0%, rgb(99 102 241 / 15%), transparent 36%),
+    var(--tng-semantic-background-muted, #f8fafc);
+}
+
+.connection-routing-demo__intro span {
+  color: var(--tng-semantic-accent-brand, #4f46e5);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.connection-routing-demo__intro h4,
+.connection-routing-demo__intro p {
+  margin: 0;
+}
+
+.connection-routing-demo__intro h4 {
+  margin-top: 0.25rem;
+  color: var(--tng-semantic-foreground-primary, #0f172a);
+  font-size: 1.2rem;
+}
+
+.connection-routing-demo__intro p {
+  max-width: 54rem;
+  margin-top: 0.3rem;
+  color: var(--tng-semantic-foreground-muted, #64748b);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.connection-routing-demo__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.65rem;
+  padding: 1rem 1.25rem;
+  border-block: 1px solid var(--tng-semantic-border-subtle, #e2e8f0);
+}
+
+.connection-routing-demo__controls label {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  color: var(--tng-semantic-foreground-muted, #64748b);
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
+.connection-routing-demo__controls select,
+.connection-routing-demo__controls input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding-inline: 0.55rem;
+  color: var(--tng-semantic-foreground-primary, #0f172a);
+  font: inherit;
+  font-weight: 500;
+  background: var(--tng-semantic-background-surface, #fff);
+  border: 1px solid var(--tng-semantic-border-default, #cbd5e1);
+  border-radius: 0.45rem;
+}
+
+.connection-routing-demo__controls input[type='range'] {
+  padding-inline: 0;
+}
+
+.connection-routing-demo__canvas {
+  height: 33rem;
+  min-height: 28rem;
+  --tng-flow-border-color: transparent;
+  --tng-flow-border-radius: 0;
+}
+
+@media (max-width: 640px) {
+  .connection-routing-demo__canvas {
+    height: 29rem;
+  }
+}

@@ -88,6 +88,34 @@
             <td>Runs after built-in connection validation for application-specific rules.</td>
           </tr>
           <tr>
+            <td><code>options</code></td>
+            <td><code>TngFlowEditorOptions | null</code></td>
+            <td><code>null</code></td>
+            <td>
+              Configures editor-level routing, marker and label defaults, global connection
+              selection and reassignment gates, waypoint editing, and motion preference.
+              Per-connection values take precedence.
+            </td>
+          </tr>
+          <tr>
+            <td><code>connectionOptions</code></td>
+            <td><code>TngFlowEditorConnectionOptions | null</code></td>
+            <td><code>null</code></td>
+            <td>
+              Focused compatibility input for the same connection options. Values supplied here take
+              precedence over matching fields in <code>options</code>.
+            </td>
+          </tr>
+          <tr>
+            <td><code>connectionAriaLabel</code></td>
+            <td><code>TngFlowConnectionAriaLabelFactory | null</code></td>
+            <td><code>null</code></td>
+            <td>
+              Optional accessible-name factory receiving the connection, endpoint descriptions, and
+              resolved presentation state.
+            </td>
+          </tr>
+          <tr>
             <td><code>keyboardOptions</code></td>
             <td><code>TngFlowKeyboardOptions | null</code></td>
             <td><code>null</code></td>
@@ -236,6 +264,14 @@
             <td>After a reassigned endpoint produces a valid complete connection.</td>
           </tr>
           <tr>
+            <td><code>connectionWaypointsChange</code></td>
+            <td><code>TngFlowConnectionWaypointsChange</code></td>
+            <td>
+              Once after an enabled waypoint add, move, or remove interaction commits in edit mode.
+              The application writes the returned points into a new definition snapshot.
+            </td>
+          </tr>
+          <tr>
             <td><code>connectionsDeleteRequested</code></td>
             <td><code>TngFlowConnectionsDeleteRequest</code></td>
             <td>When editable selected connections are requested for deletion.</td>
@@ -360,7 +396,8 @@
               Source and target are <code>TngFlowEndpoint</code> values containing
               <code>nodeId</code> and <code>portId</code>. Connections also support
               <code>label</code>, <code>description</code>, typed data, disabled, reassignable,
-              selectable, and line type.
+              selectable, persisted <code>routing</code>, source and target markers, and label
+              placement. The legacy renderer-named <code>type</code> property is deprecated.
             </td>
           </tr>
           <tr>
@@ -372,8 +409,8 @@
             <td><code>TngFlowConnectionPresentation</code></td>
             <td>none</td>
             <td>
-              Status and emphasis plus flowing motion, speed, and direction. This state is never
-              persisted into the graph connection.
+              Status, message and emphasis plus flow or pulse motion, speed, and direction. This
+              state is never persisted into the graph connection.
             </td>
           </tr>
           <tr>
@@ -416,12 +453,59 @@
     </p>
   </section>
 
+  <section id="connection-routing" class="docs-overview-block">
+    <h3>Connection routing</h3>
+    <p>
+      Persist path geometry in <code>connection.routing</code>. A connection override wins over
+      <code>options.defaultConnection</code>, which wins over TailNG's compatibility default.
+      Existing definitions remain Bézier unless an application opts into another default.
+    </p>
+    <div class="docs-api-table-wrap">
+      <table class="docs-api-table">
+        <thead>
+          <tr>
+            <th>Path</th>
+            <th>Behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>straight</code></td>
+            <td>Direct source-to-target line.</td>
+          </tr>
+          <tr>
+            <td><code>bezier</code></td>
+            <td>Smooth cubic curve and the backward-compatible default.</td>
+          </tr>
+          <tr>
+            <td><code>orthogonal</code></td>
+            <td>Horizontal and vertical segments with square corners.</td>
+          </tr>
+          <tr>
+            <td><code>orthogonal-rounded</code></td>
+            <td>Horizontal and vertical segments using the configured corner radius.</td>
+          </tr>
+          <tr>
+            <td><code>adaptive</code></td>
+            <td>A side-aware curve that adapts its control points to endpoint direction.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <code>offset</code> and <code>radius</code> are non-negative canvas values.
+      <code>waypoints</code> are canvas coordinates. Set
+      <code>connectionWaypointsEnabled: true</code> to show editing handles on selected connections
+      in edit mode; inspect and readonly modes only render the saved route.
+    </p>
+  </section>
+
   <section id="connection-motion" class="docs-overview-block">
     <h3>Connection motion</h3>
     <p>
       Set connection motion through <code>presentation.connections</code>. Motion changes only the
       SVG path presentation, so straight, Bézier, segmented, and adaptive connections retain their
-      existing geometry. Multiple connections can move at the same time.
+      existing geometry. Multiple connections can animate at the same time.
     </p>
     <div class="docs-api-table-wrap">
       <table class="docs-api-table">
@@ -436,9 +520,12 @@
         <tbody>
           <tr>
             <td><code>motion</code></td>
-            <td><code>'none' | 'flow'</code></td>
+            <td><code>'none' | 'flow' | 'pulse'</code></td>
             <td><code>'none'</code></td>
-            <td>Shows a directional travelling dash when set to <code>'flow'</code>.</td>
+            <td>
+              <code>flow</code> shows a directional travelling dash. <code>pulse</code> emphasizes a
+              waiting or retrying route without implying direction.
+            </td>
           </tr>
           <tr>
             <td><code>motionSpeed</code></td>
@@ -465,8 +552,9 @@
       </table>
     </div>
     <p>
-      Reduced-motion preferences disable the dash animation while preserving a static emphasized
-      path, so execution state remains visible without movement.
+      <code>options.motionPreference</code> accepts <code>system</code>, <code>enabled</code>, or
+      <code>disabled</code>. Reduced motion preserves a static emphasized path, so execution state
+      remains visible without movement.
     </p>
   </section>
 
@@ -525,11 +613,12 @@
   <section id="connection-template-context" class="docs-overview-block">
     <h3>Connection labels and template context</h3>
     <p>
-      A connection with <code>label</code> receives a default, visually truncated midpoint label
-      while retaining its complete accessible name. <code>description</code> supplies additional
-      accessible and hover context. Add <code>&lt;ng-template tngFlowConnection&gt;</code> to
-      replace only the default label content. Flow Editor retains the path, true-path midpoint
-      shell, validation badge, selection, reassignment, and accessibility behavior.
+      A connection with <code>label</code> receives a default, visually truncated path label while
+      retaining its complete accessible name. <code>description</code> supplies additional
+      accessible and hover context. Add <code>&lt;ng-template tngFlowConnectionLabel&gt;</code> to
+      replace only the default label content. The earlier <code>tngFlowConnection</code> spelling
+      remains supported. Flow Editor retains the path, true-path midpoint shell, validation badge,
+      selection, reassignment, and accessibility behavior.
     </p>
     <div class="docs-api-table-wrap">
       <table class="docs-api-table">
@@ -571,8 +660,8 @@
     </div>
     <p>
       The first connection-template contract deliberately omits <code>midpoint</code>. Foblex
-      positions the editor-owned shell at half the true path length for adaptive, Bézier, segmented,
-      and straight connections.
+      positions the editor-owned shell at the configured start, center, or end position along the
+      true path for adaptive, Bézier, orthogonal, and straight connections.
     </p>
   </section>
 

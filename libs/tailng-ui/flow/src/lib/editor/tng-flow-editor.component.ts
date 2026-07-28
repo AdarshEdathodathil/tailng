@@ -24,6 +24,7 @@ import {
   F_A11Y_CONFIG,
   FCanvasComponent,
   FConnectionMarkerArrow,
+  FConnectionMarkerCircle,
   FConnectorDirective,
   FFlowComponent,
   FFlowModule,
@@ -34,6 +35,7 @@ import {
   withA11y,
 } from '@foblex/flow';
 import { TngButtonComponent } from '@tailng-ui/components';
+import { TngFlowConnectionMarkerDiamondDirective } from './tng-flow-connection-marker-diamond.directive';
 import { TngFlowFoblexA11yBridgeDirective } from './tng-flow-foblex-a11y-bridge.directive';
 import {
   TngFlowKeyboardConfig,
@@ -57,6 +59,12 @@ import {
 } from '../layout/tng-flow-layout-coordinator';
 import { TNG_FLOW_LAYOUT_ENGINE } from '../layout/tng-flow-layout.provider';
 import { resolveTngFlowCapabilities } from '../model/tng-flow-capabilities';
+import {
+  resolveTngFlowConnectionOptions,
+  tngFlowLabelPlacementPosition,
+  tngFlowPathTypeToRendererType,
+  type TngResolvedFlowConnectionOptions,
+} from '../model/tng-flow-connection-options';
 import { createTngFlowConnectorId, parseTngFlowConnectorId } from '../model/tng-flow-connector-id';
 import {
   TNG_FLOW_CUSTOM_POINTS_PER_SIDE,
@@ -104,6 +112,15 @@ import type {
   TngFlowEditorCommandSource,
 } from '../types/tng-flow-command.types';
 import type { TngFlowConnectionTemplateContext } from '../types/tng-flow-connection-template.types';
+import {
+  DEFAULT_TNG_FLOW_CONNECTION_OPTIONS,
+  type TngFlowConnectionAriaLabelFactory,
+  type TngFlowConnectionWaypointsChange,
+  type TngFlowDefaultConnectionOptions,
+  type TngFlowEditorConnectionOptions,
+  type TngFlowEditorOptions,
+  type TngFlowMotionPreference,
+} from '../types/tng-flow-connection.types';
 import type {
   TngFlowContextMenuRequest,
   TngFlowContextMenuTarget,
@@ -257,14 +274,14 @@ const TNG_FLOW_SMART_GUIDE_MODIFIERS = new Set<TngFlowSmartGuideModifier>([
   'shift',
 ]);
 
-type FoblexPointLike = Readonly<{ x: number; y: number }>;
-type FoblexCanvasChangeLike = Readonly<{ position: FoblexPointLike; scale: number }>;
-type FoblexCreateConnectionLike = Readonly<{
+type RendererPointLike = Readonly<{ x: number; y: number }>;
+type RendererCanvasChangeLike = Readonly<{ position: RendererPointLike; scale: number }>;
+type RendererCreateConnectionLike = Readonly<{
   sourceId: string;
   targetId: string | undefined;
-  dropPosition: FoblexPointLike;
+  dropPosition: RendererPointLike;
 }>;
-type FoblexCreateNodeLike = Readonly<{
+type RendererCreateNodeLike = Readonly<{
   data: unknown;
   externalItemRect: Readonly<{
     x: number;
@@ -273,31 +290,58 @@ type FoblexCreateNodeLike = Readonly<{
     height: number;
   }>;
 }>;
-type FoblexDeleteSelectedLike = Readonly<{
+type RendererDeleteSelectedLike = Readonly<{
   nodeIds: readonly string[];
   connectionIds: readonly string[];
 }>;
-type FoblexMoveNodesLike = Readonly<{
-  nodes: readonly Readonly<{ id: string; position: FoblexPointLike }>[];
+type RendererMoveNodesLike = Readonly<{
+  nodes: readonly Readonly<{ id: string; position: RendererPointLike }>[];
 }>;
-type FoblexReassignConnectionLike = Readonly<{
+type RendererReassignConnectionLike = Readonly<{
   connectionId: string;
   endpoint: 'source' | 'target';
   previousSourceId: string;
   nextSourceId: string | undefined;
   previousTargetId: string;
   nextTargetId: string | undefined;
-  dropPosition: FoblexPointLike;
+  dropPosition: RendererPointLike;
 }>;
-type FoblexSelectionChangeLike = Readonly<{
+type RendererSelectionChangeLike = Readonly<{
   nodeIds: readonly string[];
   connectionIds: readonly string[];
 }>;
+type RendererConnectionWaypointsChangedLike = Readonly<{
+  connectionId: string;
+  waypoints: readonly RendererPointLike[];
+}>;
+type ConnectionBooleanOptionKey =
+  | 'connectionReassignmentEnabled'
+  | 'connectionSelectionEnabled'
+  | 'connectionWaypointsEnabled';
+type LegacyConnectionBooleanOptionKey =
+  | 'reassignmentEnabled'
+  | 'selectionEnabled'
+  | 'waypointsEnabled';
 type MultiSelectEventLike = Readonly<{
   ctrlKey: boolean;
   metaKey: boolean;
   shiftKey: boolean;
 }>;
+
+// eslint-disable-next-line complexity, max-params -- Canonical and compatibility aliases have explicit precedence across two inputs.
+function resolveConnectionBooleanOption(
+  focusedOptions: TngFlowEditorConnectionOptions | null,
+  editorOptions: TngFlowEditorOptions | null,
+  key: ConnectionBooleanOptionKey,
+  legacyKey: LegacyConnectionBooleanOptionKey,
+  fallback: boolean,
+): boolean {
+  const focusedValue = focusedOptions?.[key] ?? focusedOptions?.[legacyKey];
+  if (focusedValue !== undefined) {
+    return focusedValue;
+  }
+  return editorOptions?.[key] ?? editorOptions?.[legacyKey] ?? fallback;
+}
 type NodePortGroups = Readonly<{
   ports: readonly TngFlowPort[];
   bySide: Readonly<Record<TngFlowPortSide, readonly TngFlowPort[]>>;
@@ -352,8 +396,10 @@ type ContextMenuInvocation = Readonly<{
   imports: [
     FFlowModule,
     FConnectionMarkerArrow,
+    FConnectionMarkerCircle,
     NgTemplateOutlet,
     TngButtonComponent,
+    TngFlowConnectionMarkerDiamondDirective,
     TngFlowFoblexA11yBridgeDirective,
     TngFlowNodeComponent,
     TngFlowPortComponent,
@@ -381,7 +427,7 @@ export class TngFlowEditorComponent<
 > {
   private readonly canvas = viewChild.required(FCanvasComponent);
   private readonly flow = viewChild(FFlowComponent);
-  private readonly foblexA11yBridge = viewChild.required(TngFlowFoblexA11yBridgeDirective);
+  private readonly rendererA11yBridge = viewChild.required(TngFlowFoblexA11yBridgeDirective);
   private readonly connectors = viewChildren(FConnectorDirective);
   protected readonly connectionTemplate = contentChild(
     TngFlowConnectionTemplateDirective<TConnectionData>,
@@ -414,11 +460,11 @@ export class TngFlowEditorComponent<
   private readonly provisionalPositions = signal<ReadonlyMap<string, TngFlowPoint>>(new Map());
   /** Last measured node sizes for nearest-border geometry. */
   private readonly measuredNodeSizes = signal<ReadonlyMap<string, TngFlowSize>>(new Map());
-  /** Active pointer-connect source connector id while Foblex is in connections-dragging. */
+  /** Active pointer-connect source connector id while the renderer is dragging a connection. */
   private readonly pointerConnectionSourceId = signal<string | null>(null);
 
   private get connectionSession(): FCreateConnectionSession {
-    return this.foblexA11yBridge().connectionSession as FCreateConnectionSession;
+    return this.rendererA11yBridge().connectionSession as FCreateConnectionSession;
   }
 
   public readonly definition = input<TngFlowDefinition<TData, TConnectionData> | null>(null);
@@ -441,6 +487,12 @@ export class TngFlowEditorComponent<
   public readonly selection = input<TngFlowSelection>(EMPTY_TNG_FLOW_SELECTION);
   public readonly viewport = input<TngFlowViewport | null>(null);
   public readonly connectionValidator = input<TngFlowConnectionValidator<TData> | null>(null);
+  public readonly options = input<TngFlowEditorOptions | null>(null);
+  public readonly connectionOptions = input<TngFlowEditorConnectionOptions | null>(null);
+  public readonly connectionAriaLabel =
+    input<TngFlowConnectionAriaLabelFactory<TConnectionData> | null>(null);
+  public readonly connectionAriaLabelFactory =
+    input<TngFlowConnectionAriaLabelFactory<TConnectionData> | null>(null);
   /** Overrides an engine configured with `provideTngFlowLayoutEngine` for this editor. */
   public readonly layoutEngine = input<TngFlowLayoutEngine<TData, TConnectionData> | null>(null);
   public readonly keyboardOptions = input<TngFlowKeyboardOptions | null>(null);
@@ -484,6 +536,7 @@ export class TngFlowEditorComponent<
   public readonly nodeCreateRequested = output<TngFlowNodeCreateRequest<TData>>();
   public readonly connectionCreateRequested = output<TngFlowConnectionCreateRequest>();
   public readonly connectionReconnectRequested = output<TngFlowConnectionReconnectRequest>();
+  public readonly connectionWaypointsChange = output<TngFlowConnectionWaypointsChange>();
   public readonly connectionsDeleteRequested = output<TngFlowConnectionsDeleteRequest>();
   public readonly nodesDeleteRequested = output<TngFlowNodesDeleteRequest>();
   public readonly nodesLayoutRequested = output<TngFlowNodesLayoutRequest>();
@@ -678,6 +731,92 @@ export class TngFlowEditorComponent<
   protected readonly useArrowMarkers = computed(
     () => this.useNearestBorderLayout() || this.useCustomPointsLayout(),
   );
+  private readonly compatibilityConnectionDefaults = computed<TngFlowDefaultConnectionOptions>(
+    () =>
+      this.useArrowMarkers()
+        ? Object.freeze({
+            ...DEFAULT_TNG_FLOW_CONNECTION_OPTIONS,
+            sourceMarker: 'arrow',
+            targetMarker: 'arrow',
+          })
+        : DEFAULT_TNG_FLOW_CONNECTION_OPTIONS,
+  );
+  private readonly effectiveConnectionOptions = computed<TngFlowEditorConnectionOptions>(() => {
+    const editorOptions = this.options() ?? {};
+    const connectionOptions = this.connectionOptions() ?? {};
+    return {
+      ...editorOptions,
+      ...connectionOptions,
+      defaultConnection: {
+        ...editorOptions.defaultConnection,
+        ...connectionOptions.defaultConnection,
+        routing: {
+          ...editorOptions.defaultConnection?.routing,
+          ...connectionOptions.defaultConnection?.routing,
+        },
+      },
+    };
+  });
+  private readonly connectionSelectionEnabled = computed(() =>
+    resolveConnectionBooleanOption(
+      this.connectionOptions(),
+      this.options(),
+      'connectionSelectionEnabled',
+      'selectionEnabled',
+      true,
+    ),
+  );
+  private readonly connectionReassignmentEnabled = computed(() =>
+    resolveConnectionBooleanOption(
+      this.connectionOptions(),
+      this.options(),
+      'connectionReassignmentEnabled',
+      'reassignmentEnabled',
+      true,
+    ),
+  );
+  private readonly connectionWaypointsEnabled = computed(() =>
+    resolveConnectionBooleanOption(
+      this.connectionOptions(),
+      this.options(),
+      'connectionWaypointsEnabled',
+      'waypointsEnabled',
+      false,
+    ),
+  );
+  private readonly resolvedConnectionOptions = computed(() => {
+    const editorOptions = this.effectiveConnectionOptions();
+    const compatibilityDefaults = this.compatibilityConnectionDefaults();
+    return new Map(
+      this.graphConnections().map((connection) => [
+        connection.id,
+        resolveTngFlowConnectionOptions(connection, editorOptions, compatibilityDefaults),
+      ]),
+    );
+  });
+  private readonly rendererConnectionWaypoints = computed(
+    () =>
+      new Map(
+        [...this.resolvedConnectionOptions()].map(([connectionId, options]) => [
+          connectionId,
+          options.routing.waypoints.map((point) => ({ x: point.x, y: point.y })),
+        ]),
+      ),
+  );
+  protected readonly motionPreference = computed<TngFlowMotionPreference>(
+    () => this.effectiveConnectionOptions()?.motionPreference ?? 'system',
+  );
+  protected readonly createSourceMarker = computed(
+    () =>
+      this.effectiveConnectionOptions()?.defaultConnection?.sourceMarker ??
+      this.compatibilityConnectionDefaults().sourceMarker,
+  );
+  protected readonly createTargetMarker = computed(
+    () =>
+      this.effectiveConnectionOptions()?.defaultConnection?.targetMarker ??
+      this.effectiveConnectionOptions()?.defaultConnection?.marker ??
+      this.compatibilityConnectionDefaults().targetMarker,
+  );
   private readonly connectedCustomPointConnectorIds = computed(() => {
     if (!this.useCustomPointsLayout()) {
       return new Set<string>();
@@ -772,14 +911,8 @@ export class TngFlowEditorComponent<
     let remaining: Map<string, TngFlowPoint> | null = null;
     for (const node of nodes) {
       const next = provisional.get(node.id);
-      if (
-        next !== undefined &&
-        next.x === node.position.x &&
-        next.y === node.position.y
-      ) {
-        if (remaining === null) {
-          remaining = new Map(provisional);
-        }
+      if (next?.x === node.position.x && next.y === node.position.y) {
+        remaining ??= new Map(provisional);
         remaining.delete(node.id);
       }
     }
@@ -1122,17 +1255,35 @@ export class TngFlowEditorComponent<
   }
 
   protected connectionDescription(connection: TngFlowConnection<TConnectionData>): string | null {
-    return this.normalizeOptionalText(connection.description);
+    const description = this.normalizeOptionalText(connection.description);
+    const view = this.connectionViewFor(connection.id);
+    const runtimeDescription =
+      view.status === 'idle' && view.message === null
+        ? null
+        : [`Status: ${view.status}.`, view.message].filter((part) => part !== null).join(' ');
+    return [description, runtimeDescription].filter((part) => part !== null).join(' ') || null;
   }
 
-  protected connectionAriaLabel(connection: TngFlowConnection<TConnectionData>): string {
+  protected connectionAccessibleLabel(connection: TngFlowConnection<TConnectionData>): string {
+    const source = this.connectionEndpointAriaLabel(connection.source);
+    const target = this.connectionEndpointAriaLabel(connection.target);
+    const customLabel = (this.connectionAriaLabel() ?? this.connectionAriaLabelFactory())?.(
+      connection,
+      {
+        source,
+        target,
+        view: this.connectionViewFor(connection.id),
+      },
+    );
+    const normalizedCustomLabel = this.normalizeOptionalText(customLabel);
+    if (normalizedCustomLabel !== null) {
+      return normalizedCustomLabel;
+    }
     const label = this.connectionLabel(connection);
     if (label !== null) {
       return label;
     }
-    return `Connection from ${this.connectionEndpointAriaLabel(
-      connection.source,
-    )} to ${this.connectionEndpointAriaLabel(connection.target)}`;
+    return `Connection from ${source} to ${target}`;
   }
 
   protected connectionTitle(connection: TngFlowConnection<TConnectionData>): string | null {
@@ -1142,6 +1293,67 @@ export class TngFlowEditorComponent<
       return `${label} — ${description}`;
     }
     return description ?? label;
+  }
+
+  protected connectionOptionsFor(
+    connection: TngFlowConnection<TConnectionData>,
+  ): TngResolvedFlowConnectionOptions {
+    const options = this.resolvedConnectionOptions().get(connection.id);
+    if (options === undefined) {
+      throw new Error(`Unknown TailNG flow connection "${connection.id}".`);
+    }
+    return options;
+  }
+
+  protected connectionRendererType(options: TngResolvedFlowConnectionOptions): string {
+    return tngFlowPathTypeToRendererType(options.routing.type);
+  }
+
+  protected connectionLabelPosition(options: TngResolvedFlowConnectionOptions): number {
+    return tngFlowLabelPlacementPosition(options.labelPlacement);
+  }
+
+  protected connectionRendererWaypoints(connectionId: string): RendererPointLike[] {
+    const waypoints = this.rendererConnectionWaypoints().get(connectionId);
+    if (waypoints === undefined) {
+      throw new Error(`Unknown TailNG flow connection "${connectionId}".`);
+    }
+    return waypoints;
+  }
+
+  protected connectionSelectionDisabled(connection: TngFlowConnection<TConnectionData>): boolean {
+    return (
+      !this.canSelect() ||
+      this.connectionSelectionEnabled() === false ||
+      connection.selectable === false
+    );
+  }
+
+  protected connectionReassignmentDisabled(
+    connection: TngFlowConnection<TConnectionData>,
+  ): boolean {
+    return (
+      !this.canEdit() ||
+      this.connectionReassignmentEnabled() === false ||
+      connection.disabled === true ||
+      connection.reassignable === false
+    );
+  }
+
+  protected connectionWaypointsRendered(options: TngResolvedFlowConnectionOptions): boolean {
+    return options.routing.waypoints.length > 0 || this.connectionWaypointsEnabled();
+  }
+
+  protected connectionWaypointsVisible(
+    connection: TngFlowConnection<TConnectionData>,
+    view: TngFlowResolvedConnectionView,
+  ): boolean {
+    return (
+      this.canEdit() &&
+      this.connectionWaypointsEnabled() &&
+      connection.disabled !== true &&
+      view.selected
+    );
   }
 
   protected viewFor(nodeId: string): TngFlowResolvedNodeView<TStatus> {
@@ -1251,6 +1463,14 @@ export class TngFlowEditorComponent<
     if (this.connectedCustomPointConnectorIds().has(connectorId)) {
       return true;
     }
+    return this.isUnconnectedCustomPointVisible(nodeId, port, connectorId);
+  }
+
+  private isUnconnectedCustomPointVisible(
+    nodeId: string,
+    port: TngFlowPort,
+    connectorId: string,
+  ): boolean {
     const sourceConnectorId = this.activeCustomPointConnectSourceId();
     if (sourceConnectorId === null) {
       return port.direction === 'output' && this.isNodeSelected(nodeId);
@@ -1399,6 +1619,39 @@ export class TngFlowEditorComponent<
     }
   }
 
+  protected onConnectionWaypointsChanged(event: RendererConnectionWaypointsChangedLike): void {
+    const connection = this.connectionForWaypointChange(event.connectionId);
+    if (connection === null) {
+      return;
+    }
+    const previousWaypoints = (connection.routing?.waypoints ?? []).map((point) =>
+      Object.freeze({ x: point.x, y: point.y }),
+    );
+    const waypoints = event.waypoints
+      .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+      .map((point) => Object.freeze(this.toPoint(point)));
+    if (this.arePointListsEqual(previousWaypoints, waypoints)) {
+      return;
+    }
+    this.runInAngular(() =>
+      this.connectionWaypointsChange.emit({
+        connectionId: connection.id,
+        previousWaypoints,
+        waypoints,
+      }),
+    );
+  }
+
+  private connectionForWaypointChange(
+    connectionId: string,
+  ): TngFlowConnection<TConnectionData> | null {
+    if (!this.canEdit() || !this.connectionWaypointsEnabled()) {
+      return null;
+    }
+    const connection = this.graphIndex().connectionsById.get(connectionId);
+    return connection === undefined || connection.disabled === true ? null : connection;
+  }
+
   protected onValidationIssueActivated(
     issue: TngFlowValidationIssue,
     source: TngFlowValidationIssueActivationSource,
@@ -1407,7 +1660,7 @@ export class TngFlowEditorComponent<
     this.runInAngular(() => this.validationIssueActivated.emit({ issue, source }));
   }
 
-  protected onMoveNodes(event: FoblexMoveNodesLike): void {
+  protected onMoveNodes(event: RendererMoveNodesLike): void {
     if (!this.canEdit()) {
       return;
     }
@@ -1422,7 +1675,7 @@ export class TngFlowEditorComponent<
     }
   }
 
-  protected onCreateNode(event: FoblexCreateNodeLike): void {
+  protected onCreateNode(event: RendererCreateNodeLike): void {
     if (!this.canEdit()) {
       return;
     }
@@ -1439,7 +1692,7 @@ export class TngFlowEditorComponent<
     }
   }
 
-  protected onCreateConnection(event: FoblexCreateConnectionLike): void {
+  protected onCreateConnection(event: RendererCreateConnectionLike): void {
     if (!this.canEdit()) {
       return;
     }
@@ -1457,7 +1710,7 @@ export class TngFlowEditorComponent<
     this.emitConnectionCreated(candidate, event.dropPosition);
   }
 
-  protected onReassignConnection(event: FoblexReassignConnectionLike): void {
+  protected onReassignConnection(event: RendererReassignConnectionLike): void {
     if (!this.canEdit()) {
       return;
     }
@@ -1477,7 +1730,7 @@ export class TngFlowEditorComponent<
     this.emitConnectionReconnected(connection, candidate, event);
   }
 
-  protected onSelectionChange(event: FoblexSelectionChangeLike): void {
+  protected onSelectionChange(event: RendererSelectionChangeLike): void {
     if (!this.canSelect()) {
       this.requestSelectionResync();
       return;
@@ -1495,7 +1748,7 @@ export class TngFlowEditorComponent<
     this.requestSelectionResync();
   }
 
-  protected onDeleteSelected(event: FoblexDeleteSelectedLike): void {
+  protected onDeleteSelected(event: RendererDeleteSelectedLike): void {
     if (!this.canEdit()) {
       return;
     }
@@ -1504,7 +1757,7 @@ export class TngFlowEditorComponent<
     this.runInAngular(() => this.emitDeleteRequests(nodeIds, connectionIds));
   }
 
-  protected onViewportChange(event: FoblexCanvasChangeLike): void {
+  protected onViewportChange(event: RendererCanvasChangeLike): void {
     if (Number.isFinite(event.scale) && event.scale > 0) {
       this.currentCanvasScale.set(event.scale);
     }
@@ -1719,7 +1972,7 @@ export class TngFlowEditorComponent<
 
   private emitConnectionCreated(
     candidate: TngFlowConnectionCandidate<TData>,
-    dropPosition: FoblexPointLike,
+    dropPosition: RendererPointLike,
   ): void {
     this.runInAngular(() => {
       this.connectionCreateRequested.emit({
@@ -1755,7 +2008,7 @@ export class TngFlowEditorComponent<
 
   private reconnectCandidate(
     connection: TngFlowConnection<TConnectionData>,
-    event: FoblexReassignConnectionLike,
+    event: RendererReassignConnectionLike,
   ): TngFlowConnectionCandidate<TData> | undefined {
     const droppedId = event.endpoint === 'source' ? event.nextSourceId : event.nextTargetId;
     const dropped = this.resolveDroppedPort(droppedId, event.dropPosition);
@@ -1774,7 +2027,7 @@ export class TngFlowEditorComponent<
   private emitConnectionReconnected(
     connection: TngFlowConnection<TConnectionData>,
     candidate: TngFlowConnectionCandidate<TData>,
-    event: FoblexReassignConnectionLike,
+    event: RendererReassignConnectionLike,
   ): void {
     this.runInAngular(() => {
       this.connectionReconnectRequested.emit({
@@ -1811,14 +2064,14 @@ export class TngFlowEditorComponent<
 
   private resolveDroppedPort(
     connectorId: string | undefined,
-    dropPosition: FoblexPointLike,
+    dropPosition: RendererPointLike,
   ): TngFlowPortRecord<TData> | undefined {
     return connectorId === undefined
       ? this.portRecordAtPoint(dropPosition)
       : this.portRecordForConnectorId(connectorId);
   }
 
-  private portRecordAtPoint(point: FoblexPointLike): TngFlowPortRecord<TData> | undefined {
+  private portRecordAtPoint(point: RendererPointLike): TngFlowPortRecord<TData> | undefined {
     if (typeof this.documentRef.elementsFromPoint !== 'function') {
       return undefined;
     }
@@ -2067,6 +2320,7 @@ export class TngFlowEditorComponent<
     this.provisionalPositions.set(next);
   }
 
+  // eslint-disable-next-line complexity -- Sampling intentionally handles missing DOM state and unchanged points defensively.
   private sampleProvisionalPositionsFromDom(): void {
     const host = this.flowHost();
     if (host === null) {
@@ -2086,11 +2340,7 @@ export class TngFlowEditorComponent<
       const rect = element.getBoundingClientRect();
       const canvasPoint = this.screenToCanvas({ x: rect.left, y: rect.top });
       const previous = next.get(nodeId);
-      if (
-        previous === undefined ||
-        previous.x !== canvasPoint.x ||
-        previous.y !== canvasPoint.y
-      ) {
+      if (previous?.x !== canvasPoint.x || previous.y !== canvasPoint.y) {
         next.set(nodeId, canvasPoint);
         changed = true;
       }
@@ -2406,7 +2656,7 @@ export class TngFlowEditorComponent<
     ) {
       return;
     }
-    if (!this.beginFoblexConnection(sourceConnectorId, sourceConnector)) {
+    if (!this.beginRendererConnection(sourceConnectorId, sourceConnector)) {
       this.announcer.announce('Connection authoring is unavailable', 'assertive');
       return;
     }
@@ -2432,7 +2682,7 @@ export class TngFlowEditorComponent<
     this.focusKeyboardConnectionTarget(session);
   }
 
-  private beginFoblexConnection(
+  private beginRendererConnection(
     sourceConnectorId: string,
     sourceConnector: FConnectorDirective,
   ): boolean {
@@ -2846,11 +3096,7 @@ export class TngFlowEditorComponent<
     for (const bounds of measured) {
       next.set(bounds.id, bounds.size);
       const prior = previous.get(bounds.id);
-      if (
-        prior === undefined ||
-        prior.width !== bounds.size.width ||
-        prior.height !== bounds.size.height
-      ) {
+      if (prior?.width !== bounds.size.width || prior.height !== bounds.size.height) {
         changed = true;
       }
     }
@@ -3025,7 +3271,17 @@ export class TngFlowEditorComponent<
     );
   }
 
-  private toPoint(point: FoblexPointLike): TngFlowPoint {
+  private arePointListsEqual(
+    left: readonly TngFlowPoint[],
+    right: readonly TngFlowPoint[],
+  ): boolean {
+    return (
+      left.length === right.length &&
+      left.every((point, index) => point.x === right[index]?.x && point.y === right[index]?.y)
+    );
+  }
+
+  private toPoint(point: RendererPointLike): TngFlowPoint {
     return { x: point.x, y: point.y };
   }
 

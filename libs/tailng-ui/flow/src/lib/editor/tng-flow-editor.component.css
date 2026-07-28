@@ -64,7 +64,7 @@
 }
 
 .tng-flow-editor__connection.f-selected {
-  --ff-connection-width: calc(3 * var(--_ring));
+  --ff-connection-width: var(--tng-flow-connection-selected-width, calc(3 * var(--_ring)));
 }
 
 .tng-flow-editor__node[data-validation='error'] .tng-flow-editor__node-content {
@@ -162,8 +162,7 @@
 
 .tng-flow-editor .tng-flow-editor__port-socket[data-keyboard-connection-source] {
   border-radius: 999px;
-  box-shadow: 0 0 0 calc(4 * var(--_ring))
-    color-mix(in srgb, var(--_focus) 35%, transparent);
+  box-shadow: 0 0 0 calc(4 * var(--_ring)) color-mix(in srgb, var(--_focus) 35%, transparent);
 }
 
 .tng-flow-editor[data-attachment-layout='custom-points']

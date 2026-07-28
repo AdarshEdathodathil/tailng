@@ -14,11 +14,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { TngFlowEditorComponent } from './tng-flow-editor.component';
 import { TngFlowConnectionTemplateDirective } from '../connection-template/tng-flow-connection-template.directive';
+import { createTngFlowConnectorId } from '../model/tng-flow-connector-id';
 import { TngFlowNodeTemplateDirective } from '../node-template/tng-flow-node-template.directive';
 import { createTngFlowPaletteItemEnvelope } from '../palette-item/tng-flow-palette-item.directive';
-import { createTngFlowConnectorId } from '../model/tng-flow-connector-id';
 import type { TngFlowNodesArrangementRequest } from '../types/tng-flow-arrangement.types';
 import type { TngFlowEditorCommandRequest } from '../types/tng-flow-command.types';
+import type { TngFlowConnectionWaypointsChange } from '../types/tng-flow-connection.types';
 import type { TngFlowContextMenuRequest } from '../types/tng-flow-context-menu.types';
 import type { TngFlowValidationIssueActivatedEvent } from '../types/tng-flow-events.types';
 import type { TngFlowLayoutEngine } from '../types/tng-flow-layout.types';
@@ -204,6 +205,10 @@ type EditorEventHarness = Readonly<{
   }) => void;
   onSelectionChange: (event: FSelectionChangeEvent) => void;
   onDeleteSelected: (event: FDeleteSelectedEvent) => void;
+  onConnectionWaypointsChanged: (event: {
+    connectionId: string;
+    waypoints: readonly { x: number; y: number }[];
+  }) => void;
   onViewportChange: (event: { position: { x: number; y: number }; scale: number }) => void;
   onReassignConnection: (event: {
     connectionId: string;
@@ -846,6 +851,134 @@ describe('TngFlowEditorComponent', () => {
     expect(connection?.getAttribute('data-motion-speed')).toBe('normal');
     expect(connection?.getAttribute('data-motion-direction')).toBe('forward');
     expect(connection?.hasAttribute('data-animated')).toBe(false);
+  });
+
+  it('resolves TailNG routing, markers, and label placement without exposing renderer names', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('connections', [
+      {
+        ...labelledConnections[0],
+        routing: { type: 'orthogonal-rounded', offset: 28, radius: 14 },
+        sourceMarker: 'circle',
+        targetMarker: 'diamond',
+        labelOptions: { placement: 'end', offset: 7, offsetX: 4, offsetY: -2 },
+      },
+    ]);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const connection = host.querySelector<HTMLElement>('[data-connection-id="custom-to-default"]');
+    const connectionDebugElement = fixture.debugElement.query(
+      By.css('[data-connection-id="custom-to-default"]'),
+    );
+    const renderer = connectionDebugElement.componentInstance as {
+      fOffset: number;
+      fRadius: number;
+      fType: string;
+    };
+
+    expect(connection?.getAttribute('data-path-type')).toBe('orthogonal-rounded');
+    expect(connection?.getAttribute('data-f-connection-type')).toBe('segment');
+    expect(renderer).toMatchObject({ fOffset: 28, fRadius: 14, fType: 'segment' });
+    expect(connection?.querySelector('f-connection-marker-circle')).not.toBeNull();
+    expect(
+      connection?.querySelector(
+        'f-connection-marker-circle.tng-flow-editor__connection-marker-diamond',
+      ),
+    ).not.toBeNull();
+    expect(
+      connection?.querySelector('[data-connection-content]')?.getAttribute('data-label-placement'),
+    ).toBe('end');
+    expect(
+      (connection?.querySelector('[data-connection-content]') as HTMLElement | null)?.style
+        .translate,
+    ).toBe('4px -2px');
+  });
+
+  it('supports pulse presentation, motion preference, runtime descriptions, and aria factories', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('connections', labelledConnections);
+    fixture.componentRef.setInput('options', { motionPreference: 'disabled' });
+    fixture.componentRef.setInput(
+      'connectionAriaLabel',
+      (_connection: TngFlowConnection, context: { source: string; target: string }) =>
+        `Route ${context.source} toward ${context.target}`,
+    );
+    fixture.componentRef.setInput('presentation', {
+      connections: {
+        'custom-to-default': {
+          status: 'warning',
+          motion: 'pulse',
+          message: 'Waiting for approval',
+        },
+      },
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const editor = host.querySelector<HTMLElement>('.tng-flow-editor');
+    const connection = host.querySelector<HTMLElement>('[data-connection-id="custom-to-default"]');
+
+    expect(editor?.getAttribute('data-motion-preference')).toBe('disabled');
+    expect(connection?.getAttribute('data-motion')).toBe('pulse');
+    expect(connection?.getAttribute('aria-label')).toContain(
+      'Route Custom tool output port Result',
+    );
+    expect(connection?.getAttribute('aria-description')).toContain('Status: warning.');
+    expect(connection?.getAttribute('aria-description')).toContain('Waiting for approval');
+  });
+
+  it('emits one immutable committed waypoint change only while waypoint editing is enabled', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    const originalWaypoints = Object.freeze([Object.freeze({ x: 160, y: 80 })]);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('connections', [
+      {
+        ...labelledConnections[0],
+        routing: { type: 'orthogonal-rounded', waypoints: originalWaypoints },
+      },
+    ]);
+    fixture.componentRef.setInput('selection', {
+      nodeIds: new Set<string>(),
+      connectionIds: new Set(['custom-to-default']),
+    });
+    fixture.componentRef.setInput('options', { connectionWaypointsEnabled: true });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const waypointChanges = vi.fn<(event: TngFlowConnectionWaypointsChange) => void>();
+    fixture.componentInstance.connectionWaypointsChange.subscribe(waypointChanges);
+    const editor = fixture.componentInstance as unknown as EditorEventHarness;
+    editor.onConnectionWaypointsChanged({
+      connectionId: 'custom-to-default',
+      waypoints: [
+        { x: 220, y: 100 },
+        { x: 300, y: 140 },
+      ],
+    });
+
+    expect(waypointChanges).toHaveBeenCalledOnce();
+    expect(waypointChanges).toHaveBeenCalledWith({
+      connectionId: 'custom-to-default',
+      previousWaypoints: [{ x: 160, y: 80 }],
+      waypoints: [
+        { x: 220, y: 100 },
+        { x: 300, y: 140 },
+      ],
+    });
+    expect(originalWaypoints).toEqual([{ x: 160, y: 80 }]);
+
+    fixture.componentRef.setInput('mode', 'inspect');
+    fixture.detectChanges();
+    editor.onConnectionWaypointsChanged({
+      connectionId: 'custom-to-default',
+      waypoints: [{ x: 400, y: 200 }],
+    });
+    expect(waypointChanges).toHaveBeenCalledOnce();
   });
 
   it('distributes ports evenly across each node side', () => {
@@ -1743,7 +1876,9 @@ describe('TngFlowEditorComponent', () => {
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
-    const port = host.querySelector<HTMLElement>('[data-node-id="labeled"] > [data-port-id="start"]');
+    const port = host.querySelector<HTMLElement>(
+      '[data-node-id="labeled"] > [data-port-id="start"]',
+    );
     expect(port?.getAttribute('data-side')).toBe('top');
     expect(port?.querySelector('.tng-flow-port__label')?.textContent).toContain('Start');
     expect(host.querySelector('f-connection-marker-arrow')).toBeNull();
@@ -1867,15 +2002,19 @@ describe('TngFlowEditorComponent', () => {
 
     const host = fixture.nativeElement as HTMLElement;
     const visibleOn = (nodeId: string): HTMLElement[] =>
-      [...host.querySelectorAll<HTMLElement>(`[data-node-id="${nodeId}"] > [data-custom-point-visible]`)];
+      Array.from(
+        host.querySelectorAll<HTMLElement>(
+          `[data-node-id="${nodeId}"] > [data-custom-point-visible]`,
+        ),
+      );
 
-    expect(visibleOn('source').every((port) => port.getAttribute('data-direction') === 'output')).toBe(
-      true,
-    );
+    expect(
+      visibleOn('source').every((port) => port.getAttribute('data-direction') === 'output'),
+    ).toBe(true);
     expect(visibleOn('source').length).toBe(12);
-    expect(visibleOn('target').every((port) => port.getAttribute('data-direction') === 'input')).toBe(
-      true,
-    );
+    expect(
+      visibleOn('target').every((port) => port.getAttribute('data-direction') === 'input'),
+    ).toBe(true);
     expect(visibleOn('target').length).toBe(12);
     expect(visibleOn('other')).toHaveLength(0);
   });
@@ -1901,7 +2040,9 @@ describe('TngFlowEditorComponent', () => {
       },
     ]);
     fixture.componentRef.setInput('fitOnInit', false);
-    fixture.componentInstance.connectionCreateRequested.subscribe((request) => created.push(request));
+    fixture.componentInstance.connectionCreateRequested.subscribe((request) =>
+      created.push(request),
+    );
     fixture.detectChanges();
 
     (

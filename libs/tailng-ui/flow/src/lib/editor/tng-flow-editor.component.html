@@ -1,5 +1,5 @@
 <ng-content select="ng-template[tngFlowNode]" />
-<ng-content select="ng-template[tngFlowConnection]" />
+<ng-content select="ng-template[tngFlowConnection], ng-template[tngFlowConnectionLabel]" />
 
 <section
   class="tng-flow-editor"
@@ -9,6 +9,7 @@
   [attr.data-readonly]="effectiveMode() === 'readonly' ? '' : null"
   [attr.data-validation]="validationSeverity()"
   [attr.data-attachment-layout]="attachmentLayout()"
+  [attr.data-motion-preference]="motionPreference()"
   [style.--tng-flow-focus-ring-compensation]="focusRingCompensation()"
 >
   <f-flow
@@ -26,6 +27,7 @@
     (fCreateNode)="onCreateNode($event)"
     (fCreateConnection)="onCreateConnection($event)"
     (fReassignConnection)="onReassignConnection($event)"
+    (fConnectionWaypointsChanged)="onConnectionWaypointsChanged($event)"
     (fSelectionChange)="onSelectionChange($event)"
     (fDeleteSelected)="onDeleteSelected($event)"
   >
@@ -57,11 +59,25 @@
     >
       @if (canEdit()) {
         <f-connection-for-create>
-          @if (useArrowMarkers()) {
+          @if (createSourceMarker() === 'arrow') {
             <f-connection-marker-arrow type="f-connection-marker-start-all-states" />
+          } @else if (createSourceMarker() === 'circle') {
+            <f-connection-marker-circle type="f-connection-marker-start-all-states" />
+          } @else if (createSourceMarker() === 'diamond') {
+            <f-connection-marker-circle
+              tngFlowConnectionMarkerDiamond
+              type="f-connection-marker-start-all-states"
+            />
           }
-          @if (useArrowMarkers()) {
+          @if (createTargetMarker() === 'arrow') {
             <f-connection-marker-arrow type="f-connection-marker-end-all-states" />
+          } @else if (createTargetMarker() === 'circle') {
+            <f-connection-marker-circle type="f-connection-marker-end-all-states" />
+          } @else if (createTargetMarker() === 'diamond') {
+            <f-connection-marker-circle
+              tngFlowConnectionMarkerDiamond
+              type="f-connection-marker-end-all-states"
+            />
           }
         </f-connection-for-create>
       }
@@ -69,17 +85,18 @@
       <ng-container ngProjectAs="[fConnections]">
         @for (connection of renderableConnections(); track connection.id) {
           @let view = connectionViewFor(connection.id);
+          @let resolvedConnection = connectionOptionsFor(connection);
           <f-connection
             class="tng-flow-editor__connection"
             [fConnectionId]="connection.id"
             [fSourceId]="connectorId(connection.source.nodeId, connection.source.portId)"
             [fTargetId]="connectorId(connection.target.nodeId, connection.target.portId)"
-            [fType]="connection.type ?? 'bezier'"
-            [fSelectionDisabled]="!canSelect() || connection.selectable === false"
-            [fReassignDisabled]="
-              !canEdit() || connection.disabled === true || connection.reassignable === false
-            "
-            [attr.aria-label]="connectionAriaLabel(connection)"
+            [fType]="connectionRendererType(resolvedConnection)"
+            [fOffset]="resolvedConnection.routing.offset"
+            [fRadius]="resolvedConnection.routing.radius"
+            [fSelectionDisabled]="connectionSelectionDisabled(connection)"
+            [fReassignDisabled]="connectionReassignmentDisabled(connection)"
+            [attr.aria-label]="connectionAccessibleLabel(connection)"
             [attr.aria-description]="connectionDescription(connection)"
             [attr.title]="connectionTitle(connection)"
             [attr.data-connection-id]="connection.id"
@@ -92,13 +109,35 @@
             [attr.data-motion-speed]="view.motionSpeed"
             [attr.data-motion-direction]="view.motionDirection"
             [attr.data-animated]="view.animated ? '' : null"
+            [attr.data-path-type]="resolvedConnection.routing.type"
             (dblclick)="onConnectionDoubleClick($event, connection.id)"
           >
-            @if (useArrowMarkers()) {
+            @if (resolvedConnection.sourceMarker === 'arrow') {
               <f-connection-marker-arrow type="f-connection-marker-start-all-states" />
+            } @else if (resolvedConnection.sourceMarker === 'circle') {
+              <f-connection-marker-circle type="f-connection-marker-start-all-states" />
+            } @else if (resolvedConnection.sourceMarker === 'diamond') {
+              <f-connection-marker-circle
+                tngFlowConnectionMarkerDiamond
+                type="f-connection-marker-start-all-states"
+              />
             }
-            @if (useArrowMarkers()) {
+            @if (resolvedConnection.targetMarker === 'arrow') {
               <f-connection-marker-arrow type="f-connection-marker-end-all-states" />
+            } @else if (resolvedConnection.targetMarker === 'circle') {
+              <f-connection-marker-circle type="f-connection-marker-end-all-states" />
+            } @else if (resolvedConnection.targetMarker === 'diamond') {
+              <f-connection-marker-circle
+                tngFlowConnectionMarkerDiamond
+                type="f-connection-marker-end-all-states"
+              />
+            }
+            @if (connectionWaypointsRendered(resolvedConnection)) {
+              <f-connection-waypoints
+                [waypoints]="connectionRendererWaypoints(connection.id)"
+                [visibility]="connectionWaypointsVisible(connection, view)"
+                [radius]="6"
+              />
             }
             @let template = connectionTemplate()?.templateRef;
             @let label = connectionLabel(connection);
@@ -106,9 +145,14 @@
             @if (template || label || issues.length > 0) {
               <span
                 fConnectionContent
-                [position]="0.5"
+                [position]="connectionLabelPosition(resolvedConnection)"
+                [offset]="resolvedConnection.labelOffset"
+                [style.translate]="
+                  resolvedConnection.labelOffsetX + 'px ' + resolvedConnection.labelOffsetY + 'px'
+                "
                 class="tng-flow-editor__connection-content"
                 [attr.data-connection-content]="connection.id"
+                [attr.data-label-placement]="resolvedConnection.labelPlacement"
               >
                 @if (template) {
                   <span

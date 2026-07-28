@@ -1,0 +1,130 @@
+<article class="connection-routing-demo">
+  <header class="connection-routing-demo__intro">
+    <div>
+      <span>Routing laboratory</span>
+      <h4>Connection routing and execution states</h4>
+      <p>
+        Routing stays in the workflow definition. Status and motion are transient presentation
+        state. Select the first route to add, move, or remove waypoints.
+      </p>
+    </div>
+  </header>
+
+  <form class="connection-routing-demo__controls" aria-label="Connection appearance controls">
+    <label>
+      <span>Path</span>
+      <select [value]="pathType()" (change)="pathType.set($any($event.target).value)">
+        @for (path of pathTypes; track path) {
+          <option [value]="path">{{ path }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Radius {{ radius() }}</span>
+      <input
+        type="range"
+        min="0"
+        max="32"
+        [value]="radius()"
+        (input)="radius.set(+$any($event.target).value)"
+      />
+    </label>
+
+    <label>
+      <span>Offset {{ offset() }}</span>
+      <input
+        type="range"
+        min="0"
+        max="64"
+        [value]="offset()"
+        (input)="offset.set(+$any($event.target).value)"
+      />
+    </label>
+
+    <label>
+      <span>Source marker</span>
+      <select [value]="sourceMarker()" (change)="sourceMarker.set($any($event.target).value)">
+        @for (marker of markers; track marker) {
+          <option [value]="marker">{{ marker }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Target marker</span>
+      <select [value]="targetMarker()" (change)="targetMarker.set($any($event.target).value)">
+        @for (marker of markers; track marker) {
+          <option [value]="marker">{{ marker }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Label</span>
+      <input type="text" [value]="label()" (input)="label.set($any($event.target).value)" />
+    </label>
+
+    <label>
+      <span>Status</span>
+      <select [value]="status()" (change)="status.set($any($event.target).value)">
+        @for (value of statuses; track value) {
+          <option [value]="value">{{ value }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Motion</span>
+      <select [value]="motion()" (change)="motion.set($any($event.target).value)">
+        @for (value of motions; track value) {
+          <option [value]="value">{{ value }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Speed</span>
+      <select [value]="motionSpeed()" (change)="motionSpeed.set($any($event.target).value)">
+        @for (value of speeds; track value) {
+          <option [value]="value">{{ value }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Direction</span>
+      <select [value]="motionDirection()" (change)="motionDirection.set($any($event.target).value)">
+        @for (value of directions; track value) {
+          <option [value]="value">{{ value }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Reduced motion</span>
+      <select
+        [value]="motionPreference()"
+        (change)="motionPreference.set($any($event.target).value)"
+      >
+        @for (value of motionPreferences; track value) {
+          <option [value]="value">{{ value }}</option>
+        }
+      </select>
+    </label>
+  </form>
+
+  <tng-flow-editor
+    flowId="docs-connection-routing-lab"
+    class="connection-routing-demo__canvas"
+    ariaLabel="Connection routing and execution state laboratory"
+    [definition]="definition()"
+    [selection]="selection()"
+    [presentation]="presentation()"
+    [options]="editorOptions()"
+    [fitOnInit]="false"
+    [showMinimap]="true"
+    (selectionChange)="selection.set($event)"
+    (connectionWaypointsChange)="updateWaypoints($event)"
+  />
+</article>

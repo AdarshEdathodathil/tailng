@@ -1,3 +1,9 @@
+import type {
+  TngFlowConnectionLabelOptions,
+  TngFlowConnectionMarker,
+  TngFlowConnectionRouting,
+} from './tng-flow-connection.types';
+
 export type TngFlowPoint = Readonly<{
   x: number;
   y: number;
@@ -93,6 +99,11 @@ export type TngFlowConnection<TData = unknown> = Readonly<{
   disabled?: boolean;
   reassignable?: boolean;
   selectable?: boolean;
+  routing?: TngFlowConnectionRouting;
+  sourceMarker?: TngFlowConnectionMarker;
+  targetMarker?: TngFlowConnectionMarker;
+  labelOptions?: TngFlowConnectionLabelOptions;
+  /** @deprecated Use `routing.type`. */
   type?: TngFlowConnectionType;
 }>;
 

@@ -14,10 +14,7 @@ import type {
   TngFlowNodeView,
 } from '../types/tng-flow.types';
 
-export function resolveTngFlowNodeView<
-  TNodeData,
-  TStatus extends string = TngFlowNodeStatus,
->(
+export function resolveTngFlowNodeView<TNodeData, TStatus extends string = TngFlowNodeStatus>(
   node: TngFlowNode<TNodeData>,
   selected: boolean,
   presentation: TngFlowNodePresentation<TStatus> | undefined,
@@ -47,6 +44,7 @@ export function resolveTngFlowConnectionView<TConnectionData>(
   issues: readonly TngFlowValidationIssue[],
 ): TngFlowResolvedConnectionView {
   const motion = presentation?.motion ?? (presentation?.animated === true ? 'flow' : 'none');
+  const message = presentation?.message?.trim();
   return {
     selected,
     disabled: connection.disabled === true,
@@ -58,6 +56,7 @@ export function resolveTngFlowConnectionView<TConnectionData>(
     motion,
     motionSpeed: presentation?.motionSpeed ?? 'normal',
     motionDirection: presentation?.motionDirection ?? 'forward',
+    message: message === undefined || message.length === 0 ? null : message,
     animated: motion !== 'none',
   };
 }
