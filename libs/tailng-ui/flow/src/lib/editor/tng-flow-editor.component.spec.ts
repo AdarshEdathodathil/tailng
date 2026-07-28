@@ -1588,14 +1588,56 @@ describe('TngFlowEditorComponent', () => {
     };
     expect(harness.minimapClassesFor('custom')).toEqual([
       'tng-flow-minimap__node',
+      'tng-flow-minimap__node-id--0',
       'tng-flow-minimap__node--selected',
       'tng-flow-minimap__node--highlighted',
     ]);
     expect(harness.minimapClassesFor('default')).toEqual([
       'tng-flow-minimap__node',
+      'tng-flow-minimap__node-id--1',
       'tng-flow-minimap__node--disabled',
       'tng-flow-minimap__node--error',
     ]);
+  });
+
+  it('centers the corresponding workflow node when its interactive minimap item is hovered', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('showMinimap', true);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const centerNode = vi.spyOn(fixture.componentInstance, 'centerNode');
+    const shell = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '.tng-flow-editor__minimap-shell',
+    );
+    const minimapNode = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    minimapNode.classList.add('tng-flow-minimap__node', 'tng-flow-minimap__node-id--1');
+    shell?.append(minimapNode);
+    minimapNode.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
+
+    expect(centerNode).toHaveBeenCalledOnce();
+    expect(centerNode).toHaveBeenCalledWith('default');
+  });
+
+  it('does not center nodes from hover when minimap interaction is disabled', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('nodes', nodes);
+    fixture.componentRef.setInput('showMinimap', true);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('minimapOptions', { interactive: false });
+    fixture.detectChanges();
+
+    const centerNode = vi.spyOn(fixture.componentInstance, 'centerNode');
+    const shell = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '.tng-flow-editor__minimap-shell',
+    );
+    const minimapNode = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    minimapNode.classList.add('tng-flow-minimap__node', 'tng-flow-minimap__node-id--0');
+    shell?.append(minimapNode);
+    minimapNode.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
+
+    expect(centerNode).not.toHaveBeenCalled();
   });
 
   it('keeps minimap viewport navigation active in readonly mode without graph mutations', async () => {

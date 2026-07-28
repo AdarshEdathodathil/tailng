@@ -266,6 +266,7 @@ const DEFAULT_TNG_FLOW_MINIMAP_OPTIONS: TngResolvedFlowMinimapOptions = Object.f
   interactive: true,
   ariaLabel: 'Workflow overview',
 });
+const TNG_FLOW_MINIMAP_NODE_ID_CLASS_PREFIX = 'tng-flow-minimap__node-id--';
 const DEFAULT_TNG_FLOW_SMART_GUIDE_THRESHOLD = 10;
 const TNG_FLOW_SMART_GUIDE_MODIFIERS = new Set<TngFlowSmartGuideModifier>([
   'alt',
@@ -663,6 +664,21 @@ export class TngFlowEditorComponent<
   protected readonly minimapOverRenderLimit = computed(() => {
     const limit = this.resolvedMinimapOptions().nodeRenderLimit;
     return limit > 0 && this.graphNodes().length > limit;
+  });
+  private readonly minimapNodeClassIndex = computed<
+    Readonly<{
+      classByNodeId: ReadonlyMap<string, string>;
+      nodeIdByClass: ReadonlyMap<string, string>;
+    }>
+  >(() => {
+    const classByNodeId = new Map<string, string>();
+    const nodeIdByClass = new Map<string, string>();
+    this.graphNodes().forEach((node, index) => {
+      const className = `${TNG_FLOW_MINIMAP_NODE_ID_CLASS_PREFIX}${index}`;
+      classByNodeId.set(node.id, className);
+      nodeIdByClass.set(className, node.id);
+    });
+    return { classByNodeId, nodeIdByClass };
   });
   protected readonly focusRingCompensation = computed(() => {
     return String(1 / Math.max(0.01, this.effectiveCanvasScale()));
@@ -1373,8 +1389,10 @@ export class TngFlowEditorComponent<
 
   protected minimapClassesFor(nodeId: string): string[] {
     const view = this.viewFor(nodeId);
+    const nodeIdClass = this.minimapNodeClassIndex().classByNodeId.get(nodeId);
     return [
       'tng-flow-minimap__node',
+      ...(nodeIdClass === undefined ? [] : [nodeIdClass]),
       ...(view.selected ? ['tng-flow-minimap__node--selected'] : []),
       ...(view.disabled ? ['tng-flow-minimap__node--disabled'] : []),
       ...(view.highlighted ? ['tng-flow-minimap__node--highlighted'] : []),
@@ -1798,6 +1816,29 @@ export class TngFlowEditorComponent<
     });
     canvas.redraw();
     canvas.emitCanvasChangeEvent();
+  }
+
+  protected onMinimapPointerOver(event: PointerEvent): void {
+    if (!this.showMinimap() || !this.resolvedMinimapOptions().interactive) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+    const minimapNode = target.closest<SVGElement>('.tng-flow-minimap__node');
+    if (minimapNode === null) {
+      return;
+    }
+    const nodeIdByClass = this.minimapNodeClassIndex().nodeIdByClass;
+    const nodeIdClass = (minimapNode.getAttribute('class') ?? '')
+      .split(/\s+/)
+      .find((className) => className.startsWith(TNG_FLOW_MINIMAP_NODE_ID_CLASS_PREFIX));
+    const nodeId = nodeIdClass === undefined ? undefined : nodeIdByClass.get(nodeIdClass);
+    if (nodeId !== undefined) {
+      this.centerNode(nodeId);
+    }
   }
 
   private buildConnectableTargets(): ReadonlyMap<string, string[]> {
