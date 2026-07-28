@@ -28,9 +28,11 @@ import {
   FConnectorDirective,
   FFlowComponent,
   FFlowModule,
+  FMinimapComponent,
   calculatePointerInFlow,
   provideFFlow,
   type FCreateConnectionSession,
+  type FEventTrigger,
   type IFA11yResolvedConfig,
   withA11y,
 } from '@foblex/flow';
@@ -390,6 +392,14 @@ type ContextMenuInvocation = Readonly<{
   source: 'keyboard' | 'pointer';
   clientPosition: TngFlowPoint;
 }>;
+type MinimapHoverNavigationSnapshot = Readonly<{
+  canvasPosition: TngFlowPoint;
+  canvasScale: number;
+  flowSize: TngFlowSize;
+  minimapOrigin: TngFlowPoint;
+  minimapScale: number;
+  viewBoxPosition: TngFlowPoint;
+}>;
 
 @Component({
   selector: 'tng-flow-editor',
@@ -428,6 +438,7 @@ export class TngFlowEditorComponent<
 > {
   private readonly canvas = viewChild.required(FCanvasComponent);
   private readonly flow = viewChild(FFlowComponent);
+  private readonly minimap = viewChild(FMinimapComponent);
   private readonly rendererA11yBridge = viewChild.required(TngFlowFoblexA11yBridgeDirective);
   private readonly connectors = viewChildren(FConnectorDirective);
   protected readonly connectionTemplate = contentChild(
@@ -452,10 +463,13 @@ export class TngFlowEditorComponent<
   private pendingReveal: PendingReveal | null = null;
   private lastFocusedPortConnectorId: string | null = null;
   private lastPointerClientPosition: TngFlowPoint | null = null;
+  private minimapHoverNavigationSnapshot: MinimapHoverNavigationSnapshot | null = null;
   private nodePointerSessionActive = false;
   private readonly pendingLayoutViewport = signal<PendingLayoutViewport | null>(null);
   private readonly keyboardConnection = signal<KeyboardConnectionSession | null>(null);
   private readonly currentCanvasScale = signal(1);
+  protected readonly scrollZoomLocked = signal(false);
+  protected readonly scrollZoomTrigger: FEventTrigger = () => !this.scrollZoomLocked();
   private readonly smartGuidesSuppressedForDrag = signal(false);
   /** Live positions during drag before the controlled definition catches up. */
   private readonly provisionalPositions = signal<ReadonlyMap<string, TngFlowPoint>>(new Map());
@@ -665,20 +679,13 @@ export class TngFlowEditorComponent<
     const limit = this.resolvedMinimapOptions().nodeRenderLimit;
     return limit > 0 && this.graphNodes().length > limit;
   });
-  private readonly minimapNodeClassIndex = computed<
-    Readonly<{
-      classByNodeId: ReadonlyMap<string, string>;
-      nodeIdByClass: ReadonlyMap<string, string>;
-    }>
-  >(() => {
+  private readonly minimapNodeClassById = computed<ReadonlyMap<string, string>>(() => {
     const classByNodeId = new Map<string, string>();
-    const nodeIdByClass = new Map<string, string>();
     this.graphNodes().forEach((node, index) => {
       const className = `${TNG_FLOW_MINIMAP_NODE_ID_CLASS_PREFIX}${index}`;
       classByNodeId.set(node.id, className);
-      nodeIdByClass.set(className, node.id);
     });
-    return { classByNodeId, nodeIdByClass };
+    return classByNodeId;
   });
   protected readonly focusRingCompensation = computed(() => {
     return String(1 / Math.max(0.01, this.effectiveCanvasScale()));
@@ -1006,11 +1013,13 @@ export class TngFlowEditorComponent<
   });
   private readonly minimapSyncEffect = afterRenderEffect(() => {
     if (!this.showMinimap()) {
+      this.endMinimapHoverNavigation();
       return;
     }
     this.graphNodes();
     this.resolvedNodeViews();
     this.resolvedMinimapOptions();
+    this.endMinimapHoverNavigation();
     this.canvas().redraw();
   });
   private readonly layoutViewportSyncEffect = afterRenderEffect(() => {
@@ -1077,6 +1086,10 @@ export class TngFlowEditorComponent<
 
   public zoomOut(): void {
     this.zoomBy(-this.zoomStep());
+  }
+
+  public toggleScrollZoomLock(): void {
+    this.scrollZoomLocked.update((locked) => !locked);
   }
 
   public zoomBy(delta: number): void {
@@ -1389,7 +1402,7 @@ export class TngFlowEditorComponent<
 
   protected minimapClassesFor(nodeId: string): string[] {
     const view = this.viewFor(nodeId);
-    const nodeIdClass = this.minimapNodeClassIndex().classByNodeId.get(nodeId);
+    const nodeIdClass = this.minimapNodeClassById().get(nodeId);
     return [
       'tng-flow-minimap__node',
       ...(nodeIdClass === undefined ? [] : [nodeIdClass]),
@@ -1818,27 +1831,91 @@ export class TngFlowEditorComponent<
     canvas.emitCanvasChangeEvent();
   }
 
-  protected onMinimapPointerOver(event: PointerEvent): void {
-    if (!this.showMinimap() || !this.resolvedMinimapOptions().interactive) {
+  protected onMinimapPointerMove(event: PointerEvent): void {
+    if (!this.canNavigateMinimap()) {
+      this.endMinimapHoverNavigation();
+      return;
+    }
+    if (!this.isMouseHoverPointer(event)) {
+      this.endMinimapHoverNavigation();
       return;
     }
 
-    const target = event.target;
-    if (!(target instanceof Element)) {
+    const minimap = this.minimap();
+    const flowHost = this.hostElement.nativeElement.querySelector<HTMLElement>('f-flow');
+    if (minimap === undefined || flowHost === null) {
       return;
     }
-    const minimapNode = target.closest<SVGElement>('.tng-flow-minimap__node');
-    if (minimapNode === null) {
+
+    const navigation =
+      this.minimapHoverNavigationSnapshot ?? this.beginMinimapHoverNavigation(flowHost, minimap);
+    const nextPosition = this.minimapCanvasPosition(event, navigation);
+    if (!this.isFinitePoint(nextPosition)) {
       return;
     }
-    const nodeIdByClass = this.minimapNodeClassIndex().nodeIdByClass;
-    const nodeIdClass = (minimapNode.getAttribute('class') ?? '')
-      .split(/\s+/)
-      .find((className) => className.startsWith(TNG_FLOW_MINIMAP_NODE_ID_CLASS_PREFIX));
-    const nodeId = nodeIdClass === undefined ? undefined : nodeIdByClass.get(nodeIdClass);
-    if (nodeId !== undefined) {
-      this.centerNode(nodeId);
-    }
+
+    const canvas = this.canvas();
+    canvas._setPosition(nextPosition);
+    canvas.redraw();
+    canvas.emitCanvasChangeEvent();
+  }
+
+  private canNavigateMinimap(): boolean {
+    return this.showMinimap() && this.resolvedMinimapOptions().interactive;
+  }
+
+  private isMouseHoverPointer(event: Readonly<PointerEvent>): boolean {
+    return (!event.pointerType || event.pointerType === 'mouse') && event.buttons === 0;
+  }
+
+  protected endMinimapHoverNavigation(): void {
+    this.minimapHoverNavigationSnapshot = null;
+  }
+
+  private beginMinimapHoverNavigation(
+    flowHost: Readonly<HTMLElement>,
+    minimap: Readonly<FMinimapComponent>,
+  ): MinimapHoverNavigationSnapshot {
+    const canvas = this.canvas();
+    const flowRect = flowHost.getBoundingClientRect();
+    const minimapState = minimap.state;
+    const minimapRect = minimapState.element.getBoundingClientRect();
+    const snapshot = {
+      canvasPosition: this.toPoint(canvas.getPosition()),
+      canvasScale: canvas.getScale() || 1,
+      flowSize: { width: flowRect.width, height: flowRect.height },
+      minimapOrigin: { x: minimapRect.left, y: minimapRect.top },
+      minimapScale: minimapState.scale,
+      viewBoxPosition: { x: minimapState.viewBox.x, y: minimapState.viewBox.y },
+    };
+    this.minimapHoverNavigationSnapshot = snapshot;
+    return snapshot;
+  }
+
+  private minimapCanvasPosition(
+    event: Readonly<PointerEvent>,
+    navigation: MinimapHoverNavigationSnapshot,
+  ): TngFlowPoint {
+    return {
+      x:
+        navigation.canvasPosition.x -
+        ((event.clientX - navigation.minimapOrigin.x) *
+          navigation.minimapScale *
+          navigation.canvasScale +
+          navigation.viewBoxPosition.x * navigation.canvasScale -
+          navigation.flowSize.width / 2),
+      y:
+        navigation.canvasPosition.y -
+        ((event.clientY - navigation.minimapOrigin.y) *
+          navigation.minimapScale *
+          navigation.canvasScale +
+          navigation.viewBoxPosition.y * navigation.canvasScale -
+          navigation.flowSize.height / 2),
+    };
+  }
+
+  private isFinitePoint(point: TngFlowPoint): boolean {
+    return Number.isFinite(point.x) && Number.isFinite(point.y);
   }
 
   private buildConnectableTargets(): ReadonlyMap<string, string[]> {

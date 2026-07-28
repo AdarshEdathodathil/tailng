@@ -254,7 +254,7 @@
 }
 
 :host ::ng-deep .tng-flow-editor__minimap .tng-flow-minimap__node {
-  cursor: pointer;
+  cursor: inherit;
 }
 
 :host ::ng-deep .tng-flow-editor__minimap .f-minimap-view {

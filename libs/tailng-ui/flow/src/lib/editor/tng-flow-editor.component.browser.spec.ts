@@ -19,6 +19,7 @@ import type {
   TngFlowConnectionCandidate,
   TngFlowConnectionType,
   TngFlowDefinition,
+  TngFlowViewport,
 } from '../types/tng-flow.types';
 
 const definition: TngFlowDefinition = Object.freeze({
@@ -504,7 +505,7 @@ const performanceScenarios = [
 ] as const;
 
 describe('TngFlowEditorComponent browser contracts', () => {
-  it('centers a workflow node when its rendered minimap item is hovered', async () => {
+  it('pans smoothly across the full minimap instead of snapping between nodes', async () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('definition', definition);
     fixture.componentRef.setInput('fitOnInit', false);
@@ -515,24 +516,43 @@ describe('TngFlowEditorComponent browser contracts', () => {
     await nextPaint();
 
     const host = fixture.nativeElement as HTMLElement;
-    const centerNode = vi.spyOn(fixture.componentInstance, 'centerNode').mockReturnValue(true);
-    const minimapNode = host.querySelector<SVGRectElement>('.tng-flow-minimap__node-id--1');
+    const viewportChanged = vi.fn<(viewport: TngFlowViewport) => void>();
+    fixture.componentInstance.viewportChange.subscribe(viewportChanged);
+    const minimap = host.querySelector<HTMLElement>('f-minimap');
     const minimapView = host.querySelector<SVGRectElement>('.f-minimap-view');
-    if (minimapNode === null || minimapView === null) {
-      throw new Error('Expected the minimap nodes and viewport to render.');
+    if (minimap === null || minimapView === null) {
+      throw new Error('Expected the minimap and viewport to render.');
     }
 
     expect(getComputedStyle(minimapView).pointerEvents).toBe('none');
-    const bounds = minimapNode.getBoundingClientRect();
-    expect(
-      document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2),
-    ).toBe(minimapNode);
-    minimapNode.dispatchEvent(
-      new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }),
+    const bounds = minimap.getBoundingClientRect();
+    minimap.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: bounds.left + bounds.width * 0.25,
+        clientY: bounds.top + bounds.height * 0.5,
+        pointerType: 'mouse',
+      }),
     );
+    await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
+    const firstPosition = viewportChanged.mock.lastCall?.[0]?.position;
 
-    expect(centerNode).toHaveBeenCalledOnce();
-    expect(centerNode).toHaveBeenCalledWith('finish');
+    minimap.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: bounds.left + bounds.width * 0.75,
+        clientY: bounds.top + bounds.height * 0.5,
+        pointerType: 'mouse',
+      }),
+    );
+    await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
+    const secondPosition = viewportChanged.mock.lastCall?.[0]?.position;
+
+    if (firstPosition === undefined || secondPosition === undefined) {
+      throw new Error('Expected minimap hover to emit two viewport positions.');
+    }
+    expect(secondPosition.x).toBeLessThan(firstPosition.x);
+    expect(secondPosition.y).toBeCloseTo(firstPosition.y, 4);
   });
 
   it('keeps default labels at the true midpoint of all geometries while moving and zooming', async () => {

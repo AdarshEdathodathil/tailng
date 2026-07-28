@@ -270,6 +270,15 @@ directive supports disabled state plus optional preview and placeholder `Templat
 
 Use `[mode]="'inspect'"` for an interactive execution view and `[mode]="'readonly'"` for a non-selectable viewer.
 
+## Viewport navigation
+
+The optional interactive minimap pans the canvas continuously to the mouse position anywhere in
+the overview, including the space between nodes. Pointer dragging and keyboard navigation remain
+available; set `minimapOptions.interactive` to `false` for a display-only overview.
+
+When viewport controls are shown, the lock button toggles mouse-wheel and trackpad scroll zoom.
+Locking scroll zoom does not disable the zoom in, zoom out, fit, or reset controls.
+
 ## Automatic layout
 
 Automatic layout is engine-neutral and opt-in. Install the official Dagre adapter when needed;
