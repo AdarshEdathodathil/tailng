@@ -2,11 +2,13 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
+  FCanvasComponent,
   FCreateConnectionEvent,
   FDeleteSelectedEvent,
   FMinimapComponent,
   FMoveNodesEvent,
   FSelectionChangeEvent,
+  FZoomDirective,
 } from '@foblex/flow';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -1479,6 +1481,36 @@ describe('TngFlowEditorComponent', () => {
     expect(canvas?.style.transform).toContain('matrix(1.15');
   });
 
+  it('toggles the mouse-wheel zoom lock without disabling viewport controls', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const zoom = fixture.debugElement
+      .query(By.directive(FZoomDirective))
+      .injector.get(FZoomDirective);
+    const lockControl = host.querySelector<HTMLButtonElement>(
+      'tng-button[title="Lock scroll zoom"] button',
+    );
+    const wheelEvent = new WheelEvent('wheel', { deltaY: 100 });
+
+    expect(lockControl?.getAttribute('aria-pressed')).toBe('false');
+    expect(zoom.fWheelTrigger(wheelEvent)).toBe(true);
+
+    lockControl?.click();
+    fixture.detectChanges();
+
+    const unlockControl = host.querySelector<HTMLButtonElement>(
+      'tng-button[title="Unlock scroll zoom"] button',
+    );
+    expect(unlockControl?.getAttribute('aria-pressed')).toBe('true');
+    expect(zoom.fWheelTrigger(wheelEvent)).toBe(false);
+
+    fixture.componentInstance.zoomBy(0.15);
+    expect(host.querySelector('f-canvas')?.getAttribute('style')).toContain('matrix(1.15');
+  });
+
   it('emits the canonical viewport output together with its deprecated alias', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('fitOnInit', false);
@@ -1600,27 +1632,43 @@ describe('TngFlowEditorComponent', () => {
     ]);
   });
 
-  it('centers the corresponding workflow node when its interactive minimap item is hovered', () => {
+  it('pans continuously to pointer coordinates across the interactive minimap', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('nodes', nodes);
     fixture.componentRef.setInput('showMinimap', true);
     fixture.componentRef.setInput('fitOnInit', false);
     fixture.detectChanges();
 
-    const centerNode = vi.spyOn(fixture.componentInstance, 'centerNode');
-    const shell = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
-      '.tng-flow-editor__minimap-shell',
+    const host = fixture.nativeElement as HTMLElement;
+    const flow = host.querySelector<HTMLElement>('f-flow');
+    const shell = host.querySelector<HTMLElement>('.tng-flow-editor__minimap-shell');
+    const canvas = fixture.debugElement.query(
+      (debugElement) => debugElement.componentInstance instanceof FCanvasComponent,
+    ).componentInstance as FCanvasComponent;
+    const minimap = fixture.debugElement.query(
+      (debugElement) => debugElement.componentInstance instanceof FMinimapComponent,
+    ).componentInstance as FMinimapComponent;
+    vi.spyOn(flow!, 'getBoundingClientRect').mockReturnValue(new DOMRect(100, 50, 800, 600));
+    vi.spyOn(minimap.state.element, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(20, 30, 140, 120),
     );
-    const minimapNode = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    minimapNode.classList.add('tng-flow-minimap__node', 'tng-flow-minimap__node-id--1');
-    shell?.append(minimapNode);
-    minimapNode.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
+    minimap.state.scale = 2;
+    minimap.state.viewBox.x = 10;
+    minimap.state.viewBox.y = 20;
+    const setPosition = vi.spyOn(canvas, '_setPosition');
 
-    expect(centerNode).toHaveBeenCalledOnce();
-    expect(centerNode).toHaveBeenCalledWith('default');
+    shell?.dispatchEvent(
+      new MouseEvent('pointermove', {
+        bubbles: true,
+        clientX: 50,
+        clientY: 60,
+      }),
+    );
+
+    expect(setPosition).toHaveBeenCalledWith({ x: 330, y: 220 });
   });
 
-  it('does not center nodes from hover when minimap interaction is disabled', () => {
+  it('does not pan from hover when minimap interaction is disabled', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('nodes', nodes);
     fixture.componentRef.setInput('showMinimap', true);
@@ -1628,16 +1676,18 @@ describe('TngFlowEditorComponent', () => {
     fixture.componentRef.setInput('minimapOptions', { interactive: false });
     fixture.detectChanges();
 
-    const centerNode = vi.spyOn(fixture.componentInstance, 'centerNode');
+    const canvas = fixture.debugElement.query(
+      (debugElement) => debugElement.componentInstance instanceof FCanvasComponent,
+    ).componentInstance as FCanvasComponent;
+    const setPosition = vi.spyOn(canvas, '_setPosition');
     const shell = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
       '.tng-flow-editor__minimap-shell',
     );
-    const minimapNode = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    minimapNode.classList.add('tng-flow-minimap__node', 'tng-flow-minimap__node-id--0');
-    shell?.append(minimapNode);
-    minimapNode.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
+    shell?.dispatchEvent(
+      new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }),
+    );
 
-    expect(centerNode).not.toHaveBeenCalled();
+    expect(setPosition).not.toHaveBeenCalled();
   });
 
   it('keeps minimap viewport navigation active in readonly mode without graph mutations', async () => {

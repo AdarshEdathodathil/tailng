@@ -50,6 +50,7 @@
 
     <f-canvas
       fZoom
+      [fWheelTrigger]="scrollZoomTrigger"
       [position]="viewport()?.position"
       [scale]="viewport()?.scale ?? 1"
       [fZoomMinimum]="zoomMinimum()"
@@ -372,7 +373,8 @@
         [style.width.px]="minimap.width"
         [style.height.px]="minimap.height"
         (keydown)="onMinimapKeydown($event)"
-        (pointerover)="onMinimapPointerOver($event)"
+        (pointermove)="onMinimapPointerMove($event)"
+        (pointerleave)="endMinimapHoverNavigation()"
       >
         <f-minimap
           class="tng-flow-editor__minimap"
@@ -413,6 +415,18 @@
       <tng-button appearance="outline" size="sm" title="Reset viewport" (click)="resetViewport()">
         <span aria-hidden="true">1:1</span>
         <span class="tng-flow-editor__visually-hidden">Reset viewport</span>
+      </tng-button>
+      <tng-button
+        appearance="outline"
+        size="sm"
+        [title]="scrollZoomLocked() ? 'Unlock scroll zoom' : 'Lock scroll zoom'"
+        [ariaPressed]="scrollZoomLocked()"
+        (click)="toggleScrollZoomLock()"
+      >
+        <span aria-hidden="true">{{ scrollZoomLocked() ? '🔒' : '🔓' }}</span>
+        <span class="tng-flow-editor__visually-hidden">
+          {{ scrollZoomLocked() ? 'Unlock scroll zoom' : 'Lock scroll zoom' }}
+        </span>
       </tng-button>
     </nav>
   }
