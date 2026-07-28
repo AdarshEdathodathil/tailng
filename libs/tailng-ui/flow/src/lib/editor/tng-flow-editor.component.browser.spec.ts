@@ -504,6 +504,37 @@ const performanceScenarios = [
 ] as const;
 
 describe('TngFlowEditorComponent browser contracts', () => {
+  it('centers a workflow node when its rendered minimap item is hovered', async () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('showControls', false);
+    fixture.componentRef.setInput('showMinimap', true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const centerNode = vi.spyOn(fixture.componentInstance, 'centerNode').mockReturnValue(true);
+    const minimapNode = host.querySelector<SVGRectElement>('.tng-flow-minimap__node-id--1');
+    const minimapView = host.querySelector<SVGRectElement>('.f-minimap-view');
+    if (minimapNode === null || minimapView === null) {
+      throw new Error('Expected the minimap nodes and viewport to render.');
+    }
+
+    expect(getComputedStyle(minimapView).pointerEvents).toBe('none');
+    const bounds = minimapNode.getBoundingClientRect();
+    expect(
+      document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2),
+    ).toBe(minimapNode);
+    minimapNode.dispatchEvent(
+      new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }),
+    );
+
+    expect(centerNode).toHaveBeenCalledOnce();
+    expect(centerNode).toHaveBeenCalledWith('finish');
+  });
+
   it('keeps default labels at the true midpoint of all geometries while moving and zooming', async () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('definition', createConnectionGeometryDefinition());

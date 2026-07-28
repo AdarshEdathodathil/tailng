@@ -253,6 +253,14 @@
   height: 100% !important;
 }
 
+:host ::ng-deep .tng-flow-editor__minimap .tng-flow-minimap__node {
+  cursor: pointer;
+}
+
+:host ::ng-deep .tng-flow-editor__minimap .f-minimap-view {
+  pointer-events: none;
+}
+
 .tng-flow-editor__minimap-limit {
   position: absolute;
   inset: auto 0 0;

@@ -372,6 +372,7 @@
         [style.width.px]="minimap.width"
         [style.height.px]="minimap.height"
         (keydown)="onMinimapKeydown($event)"
+        (pointerover)="onMinimapPointerOver($event)"
       >
         <f-minimap
           class="tng-flow-editor__minimap"
