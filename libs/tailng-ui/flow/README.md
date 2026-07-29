@@ -276,6 +276,10 @@ The optional interactive minimap pans the canvas continuously to the mouse posit
 the overview, including the space between nodes. Pointer dragging and keyboard navigation remain
 available; set `minimapOptions.interactive` to `false` for a display-only overview.
 
+Hover navigation is a transient preview: clicking commits the current viewport, while leaving the
+minimap restores the viewport captured when the preview began. Controlled graph, presentation,
+selection, node-view, and viewport updates do not cancel a preview while the pointer remains inside.
+
 When viewport controls are shown, the lock button toggles mouse-wheel and trackpad scroll zoom.
 Locking scroll zoom does not disable the zoom in, zoom out, fit, or reset controls.
 

@@ -1659,8 +1659,103 @@ describe('TngFlowEditorComponent', () => {
     minimap.state.viewBox.x = 10;
     minimap.state.viewBox.y = 20;
 
-    return { canvas, fixture, shell };
+    return { canvas, fixture, minimap, shell };
   }
+
+  function expectMinimapHoverToSurviveSync(
+    update: (fixture: ReturnType<typeof createInteractiveMinimapFixture>['fixture']) => void,
+  ): void {
+    const { canvas, fixture, shell } = createInteractiveMinimapFixture();
+    const setPosition = vi.spyOn(canvas, '_setPosition');
+    const emitCanvasChange = vi.spyOn(canvas, 'emitCanvasChangeEvent');
+
+    shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }));
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 330, y: 220 });
+    const emittedAfterHover = emitCanvasChange.mock.calls.length;
+
+    update(fixture);
+    fixture.detectChanges();
+
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 330, y: 220 });
+    expect(emitCanvasChange).toHaveBeenCalledTimes(emittedAfterHover);
+
+    shell.dispatchEvent(new MouseEvent('pointerleave'));
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 0, y: 0 });
+  }
+
+  it('keeps minimap hover active when an immutable definition synchronizes', () => {
+    expectMinimapHoverToSurviveSync((fixture) => {
+      fixture.componentRef.setInput('definition', {
+        id: 'synchronized-definition',
+        nodes: nodes.map((node) => ({ ...node, position: { ...node.position } })),
+        connections: [],
+      });
+    });
+  });
+
+  it('keeps minimap hover active when presentation synchronizes', () => {
+    expectMinimapHoverToSurviveSync((fixture) => {
+      fixture.componentRef.setInput('presentation', {
+        nodes: { custom: { highlighted: true } },
+      });
+    });
+  });
+
+  it('keeps minimap hover active when legacy node views synchronize', () => {
+    expectMinimapHoverToSurviveSync((fixture) => {
+      fixture.componentRef.setInput('nodeViews', {
+        custom: { status: 'running' },
+      });
+    });
+  });
+
+  it('keeps minimap hover active when selection synchronizes', () => {
+    expectMinimapHoverToSurviveSync((fixture) => {
+      fixture.componentRef.setInput('selection', {
+        nodeIds: new Set(['custom']),
+        connectionIds: new Set(),
+      });
+    });
+  });
+
+  it('keeps minimap hover active when a controlled viewport echoes the preview', () => {
+    expectMinimapHoverToSurviveSync((fixture) => {
+      fixture.componentRef.setInput('viewport', {
+        position: { x: 330, y: 220 },
+        scale: 1,
+      });
+    });
+  });
+
+  it('rebases minimap hover geometry without discarding the original reset position', () => {
+    const { canvas, fixture, minimap, shell } = createInteractiveMinimapFixture();
+    const setPosition = vi.spyOn(canvas, '_setPosition');
+
+    shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }));
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 330, y: 220 });
+
+    fixture.componentRef.setInput('definition', {
+      id: 'geometry-update',
+      nodes: nodes.map((node) => ({
+        ...node,
+        position: { x: node.position.x + 40, y: node.position.y + 20 },
+      })),
+      connections: [],
+    });
+    fixture.detectChanges();
+    minimap.state.scale = 3;
+    minimap.state.viewBox.x = 15;
+    minimap.state.viewBox.y = 25;
+
+    shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 60, clientY: 70 }));
+
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 595, y: 375 });
+    expect(Number.isFinite(canvas.getPosition().x)).toBe(true);
+    expect(Number.isFinite(canvas.getPosition().y)).toBe(true);
+
+    shell.dispatchEvent(new MouseEvent('pointerleave'));
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 0, y: 0 });
+  });
 
   it('restores hover navigation smoothly on leave and commits the latest clicked position', () => {
     const { canvas, shell } = createInteractiveMinimapFixture();
@@ -1759,6 +1854,31 @@ describe('TngFlowEditorComponent', () => {
     shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }));
     fixture.componentRef.setInput('minimapOptions', { interactive: false });
     fixture.detectChanges();
+
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 0, y: 0 });
+    expect(redrawWithAnimation).not.toHaveBeenCalled();
+  });
+
+  it('restores hover navigation immediately when the minimap is hidden', () => {
+    const { canvas, fixture, shell } = createInteractiveMinimapFixture();
+    const setPosition = vi.spyOn(canvas, '_setPosition');
+    const redrawWithAnimation = vi.spyOn(canvas, 'redrawWithAnimation');
+
+    shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }));
+    fixture.componentRef.setInput('showMinimap', false);
+    fixture.detectChanges();
+
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 0, y: 0 });
+    expect(redrawWithAnimation).not.toHaveBeenCalled();
+  });
+
+  it('restores hover navigation immediately on pointer cancellation', () => {
+    const { canvas, shell } = createInteractiveMinimapFixture();
+    const setPosition = vi.spyOn(canvas, '_setPosition');
+    const redrawWithAnimation = vi.spyOn(canvas, 'redrawWithAnimation');
+
+    shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }));
+    shell.dispatchEvent(new MouseEvent('pointercancel'));
 
     expect(setPosition).toHaveBeenLastCalledWith({ x: 0, y: 0 });
     expect(redrawWithAnimation).not.toHaveBeenCalled();
