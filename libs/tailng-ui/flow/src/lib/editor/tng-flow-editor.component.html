@@ -374,6 +374,7 @@
         [style.height.px]="minimap.height"
         (keydown)="onMinimapKeydown($event)"
         (pointermove)="onMinimapPointerMove($event)"
+        (click)="commitMinimapHoverNavigation()"
         (pointerleave)="endMinimapHoverNavigation()"
       >
         <f-minimap

@@ -1632,7 +1632,7 @@ describe('TngFlowEditorComponent', () => {
     ]);
   });
 
-  it('pans continuously to pointer coordinates across the interactive minimap', () => {
+  it('restores hover navigation on leave and commits the latest clicked position', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('nodes', nodes);
     fixture.componentRef.setInput('showMinimap', true);
@@ -1666,6 +1666,43 @@ describe('TngFlowEditorComponent', () => {
     );
 
     expect(setPosition).toHaveBeenCalledWith({ x: 330, y: 220 });
+
+    shell?.dispatchEvent(new MouseEvent('pointerleave'));
+
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 0, y: 0 });
+
+    shell?.dispatchEvent(
+      new MouseEvent('pointermove', {
+        bubbles: true,
+        clientX: 50,
+        clientY: 60,
+      }),
+    );
+    shell?.dispatchEvent(
+      new MouseEvent('pointermove', {
+        bubbles: true,
+        buttons: 1,
+        clientX: 60,
+        clientY: 70,
+      }),
+    );
+
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 330, y: 220 });
+
+    shell?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    shell?.dispatchEvent(
+      new MouseEvent('pointermove', {
+        bubbles: true,
+        clientX: 60,
+        clientY: 70,
+      }),
+    );
+
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 310, y: 200 });
+
+    shell?.dispatchEvent(new MouseEvent('pointerleave'));
+
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 330, y: 220 });
   });
 
   it('does not pan from hover when minimap interaction is disabled', () => {
