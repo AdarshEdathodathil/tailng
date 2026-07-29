@@ -7,12 +7,17 @@ const selected = new Set(
     .map((s) => s.trim())
     .filter(Boolean),
 );
+// Avoid Node's ESM loading race when Nx scans Vitest configs concurrently.
+const nodeOptions = [process.env.NODE_OPTIONS, "--import=vite-tsconfig-paths"]
+  .filter(Boolean)
+  .join(" ");
 
 const run = (cmd) =>
   execSync(cmd, {
     stdio: "inherit",
     env: {
       ...process.env,
+      NODE_OPTIONS: nodeOptions,
       NX_DAEMON: "false",
       NX_ISOLATE_PLUGINS: "false",
     },
