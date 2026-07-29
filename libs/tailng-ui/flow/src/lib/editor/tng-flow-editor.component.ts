@@ -462,6 +462,7 @@ export class TngFlowEditorComponent<
   private pendingReveal: PendingReveal | null = null;
   private lastFocusedPortConnectorId: string | null = null;
   private lastPointerClientPosition: TngFlowPoint | null = null;
+  private minimapPointerInside = false;
   private minimapHoverNavigationSnapshot: MinimapHoverNavigationSnapshot | null = null;
   private minimapHoverResetPosition: TngFlowPoint | null = null;
   private nodePointerSessionActive = false;
@@ -1018,8 +1019,17 @@ export class TngFlowEditorComponent<
     }
     this.graphNodes();
     this.resolvedNodeViews();
-    this.resolvedMinimapOptions();
-    this.endMinimapHoverNavigation();
+    const options = this.resolvedMinimapOptions();
+    if (!options.interactive) {
+      this.endMinimapHoverNavigation();
+    } else if (this.minimapPointerInside) {
+      // Graph and minimap geometry can change while hover navigation remains active.
+      // Recalculate from the refreshed minimap on the next pointer move without
+      // discarding the viewport captured at the start of the interaction.
+      this.minimapHoverNavigationSnapshot = null;
+    } else {
+      this.endMinimapHoverNavigation();
+    }
     this.canvas().redraw();
   });
   private readonly layoutViewportSyncEffect = afterRenderEffect(() => {
@@ -1831,6 +1841,14 @@ export class TngFlowEditorComponent<
     canvas.emitCanvasChangeEvent();
   }
 
+  protected onMinimapPointerEnter(): void {
+    if (!this.canNavigateMinimap()) {
+      this.endMinimapHoverNavigation();
+      return;
+    }
+    this.minimapPointerInside = true;
+  }
+
   protected onMinimapPointerMove(event: PointerEvent): void {
     if (!this.canNavigateMinimap()) {
       this.endMinimapHoverNavigation();
@@ -1840,6 +1858,7 @@ export class TngFlowEditorComponent<
       this.endMinimapHoverNavigation();
       return;
     }
+    this.minimapPointerInside = true;
     if (event.buttons !== 0) {
       return;
     }
@@ -1880,10 +1899,16 @@ export class TngFlowEditorComponent<
   }
 
   protected onMinimapPointerLeave(): void {
+    this.minimapPointerInside = false;
     this.restoreMinimapHoverNavigation(true);
   }
 
+  protected onMinimapPointerCancel(): void {
+    this.endMinimapHoverNavigation();
+  }
+
   private endMinimapHoverNavigation(): void {
+    this.minimapPointerInside = false;
     this.restoreMinimapHoverNavigation(false);
   }
 

@@ -408,6 +408,42 @@ class BrowserMotionHost {
   };
 }
 
+@Component({
+  imports: [TngFlowEditorComponent],
+  template: `
+    <tng-flow-editor
+      [definition]="definition()"
+      [viewport]="viewport()"
+      [fitOnInit]="false"
+      [showControls]="false"
+      [showMinimap]="true"
+      (viewportChange)="updateViewport($event)"
+    />
+  `,
+})
+class BrowserControlledMinimapHost {
+  public readonly definition = signal<TngFlowDefinition>(definition);
+  public readonly viewport = signal<TngFlowViewport>({
+    position: { x: 0, y: 0 },
+    scale: 1,
+  });
+  public readonly viewportChangeCount = signal(0);
+
+  public updateViewport(viewport: TngFlowViewport): void {
+    this.viewport.set(viewport);
+    this.viewportChangeCount.update((count) => count + 1);
+    this.definition.update((current) => ({
+      ...current,
+      nodes: current.nodes.map((node) => ({ ...node, position: { ...node.position } })),
+      connections: current.connections.map((connection) => ({
+        ...connection,
+        source: { ...connection.source },
+        target: { ...connection.target },
+      })),
+    }));
+  }
+}
+
 function nextPaint(): Promise<void> {
   return new Promise((resolvePaint) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolvePaint()));
@@ -587,6 +623,56 @@ describe('TngFlowEditorComponent browser contracts', () => {
 
     expect(committedPosition).toBeDefined();
     expect(viewportChanged.mock.lastCall?.[0]?.position).toEqual(committedPosition);
+  });
+
+  it('keeps controlled minimap hover active across immutable host synchronization', async () => {
+    const fixture = TestBed.createComponent(BrowserControlledMinimapHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const minimap = host.querySelector<HTMLElement>('f-minimap');
+    const minimapShell = host.querySelector<HTMLElement>('.tng-flow-editor__minimap-shell');
+    if (minimap === null || minimapShell === null) {
+      throw new Error('Expected the controlled interactive minimap to render.');
+    }
+    const bounds = minimap.getBoundingClientRect();
+
+    minimap.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: bounds.left + bounds.width * 0.25,
+        clientY: bounds.top + bounds.height * 0.5,
+        pointerType: 'mouse',
+      }),
+    );
+    await fixture.whenStable();
+    await nextPaint();
+
+    const firstPosition = fixture.componentInstance.viewport().position;
+    expect(firstPosition).not.toEqual({ x: 0, y: 0 });
+    expect(fixture.componentInstance.viewportChangeCount()).toBe(1);
+
+    minimap.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: bounds.left + bounds.width * 0.75,
+        clientY: bounds.top + bounds.height * 0.5,
+        pointerType: 'mouse',
+      }),
+    );
+    await fixture.whenStable();
+    await nextPaint();
+
+    expect(fixture.componentInstance.viewport().position.x).toBeLessThan(firstPosition.x);
+    expect(fixture.componentInstance.viewportChangeCount()).toBe(2);
+
+    minimapShell.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.viewport().position).toEqual({ x: 0, y: 0 });
+    expect(fixture.componentInstance.viewportChangeCount()).toBe(3);
   });
 
   it('keeps default labels at the true midpoint of all geometries while moving and zooming', async () => {
