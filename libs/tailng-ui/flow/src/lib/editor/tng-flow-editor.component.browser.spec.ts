@@ -358,6 +358,105 @@ function createPerformancePresentation(animatedCount: number): TngFlowPresentati
   };
 }
 
+const resizableFlowDefinition: TngFlowDefinition = Object.freeze({
+  id: 'resizable-flow-contract',
+  nodes: Object.freeze([
+    Object.freeze({
+      id: 'upper-source',
+      type: 'step',
+      name: 'Upper source',
+      position: Object.freeze({ x: 40, y: 72 }),
+      ports: Object.freeze([
+        Object.freeze({
+          id: 'custom-point-out-right-1',
+          direction: 'output',
+          kind: 'data',
+          side: 'right',
+        }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'upper-target',
+      type: 'step',
+      name: 'Upper target',
+      position: Object.freeze({ x: 560, y: 120 }),
+      ports: Object.freeze([
+        Object.freeze({
+          id: 'custom-point-in-left-1',
+          direction: 'input',
+          kind: 'data',
+          side: 'left',
+        }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'lower-source',
+      type: 'step',
+      name: 'Lower source',
+      position: Object.freeze({ x: 40, y: 352 }),
+      ports: Object.freeze([
+        Object.freeze({
+          id: 'custom-point-out-right-2',
+          direction: 'output',
+          kind: 'control',
+          side: 'right',
+        }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'lower-target',
+      type: 'step',
+      name: 'Lower target',
+      position: Object.freeze({ x: 560, y: 400 }),
+      ports: Object.freeze([
+        Object.freeze({
+          id: 'custom-point-in-left-2',
+          direction: 'input',
+          kind: 'control',
+          side: 'left',
+        }),
+      ]),
+    }),
+  ]),
+  connections: Object.freeze([
+    Object.freeze({
+      id: 'rounded-edge',
+      source: Object.freeze({
+        nodeId: 'upper-source',
+        portId: 'custom-point-out-right-1',
+      }),
+      target: Object.freeze({
+        nodeId: 'upper-target',
+        portId: 'custom-point-in-left-1',
+      }),
+      routing: Object.freeze({
+        type: 'orthogonal-rounded',
+        offset: 24,
+        radius: 12,
+        waypoints: Object.freeze([
+          Object.freeze({ x: 360, y: 110 }),
+          Object.freeze({ x: 420, y: 190 }),
+        ]),
+      }),
+    }),
+    Object.freeze({
+      id: 'adaptive-edge',
+      source: Object.freeze({
+        nodeId: 'lower-source',
+        portId: 'custom-point-out-right-2',
+      }),
+      target: Object.freeze({
+        nodeId: 'lower-target',
+        portId: 'custom-point-in-left-2',
+      }),
+      routing: Object.freeze({
+        type: 'adaptive',
+        offset: 20,
+      }),
+    }),
+  ]),
+});
+
 @Component({
   imports: [TngFlowConnectionTemplateDirective, TngFlowEditorComponent],
   template: `
@@ -444,6 +543,63 @@ class BrowserControlledMinimapHost {
   }
 }
 
+@Component({
+  imports: [TngFlowEditorComponent],
+  styles: `
+    .resizable-shell {
+      width: 1000px;
+      height: 580px;
+    }
+
+    .resizable-shell--animated {
+      transition:
+        width 160ms linear,
+        height 160ms linear;
+    }
+
+    .resizable-shell--collapsed {
+      width: 700px;
+      height: 480px;
+    }
+
+    tng-flow-editor {
+      height: 100%;
+      min-height: 0;
+    }
+  `,
+  template: `
+    <div
+      class="resizable-shell"
+      [class.resizable-shell--animated]="animated()"
+      [class.resizable-shell--collapsed]="collapsed()"
+    >
+      <tng-flow-editor
+        attachmentLayout="custom-points"
+        [definition]="definition"
+        [fitOnInit]="false"
+        [showControls]="false"
+        [showMinimap]="true"
+        [viewport]="viewport"
+        (viewportChange)="recordViewportChange()"
+      />
+    </div>
+  `,
+})
+class BrowserResizableFlowHost {
+  public readonly animated = signal(false);
+  public readonly collapsed = signal(false);
+  public readonly viewportChangeCount = signal(0);
+  public readonly definition = resizableFlowDefinition;
+  public readonly viewport: TngFlowViewport = {
+    position: { x: 24, y: -16 },
+    scale: 0.82,
+  };
+
+  public recordViewportChange(): void {
+    this.viewportChangeCount.update((count) => count + 1);
+  }
+}
+
 function nextPaint(): Promise<void> {
   return new Promise((resolvePaint) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolvePaint()));
@@ -494,6 +650,112 @@ function expectContentAtPathMidpoint(connection: HTMLElement): void {
   expect(Math.abs(contentCenter.y - screenMidpoint.y)).toBeLessThan(5);
 }
 
+function connectorAnchor(port: HTMLElement): Readonly<{ x: number; y: number }> {
+  const socket = port.querySelector<HTMLElement>('.tng-flow-editor__port-socket');
+  if (socket === null) {
+    throw new Error('Expected the port connector socket to render.');
+  }
+  const rect = socket.getBoundingClientRect();
+  const side = port.dataset['side'];
+  if (side === undefined) {
+    throw new Error('Expected the port to declare a connector side.');
+  }
+  switch (side) {
+    case 'bottom':
+      return { x: rect.left + rect.width / 2, y: rect.bottom };
+    case 'left':
+      return { x: rect.left, y: rect.top + rect.height / 2 };
+    case 'right':
+      return { x: rect.right, y: rect.top + rect.height / 2 };
+    case 'top':
+      return { x: rect.left + rect.width / 2, y: rect.top };
+    default:
+      throw new Error(`Unsupported connector side "${side}".`);
+  }
+}
+
+function pathScreenEndpoint(
+  path: SVGPathElement,
+  atEnd: boolean,
+): Readonly<{ x: number; y: number }> {
+  const matrix = path.getScreenCTM();
+  if (matrix === null) {
+    throw new Error('Expected the connection path to have a screen transform.');
+  }
+  const point = path.getPointAtLength(atEnd ? path.getTotalLength() : 0).matrixTransform(matrix);
+  return { x: point.x, y: point.y };
+}
+
+function nearestPathEndpointDistance(
+  paths: readonly SVGPathElement[],
+  anchor: Readonly<{ x: number; y: number }>,
+): number {
+  return Math.min(
+    ...paths.flatMap((path) =>
+      [false, true].map((atEnd) => {
+        const point = pathScreenEndpoint(path, atEnd);
+        return Math.hypot(point.x - anchor.x, point.y - anchor.y);
+      }),
+    ),
+  );
+}
+
+type ConnectionAttachmentExpectation = Readonly<{
+  connectionId: string;
+  sourceNodeId: string;
+  sourcePortId: string;
+  targetNodeId: string;
+  targetPortId: string;
+}>;
+
+function expectConnectionAttached(
+  host: HTMLElement,
+  expectation: ConnectionAttachmentExpectation,
+): void {
+  const { connectionId, sourceNodeId, sourcePortId, targetNodeId, targetPortId } = expectation;
+  const paths = [
+    ...host.querySelectorAll<SVGPathElement>(
+      `[data-connection-id="${connectionId}"] .f-connection-path`,
+    ),
+  ].filter((path) => (path.getAttribute('d')?.trim().length ?? 0) > 0);
+  const source = host.querySelector<HTMLElement>(
+    `[data-node-id="${sourceNodeId}"] > [data-port-id="${sourcePortId}"]`,
+  );
+  const target = host.querySelector<HTMLElement>(
+    `[data-node-id="${targetNodeId}"] > [data-port-id="${targetPortId}"]`,
+  );
+  if (paths.length === 0 || source === null || target === null) {
+    throw new Error(`Expected rendered geometry for connection "${connectionId}".`);
+  }
+  const sourceAnchor = connectorAnchor(source);
+  const targetAnchor = connectorAnchor(target);
+
+  expect(nearestPathEndpointDistance(paths, sourceAnchor)).toBeLessThan(3);
+  expect(nearestPathEndpointDistance(paths, targetAnchor)).toBeLessThan(3);
+}
+
+function expectResizableConnectionsAttached(host: HTMLElement): void {
+  expectConnectionAttached(host, {
+    connectionId: 'rounded-edge',
+    sourceNodeId: 'upper-source',
+    sourcePortId: 'custom-point-out-right-1',
+    targetNodeId: 'upper-target',
+    targetPortId: 'custom-point-in-left-1',
+  });
+  expectConnectionAttached(host, {
+    connectionId: 'adaptive-edge',
+    sourceNodeId: 'lower-source',
+    sourcePortId: 'custom-point-out-right-2',
+    targetNodeId: 'lower-target',
+    targetPortId: 'custom-point-in-left-2',
+  });
+}
+
+async function waitForResizeRefresh(animated: boolean): Promise<void> {
+  await new Promise<void>((resolve) => globalThis.setTimeout(resolve, animated ? 280 : 100));
+  await nextPaint();
+}
+
 function dispatchKey(
   target: HTMLElement,
   key: string,
@@ -541,6 +803,57 @@ const performanceScenarios = [
 ] as const;
 
 describe('TngFlowEditorComponent browser contracts', () => {
+  it.each([
+    { animated: false, resizeMode: 'immediate' },
+    { animated: true, resizeMode: 'animated' },
+  ])(
+    'keeps custom-point and routed connections attached after $resizeMode container resizing',
+    async ({ animated }) => {
+      const fixture = TestBed.createComponent(BrowserResizableFlowHost);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await nextPaint();
+
+      const host = fixture.nativeElement as HTMLElement;
+      const shell = host.querySelector<HTMLElement>('.resizable-shell');
+      const canvas = host.querySelector<HTMLElement>('f-canvas');
+      if (shell === null || canvas === null) {
+        throw new Error('Expected the resizable flow shell and canvas to render.');
+      }
+      await waitForRenderedConnectionPaths(host);
+      expectResizableConnectionsAttached(host);
+      const initialTransform = canvas.style.transform;
+      const initialViewportChangeCount = fixture.componentInstance.viewportChangeCount();
+      const initialPositions = resizableFlowDefinition.nodes.map((node) => node.position);
+      const initialWaypoints = resizableFlowDefinition.connections[0]?.routing?.waypoints;
+
+      fixture.componentInstance.animated.set(animated);
+      fixture.detectChanges();
+      await nextPaint();
+      fixture.componentInstance.collapsed.set(true);
+      fixture.detectChanges();
+      await waitForResizeRefresh(animated);
+      await waitForRenderedConnectionPaths(host);
+
+      expect(Math.round(shell.getBoundingClientRect().width)).toBe(700);
+      expect(Math.round(shell.getBoundingClientRect().height)).toBe(480);
+      expectResizableConnectionsAttached(host);
+
+      fixture.componentInstance.collapsed.set(false);
+      fixture.detectChanges();
+      await waitForResizeRefresh(animated);
+      await waitForRenderedConnectionPaths(host);
+
+      expect(Math.round(shell.getBoundingClientRect().width)).toBe(1000);
+      expect(Math.round(shell.getBoundingClientRect().height)).toBe(580);
+      expectResizableConnectionsAttached(host);
+      expect(canvas.style.transform).toBe(initialTransform);
+      expect(fixture.componentInstance.viewportChangeCount()).toBe(initialViewportChangeCount);
+      expect(resizableFlowDefinition.nodes.map((node) => node.position)).toEqual(initialPositions);
+      expect(resizableFlowDefinition.connections[0]?.routing?.waypoints).toBe(initialWaypoints);
+    },
+  );
+
   it('previews minimap positions on hover, restores on leave, and commits clicks', async () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('definition', definition);

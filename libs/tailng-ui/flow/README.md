@@ -283,6 +283,18 @@ selection, node-view, and viewport updates do not cancel a preview while the poi
 When viewport controls are shown, the lock button toggles mouse-wheel and trackpad scroll zoom.
 Locking scroll zoom does not disable the zoom in, zoom out, fit, or reset controls.
 
+The editor automatically refreshes connection geometry after its rendered flow area resizes. For
+layout changes that do not resize the editor, such as an ancestor transform, consumers can request
+the same non-viewport-mutating refresh through the exported component instance:
+
+```html
+<tng-flow-editor #editor="tngFlowEditor" [definition]="workflow()" />
+<button type="button" (click)="editor.refreshLayout()">Refresh connections</button>
+```
+
+`refreshLayout()` redraws connection geometry immediately. It does not fit, center, change zoom or
+pan, or emit `viewportChange`.
+
 ## Automatic layout
 
 Automatic layout is engine-neutral and opt-in. Install the official Dagre adapter when needed;
