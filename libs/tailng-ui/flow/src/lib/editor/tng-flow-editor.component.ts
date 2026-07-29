@@ -463,6 +463,7 @@ export class TngFlowEditorComponent<
   private lastFocusedPortConnectorId: string | null = null;
   private lastPointerClientPosition: TngFlowPoint | null = null;
   private minimapHoverNavigationSnapshot: MinimapHoverNavigationSnapshot | null = null;
+  private minimapHoverResetPosition: TngFlowPoint | null = null;
   private nodePointerSessionActive = false;
   private readonly pendingLayoutViewport = signal<PendingLayoutViewport | null>(null);
   private readonly keyboardConnection = signal<KeyboardConnectionSession | null>(null);
@@ -1835,8 +1836,11 @@ export class TngFlowEditorComponent<
       this.endMinimapHoverNavigation();
       return;
     }
-    if (!this.isMouseHoverPointer(event)) {
+    if (!this.isMousePointer(event)) {
       this.endMinimapHoverNavigation();
+      return;
+    }
+    if (event.buttons !== 0) {
       return;
     }
 
@@ -1859,16 +1863,38 @@ export class TngFlowEditorComponent<
     canvas.emitCanvasChangeEvent();
   }
 
+  protected commitMinimapHoverNavigation(): void {
+    if (!this.canNavigateMinimap()) {
+      this.endMinimapHoverNavigation();
+      return;
+    }
+    this.minimapHoverResetPosition = this.toPoint(this.canvas().getPosition());
+  }
+
   private canNavigateMinimap(): boolean {
     return this.showMinimap() && this.resolvedMinimapOptions().interactive;
   }
 
-  private isMouseHoverPointer(event: Readonly<PointerEvent>): boolean {
-    return (!event.pointerType || event.pointerType === 'mouse') && event.buttons === 0;
+  private isMousePointer(event: Readonly<PointerEvent>): boolean {
+    return !event.pointerType || event.pointerType === 'mouse';
   }
 
   protected endMinimapHoverNavigation(): void {
+    const resetPosition = this.minimapHoverResetPosition;
     this.minimapHoverNavigationSnapshot = null;
+    this.minimapHoverResetPosition = null;
+    if (resetPosition === null) {
+      return;
+    }
+
+    const canvas = this.canvas();
+    const currentPosition = canvas.getPosition();
+    if (currentPosition.x === resetPosition.x && currentPosition.y === resetPosition.y) {
+      return;
+    }
+    canvas._setPosition(resetPosition);
+    canvas.redraw();
+    canvas.emitCanvasChangeEvent();
   }
 
   private beginMinimapHoverNavigation(
@@ -1879,8 +1905,10 @@ export class TngFlowEditorComponent<
     const flowRect = flowHost.getBoundingClientRect();
     const minimapState = minimap.state;
     const minimapRect = minimapState.element.getBoundingClientRect();
+    const canvasPosition = this.toPoint(canvas.getPosition());
+    this.minimapHoverResetPosition ??= canvasPosition;
     const snapshot = {
-      canvasPosition: this.toPoint(canvas.getPosition()),
+      canvasPosition,
       canvasScale: canvas.getScale() || 1,
       flowSize: { width: flowRect.width, height: flowRect.height },
       minimapOrigin: { x: minimapRect.left, y: minimapRect.top },

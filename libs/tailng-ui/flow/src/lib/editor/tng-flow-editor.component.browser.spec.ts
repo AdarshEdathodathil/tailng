@@ -505,7 +505,7 @@ const performanceScenarios = [
 ] as const;
 
 describe('TngFlowEditorComponent browser contracts', () => {
-  it('pans smoothly across the full minimap instead of snapping between nodes', async () => {
+  it('previews minimap positions on hover, restores on leave, and commits clicks', async () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('definition', definition);
     fixture.componentRef.setInput('fitOnInit', false);
@@ -518,9 +518,10 @@ describe('TngFlowEditorComponent browser contracts', () => {
     const host = fixture.nativeElement as HTMLElement;
     const viewportChanged = vi.fn<(viewport: TngFlowViewport) => void>();
     fixture.componentInstance.viewportChange.subscribe(viewportChanged);
+    const minimapShell = host.querySelector<HTMLElement>('.tng-flow-editor__minimap-shell');
     const minimap = host.querySelector<HTMLElement>('f-minimap');
     const minimapView = host.querySelector<SVGRectElement>('.f-minimap-view');
-    if (minimap === null || minimapView === null) {
+    if (minimapShell === null || minimap === null || minimapView === null) {
       throw new Error('Expected the minimap and viewport to render.');
     }
 
@@ -553,6 +554,36 @@ describe('TngFlowEditorComponent browser contracts', () => {
     }
     expect(secondPosition.x).toBeLessThan(firstPosition.x);
     expect(secondPosition.y).toBeCloseTo(firstPosition.y, 4);
+
+    minimapShell.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }));
+    await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(viewportChanged.mock.lastCall?.[0]?.position).toEqual({ x: 0, y: 0 });
+
+    minimap.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: bounds.left + bounds.width * 0.25,
+        clientY: bounds.top + bounds.height * 0.5,
+        pointerType: 'mouse',
+      }),
+    );
+    await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
+    const committedPosition = viewportChanged.mock.lastCall?.[0]?.position;
+    minimap.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    minimap.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: bounds.left + bounds.width * 0.75,
+        clientY: bounds.top + bounds.height * 0.5,
+        pointerType: 'mouse',
+      }),
+    );
+    minimapShell.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }));
+    await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(committedPosition).toBeDefined();
+    expect(viewportChanged.mock.lastCall?.[0]?.position).toEqual(committedPosition);
   });
 
   it('keeps default labels at the true midpoint of all geometries while moving and zooming', async () => {
