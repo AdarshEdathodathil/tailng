@@ -375,7 +375,7 @@
         (keydown)="onMinimapKeydown($event)"
         (pointermove)="onMinimapPointerMove($event)"
         (click)="commitMinimapHoverNavigation()"
-        (pointerleave)="endMinimapHoverNavigation()"
+        (pointerleave)="onMinimapPointerLeave()"
       >
         <f-minimap
           class="tng-flow-editor__minimap"
