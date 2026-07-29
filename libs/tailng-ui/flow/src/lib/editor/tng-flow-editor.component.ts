@@ -32,7 +32,6 @@ import {
   calculatePointerInFlow,
   provideFFlow,
   type FCreateConnectionSession,
-  type FEventTrigger,
   type IFA11yResolvedConfig,
   withA11y,
 } from '@foblex/flow';
@@ -469,7 +468,7 @@ export class TngFlowEditorComponent<
   private readonly keyboardConnection = signal<KeyboardConnectionSession | null>(null);
   private readonly currentCanvasScale = signal(1);
   protected readonly scrollZoomLocked = signal(false);
-  protected readonly scrollZoomTrigger: FEventTrigger = () => !this.scrollZoomLocked();
+  protected readonly scrollZoomTrigger = (): boolean => !this.scrollZoomLocked();
   private readonly smartGuidesSuppressedForDrag = signal(false);
   /** Live positions during drag before the controlled definition catches up. */
   private readonly provisionalPositions = signal<ReadonlyMap<string, TngFlowPoint>>(new Map());
