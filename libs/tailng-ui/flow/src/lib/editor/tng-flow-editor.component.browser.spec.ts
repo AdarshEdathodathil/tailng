@@ -518,11 +518,12 @@ describe('TngFlowEditorComponent browser contracts', () => {
     const host = fixture.nativeElement as HTMLElement;
     const viewportChanged = vi.fn<(viewport: TngFlowViewport) => void>();
     fixture.componentInstance.viewportChange.subscribe(viewportChanged);
+    const canvas = host.querySelector<HTMLElement>('f-canvas');
     const minimapShell = host.querySelector<HTMLElement>('.tng-flow-editor__minimap-shell');
     const minimap = host.querySelector<HTMLElement>('f-minimap');
     const minimapView = host.querySelector<SVGRectElement>('.f-minimap-view');
-    if (minimapShell === null || minimap === null || minimapView === null) {
-      throw new Error('Expected the minimap and viewport to render.');
+    if (canvas === null || minimapShell === null || minimap === null || minimapView === null) {
+      throw new Error('Expected the canvas, minimap, and viewport to render.');
     }
 
     expect(getComputedStyle(minimapView).pointerEvents).toBe('none');
@@ -556,6 +557,7 @@ describe('TngFlowEditorComponent browser contracts', () => {
     expect(secondPosition.y).toBeCloseTo(firstPosition.y, 4);
 
     minimapShell.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }));
+    expect(canvas.style.transition).toContain('transform');
     await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
 
     expect(viewportChanged.mock.lastCall?.[0]?.position).toEqual({ x: 0, y: 0 });
@@ -568,6 +570,7 @@ describe('TngFlowEditorComponent browser contracts', () => {
         pointerType: 'mouse',
       }),
     );
+    expect(canvas.style.transition).toBe('');
     await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
     const committedPosition = viewportChanged.mock.lastCall?.[0]?.position;
     minimap.dispatchEvent(new MouseEvent('click', { bubbles: true }));

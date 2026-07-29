@@ -1632,7 +1632,7 @@ describe('TngFlowEditorComponent', () => {
     ]);
   });
 
-  it('restores hover navigation on leave and commits the latest clicked position', () => {
+  function createInteractiveMinimapFixture() {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('nodes', nodes);
     fixture.componentRef.setInput('showMinimap', true);
@@ -1642,22 +1642,34 @@ describe('TngFlowEditorComponent', () => {
     const host = fixture.nativeElement as HTMLElement;
     const flow = host.querySelector<HTMLElement>('f-flow');
     const shell = host.querySelector<HTMLElement>('.tng-flow-editor__minimap-shell');
+    if (flow === null || shell === null) {
+      throw new Error('Expected the interactive minimap to render.');
+    }
     const canvas = fixture.debugElement.query(
       (debugElement) => debugElement.componentInstance instanceof FCanvasComponent,
     ).componentInstance as FCanvasComponent;
     const minimap = fixture.debugElement.query(
       (debugElement) => debugElement.componentInstance instanceof FMinimapComponent,
     ).componentInstance as FMinimapComponent;
-    vi.spyOn(flow!, 'getBoundingClientRect').mockReturnValue(new DOMRect(100, 50, 800, 600));
+    vi.spyOn(flow, 'getBoundingClientRect').mockReturnValue(new DOMRect(100, 50, 800, 600));
     vi.spyOn(minimap.state.element, 'getBoundingClientRect').mockReturnValue(
       new DOMRect(20, 30, 140, 120),
     );
     minimap.state.scale = 2;
     minimap.state.viewBox.x = 10;
     minimap.state.viewBox.y = 20;
-    const setPosition = vi.spyOn(canvas, '_setPosition');
 
-    shell?.dispatchEvent(
+    return { canvas, fixture, shell };
+  }
+
+  it('restores hover navigation smoothly on leave and commits the latest clicked position', () => {
+    const { canvas, shell } = createInteractiveMinimapFixture();
+    const setPosition = vi.spyOn(canvas, '_setPosition');
+    const redrawWithAnimation = vi
+      .spyOn(canvas, 'redrawWithAnimation')
+      .mockImplementation(() => undefined);
+
+    shell.dispatchEvent(
       new MouseEvent('pointermove', {
         bubbles: true,
         clientX: 50,
@@ -1667,18 +1679,19 @@ describe('TngFlowEditorComponent', () => {
 
     expect(setPosition).toHaveBeenCalledWith({ x: 330, y: 220 });
 
-    shell?.dispatchEvent(new MouseEvent('pointerleave'));
+    shell.dispatchEvent(new MouseEvent('pointerleave'));
 
     expect(setPosition).toHaveBeenLastCalledWith({ x: 0, y: 0 });
+    expect(redrawWithAnimation).toHaveBeenCalledTimes(1);
 
-    shell?.dispatchEvent(
+    shell.dispatchEvent(
       new MouseEvent('pointermove', {
         bubbles: true,
         clientX: 50,
         clientY: 60,
       }),
     );
-    shell?.dispatchEvent(
+    shell.dispatchEvent(
       new MouseEvent('pointermove', {
         bubbles: true,
         buttons: 1,
@@ -1689,8 +1702,8 @@ describe('TngFlowEditorComponent', () => {
 
     expect(setPosition).toHaveBeenLastCalledWith({ x: 330, y: 220 });
 
-    shell?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    shell?.dispatchEvent(
+    shell.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    shell.dispatchEvent(
       new MouseEvent('pointermove', {
         bubbles: true,
         clientX: 60,
@@ -1700,9 +1713,55 @@ describe('TngFlowEditorComponent', () => {
 
     expect(setPosition).toHaveBeenLastCalledWith({ x: 310, y: 200 });
 
-    shell?.dispatchEvent(new MouseEvent('pointerleave'));
+    shell.dispatchEvent(new MouseEvent('pointerleave'));
 
     expect(setPosition).toHaveBeenLastCalledWith({ x: 330, y: 220 });
+    expect(redrawWithAnimation).toHaveBeenCalledTimes(2);
+  });
+
+  it('restores minimap hover navigation immediately when reduced motion is preferred', () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+      })) as Window['matchMedia'],
+    });
+
+    try {
+      const { canvas, shell } = createInteractiveMinimapFixture();
+      const redraw = vi.spyOn(canvas, 'redraw');
+      const redrawWithAnimation = vi.spyOn(canvas, 'redrawWithAnimation');
+
+      shell.dispatchEvent(
+        new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }),
+      );
+      const redrawCountAfterHover = redraw.mock.calls.length;
+      shell.dispatchEvent(new MouseEvent('pointerleave'));
+
+      expect(redrawWithAnimation).not.toHaveBeenCalled();
+      expect(redraw).toHaveBeenCalledTimes(redrawCountAfterHover + 1);
+    } finally {
+      if (originalDescriptor === undefined) {
+        Reflect.deleteProperty(window, 'matchMedia');
+      } else {
+        Object.defineProperty(window, 'matchMedia', originalDescriptor);
+      }
+    }
+  });
+
+  it('uses an immediate restore when minimap synchronization interrupts hover navigation', () => {
+    const { canvas, fixture, shell } = createInteractiveMinimapFixture();
+    const setPosition = vi.spyOn(canvas, '_setPosition');
+    const redrawWithAnimation = vi.spyOn(canvas, 'redrawWithAnimation');
+
+    shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }));
+    fixture.componentRef.setInput('minimapOptions', { interactive: false });
+    fixture.detectChanges();
+
+    expect(setPosition).toHaveBeenLastCalledWith({ x: 0, y: 0 });
+    expect(redrawWithAnimation).not.toHaveBeenCalled();
   });
 
   it('does not pan from hover when minimap interaction is disabled', () => {

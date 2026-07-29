@@ -1879,7 +1879,15 @@ export class TngFlowEditorComponent<
     return !event.pointerType || event.pointerType === 'mouse';
   }
 
-  protected endMinimapHoverNavigation(): void {
+  protected onMinimapPointerLeave(): void {
+    this.restoreMinimapHoverNavigation(true);
+  }
+
+  private endMinimapHoverNavigation(): void {
+    this.restoreMinimapHoverNavigation(false);
+  }
+
+  private restoreMinimapHoverNavigation(animated: boolean): void {
     const resetPosition = this.minimapHoverResetPosition;
     this.minimapHoverNavigationSnapshot = null;
     this.minimapHoverResetPosition = null;
@@ -1893,7 +1901,11 @@ export class TngFlowEditorComponent<
       return;
     }
     canvas._setPosition(resetPosition);
-    canvas.redraw();
+    if (this.viewportAnimationAllowed(animated)) {
+      canvas.redrawWithAnimation();
+    } else {
+      canvas.redraw();
+    }
     canvas.emitCanvasChangeEvent();
   }
 
@@ -3317,7 +3329,7 @@ export class TngFlowEditorComponent<
     }
     this.pendingLayoutViewport.set(null);
     this.fitToScreen(
-      this.layoutAnimationAllowed(pending.viewport.animated),
+      this.viewportAnimationAllowed(pending.viewport.animated),
       pending.viewport.padding,
     );
   }
@@ -3337,10 +3349,11 @@ export class TngFlowEditorComponent<
     return true;
   }
 
-  private layoutAnimationAllowed(requested: boolean): boolean {
+  private viewportAnimationAllowed(requested: boolean): boolean {
     return (
       requested &&
-      this.documentRef.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches !== true
+      this.documentRef.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches !==
+        true
     );
   }
 
