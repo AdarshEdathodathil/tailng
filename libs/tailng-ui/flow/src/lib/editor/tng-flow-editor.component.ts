@@ -37,7 +37,7 @@ import {
 } from '@foblex/flow';
 import { TngButtonComponent } from '@tailng-ui/components';
 import { TngFlowConnectionMarkerDiamondDirective } from './tng-flow-connection-marker-diamond.directive';
-import { TngFlowFoblexA11yBridgeDirective } from './tng-flow-foblex-a11y-bridge.directive';
+import { TngFlowFoblexBridgeDirective } from './tng-flow-foblex-bridge.directive';
 import {
   TngFlowKeyboardConfig,
   type TngResolvedFlowKeyboardOptions,
@@ -410,7 +410,7 @@ type MinimapHoverNavigationSnapshot = Readonly<{
     NgTemplateOutlet,
     TngButtonComponent,
     TngFlowConnectionMarkerDiamondDirective,
-    TngFlowFoblexA11yBridgeDirective,
+    TngFlowFoblexBridgeDirective,
     TngFlowNodeComponent,
     TngFlowPortComponent,
     TngFlowValidationBadgeComponent,
@@ -438,7 +438,7 @@ export class TngFlowEditorComponent<
   private readonly canvas = viewChild.required(FCanvasComponent);
   private readonly flow = viewChild(FFlowComponent);
   private readonly minimap = viewChild(FMinimapComponent);
-  private readonly rendererA11yBridge = viewChild.required(TngFlowFoblexA11yBridgeDirective);
+  private readonly rendererBridge = viewChild.required(TngFlowFoblexBridgeDirective);
   private readonly connectors = viewChildren(FConnectorDirective);
   protected readonly connectionTemplate = contentChild(
     TngFlowConnectionTemplateDirective<TConnectionData>,
@@ -480,7 +480,7 @@ export class TngFlowEditorComponent<
   private readonly pointerConnectionSourceId = signal<string | null>(null);
 
   private get connectionSession(): FCreateConnectionSession {
-    return this.rendererA11yBridge().connectionSession as FCreateConnectionSession;
+    return this.rendererBridge().connectionSession as FCreateConnectionSession;
   }
 
   public readonly definition = input<TngFlowDefinition<TData, TConnectionData> | null>(null);
@@ -1030,7 +1030,11 @@ export class TngFlowEditorComponent<
     } else {
       this.endMinimapHoverNavigation();
     }
-    this.canvas().redraw();
+    // A managed restore owns the final transform and connection invalidation. A raw
+    // redraw here would remove its CSS transition before connector geometry settles.
+    if (!this.rendererBridge().isViewportAnimating) {
+      this.canvas().redraw();
+    }
   });
   private readonly layoutViewportSyncEffect = afterRenderEffect(() => {
     this.graphNodes();
@@ -1926,12 +1930,7 @@ export class TngFlowEditorComponent<
       return;
     }
     canvas._setPosition(resetPosition);
-    if (this.viewportAnimationAllowed(animated)) {
-      canvas.redrawWithAnimation();
-    } else {
-      canvas.redraw();
-    }
-    canvas.emitCanvasChangeEvent();
+    this.rendererBridge().redrawCanvas(this.viewportAnimationAllowed(animated));
   }
 
   private beginMinimapHoverNavigation(
