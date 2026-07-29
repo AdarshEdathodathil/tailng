@@ -400,6 +400,8 @@ type MinimapHoverNavigationSnapshot = Readonly<{
   viewBoxPosition: TngFlowPoint;
 }>;
 
+const TNG_FLOW_LAYOUT_REFRESH_DEBOUNCE_MS = 64;
+
 @Component({
   selector: 'tng-flow-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -1012,6 +1014,37 @@ export class TngFlowEditorComponent<
     observer.observe(flow, { attributes: true, attributeFilter: ['class'] });
     onCleanup(() => observer.disconnect());
   });
+  private readonly flowResizeEffect = afterRenderEffect((onCleanup) => {
+    const flow = this.flow();
+    if (flow === undefined || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const flowHost = flow.hostElement as HTMLElement;
+    this.ngZone.runOutsideAngular(() => {
+      let hasObservedInitialSize = false;
+      let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+      const observer = new ResizeObserver(() => {
+        if (!hasObservedInitialSize) {
+          hasObservedInitialSize = true;
+          return;
+        }
+        if (refreshTimer !== undefined) {
+          clearTimeout(refreshTimer);
+        }
+        refreshTimer = setTimeout(() => {
+          refreshTimer = undefined;
+          this.refreshLayout();
+        }, TNG_FLOW_LAYOUT_REFRESH_DEBOUNCE_MS);
+      });
+      observer.observe(flowHost);
+      onCleanup(() => {
+        observer.disconnect();
+        if (refreshTimer !== undefined) {
+          clearTimeout(refreshTimer);
+        }
+      });
+    });
+  });
   private readonly minimapSyncEffect = afterRenderEffect(() => {
     if (!this.showMinimap()) {
       this.endMinimapHoverNavigation();
@@ -1043,6 +1076,13 @@ export class TngFlowEditorComponent<
 
   public connectorId(nodeId: string, portId: string): string {
     return createTngFlowConnectorId(nodeId, portId);
+  }
+
+  /**
+   * Recalculates rendered connection geometry without changing or emitting the viewport.
+   */
+  public refreshLayout(): void {
+    this.flow()?.redraw();
   }
 
   public fitToScreen(animated = true, padding = 48): void {

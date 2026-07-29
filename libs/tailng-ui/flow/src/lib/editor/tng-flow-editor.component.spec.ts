@@ -6,6 +6,7 @@ import {
   FComponentsStore,
   FCreateConnectionEvent,
   FDeleteSelectedEvent,
+  FFlowComponent,
   FMinimapComponent,
   FMoveNodesEvent,
   FSelectionChangeEvent,
@@ -230,7 +231,124 @@ type EditorEventHarness = Readonly<{
   }) => void;
 }>;
 
+class ControllableResizeObserver implements ResizeObserver {
+  public static instances: ControllableResizeObserver[] = [];
+  public disconnected = false;
+  private readonly targets = new Set<Element>();
+
+  public constructor(private readonly callback: ResizeObserverCallback) {
+    ControllableResizeObserver.instances.push(this);
+  }
+
+  public static reset(): void {
+    ControllableResizeObserver.instances = [];
+  }
+
+  public static forTarget(target: Element): ControllableResizeObserver {
+    const observer = ControllableResizeObserver.instances.find((candidate) =>
+      candidate.targets.has(target),
+    );
+    if (observer === undefined) {
+      throw new Error('Expected a ResizeObserver for the requested target.');
+    }
+    return observer;
+  }
+
+  public disconnect(): void {
+    this.disconnected = true;
+    this.targets.clear();
+  }
+
+  public observe(target: Element): void {
+    this.targets.add(target);
+  }
+
+  public unobserve(target: Element): void {
+    this.targets.delete(target);
+  }
+
+  public emit(target: Element, width: number, height: number): void {
+    this.callback(
+      [
+        {
+          target,
+          contentRect: new DOMRect(0, 0, width, height),
+        } as ResizeObserverEntry,
+      ],
+      this,
+    );
+  }
+}
+
 describe('TngFlowEditorComponent', () => {
+  it('refreshes connection geometry without changing or emitting the viewport', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('viewport', {
+      position: { x: 32, y: -18 },
+      scale: 1.25,
+    });
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    const flow = fixture.debugElement.query(
+      (debugElement) => debugElement.componentInstance instanceof FFlowComponent,
+    ).componentInstance as FFlowComponent;
+    const redraw = vi.spyOn(flow, 'redraw');
+    const fitToScreen = vi.spyOn(fixture.componentInstance, 'fitToScreen');
+    const resetViewport = vi.spyOn(fixture.componentInstance, 'resetViewport');
+    const viewportChanged = vi.fn();
+    fixture.componentInstance.viewportChange.subscribe(viewportChanged);
+
+    fixture.componentInstance.refreshLayout();
+
+    expect(redraw).toHaveBeenCalledOnce();
+    expect(fitToScreen).not.toHaveBeenCalled();
+    expect(resetViewport).not.toHaveBeenCalled();
+    expect(viewportChanged).not.toHaveBeenCalled();
+  });
+
+  it('ignores the initial flow size, coalesces resize bursts, and cleans up on destroy', () => {
+    const originalResizeObserver = globalThis.ResizeObserver;
+    vi.useFakeTimers();
+    ControllableResizeObserver.reset();
+    globalThis.ResizeObserver = ControllableResizeObserver;
+
+    try {
+      const fixture = TestBed.createComponent(TngFlowEditorComponent);
+      fixture.componentRef.setInput('definition', definition);
+      fixture.componentRef.setInput('fitOnInit', false);
+      fixture.detectChanges();
+      const flow = fixture.debugElement.query(
+        (debugElement) => debugElement.componentInstance instanceof FFlowComponent,
+      ).componentInstance as FFlowComponent;
+      const flowHost = flow.hostElement as HTMLElement;
+      const observer = ControllableResizeObserver.forTarget(flowHost);
+      const redraw = vi.spyOn(flow, 'redraw');
+
+      observer.emit(flowHost, 1000, 576);
+      vi.advanceTimersByTime(64);
+      expect(redraw).not.toHaveBeenCalled();
+
+      observer.emit(flowHost, 920, 576);
+      observer.emit(flowHost, 800, 520);
+      observer.emit(flowHost, 700, 480);
+      vi.advanceTimersByTime(63);
+      expect(redraw).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(redraw).toHaveBeenCalledOnce();
+
+      observer.emit(flowHost, 1000, 576);
+      fixture.destroy();
+      vi.advanceTimersByTime(64);
+      expect(observer.disconnected).toBe(true);
+      expect(redraw).toHaveBeenCalledOnce();
+    } finally {
+      globalThis.ResizeObserver = originalResizeObserver;
+      ControllableResizeObserver.reset();
+      vi.useRealTimers();
+    }
+  });
+
   it('emits application-owned command requests and enforces the mode matrix', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('definition', definition);
@@ -1683,7 +1801,9 @@ describe('TngFlowEditorComponent', () => {
     const emitCanvasChange = vi.spyOn(canvas, 'emitCanvasChangeEvent');
     vi.spyOn(bridge, 'redrawCanvas').mockImplementation(() => undefined);
 
-    shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }));
+    shell.dispatchEvent(
+      new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }),
+    );
     expect(setPosition).toHaveBeenLastCalledWith({ x: 330, y: 220 });
     const emittedAfterHover = emitCanvasChange.mock.calls.length;
 
@@ -1844,9 +1964,7 @@ describe('TngFlowEditorComponent', () => {
     const emitCanvasChange = vi.spyOn(canvas, 'emitCanvasChangeEvent');
     const emitConnectionChanges = vi.spyOn(componentsStore, 'emitConnectionChanges');
 
-    shell.dispatchEvent(
-      new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }),
-    );
+    shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }));
     const emittedAfterHover = emitCanvasChange.mock.calls.length;
     shell.dispatchEvent(new MouseEvent('pointerleave'));
 
