@@ -32,6 +32,8 @@ import {
   controlledPositionTailwindCodeTabs,
   customNodePlainCssCodeTabs,
   customNodeTailwindCodeTabs,
+  gridBackgroundPlainCssCodeTabs,
+  gridBackgroundTailwindCodeTabs,
   jsonDefinitionPlainCssCodeTabs,
   jsonDefinitionTailwindCodeTabs,
   monitorPlainCssCodeTabs,
@@ -386,6 +388,8 @@ export class FlowEditorExamplesPageComponent implements OnDestroy {
   protected readonly controlledTailwindDefinition = signal(linearWorkflowDefinition);
   protected readonly controlledPlainCssChange = signal<TngFlowNodePositionChange | null>(null);
   protected readonly controlledTailwindChange = signal<TngFlowNodePositionChange | null>(null);
+  protected readonly gridPlainCssVisible = signal(true);
+  protected readonly gridTailwindVisible = signal(true);
   protected readonly connectionPlainCss = new ConnectionEditingState();
   protected readonly connectionTailwind = new ConnectionEditingState();
   protected readonly selectionModesPlainCss = new SelectionModesState();
@@ -409,6 +413,8 @@ export class FlowEditorExamplesPageComponent implements OnDestroy {
   protected readonly jsonDefinitionTailwindCodeTabs = jsonDefinitionTailwindCodeTabs;
   protected readonly controlledPositionPlainCssCodeTabs = controlledPositionPlainCssCodeTabs;
   protected readonly controlledPositionTailwindCodeTabs = controlledPositionTailwindCodeTabs;
+  protected readonly gridBackgroundPlainCssCodeTabs = gridBackgroundPlainCssCodeTabs;
+  protected readonly gridBackgroundTailwindCodeTabs = gridBackgroundTailwindCodeTabs;
   protected readonly connectionEditingPlainCssCodeTabs = connectionEditingPlainCssCodeTabs;
   protected readonly connectionEditingTailwindCodeTabs = connectionEditingTailwindCodeTabs;
   protected readonly selectionModesPlainCssCodeTabs = selectionModesPlainCssCodeTabs;

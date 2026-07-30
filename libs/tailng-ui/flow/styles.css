@@ -1185,6 +1185,7 @@ f-flow .f-magnetic-rects .f-rect,
 
 /* Stable TailNG presentation tokens. Foblex selectors below remain an internal bridge. */
 tng-flow-editor {
+  --ff-background-dot-color: var(--tng-flow-grid-color, var(--ff-color-grid-strong));
   --tng-flow-connection-color: var(--tng-semantic-foreground-secondary, var(--ff-color-connection));
   --tng-flow-node-error-border: var(--tng-semantic-accent-danger, #dc2626);
   --tng-flow-node-warning-border: var(--tng-semantic-accent-warning, #d97706);

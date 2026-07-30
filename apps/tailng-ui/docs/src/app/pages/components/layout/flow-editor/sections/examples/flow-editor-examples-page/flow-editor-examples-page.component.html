@@ -134,6 +134,99 @@
     </app-docs-example-tabs-section>
   </section>
 
+  <section id="canvas-grid-visibility" class="docs-overview-block">
+    <app-docs-example-tabs-section
+      heading="Canvas grid visibility"
+      description="Toggle the canvas background grid independently from snap-to-grid. Scope --tng-flow-grid-color on the editor when the default token is too subtle for the surrounding canvas."
+      ariaLabel="Canvas grid visibility styling variants"
+      tabListAriaLabel="Canvas grid visibility styles"
+      defaultValue="plain-css"
+      [codeBlockTheme]="codeBlockTheme()"
+    >
+      <ng-template
+        appDocsExampleVariant
+        value="plain-css"
+        label="Plain CSS"
+        panelTitle="Canvas grid visibility with Plain CSS"
+        [codeTabs]="gridBackgroundPlainCssCodeTabs"
+      >
+        <div class="flow-editor-examples__feature-shell">
+          <header class="flow-editor-examples__feature-toolbar">
+            <p>
+              <strong>Grid:</strong> Background dots are
+              {{ gridPlainCssVisible() ? 'visible' : 'hidden' }}. Snapping remains enabled.
+            </p>
+            <tng-button
+              type="button"
+              appearance="outline"
+              size="sm"
+              [attr.aria-pressed]="gridPlainCssVisible()"
+              (click)="gridPlainCssVisible.set(!gridPlainCssVisible())"
+            >
+              {{ gridPlainCssVisible() ? 'Hide grid' : 'Show grid' }}
+            </tng-button>
+          </header>
+
+          <tng-flow-editor
+            flowId="docs-grid-background-plain-css"
+            class="flow-editor-examples__canvas flow-editor-examples__canvas--visible-grid"
+            ariaLabel="Grid background visibility example styled with Plain CSS"
+            [definition]="branchWorkflowDefinition"
+            [showBackground]="gridPlainCssVisible()"
+            [snapToGrid]="true"
+            [gridSize]="24"
+          />
+        </div>
+      </ng-template>
+
+      <ng-template
+        appDocsExampleVariant
+        value="tailwind-css"
+        label="Tailwind CSS"
+        panelTitle="Canvas grid visibility with Tailwind CSS"
+        [codeTabs]="gridBackgroundTailwindCodeTabs"
+      >
+        <div class="grid gap-3">
+          <header
+            class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
+          >
+            <p class="m-0">
+              <strong class="text-slate-950 dark:text-white">Grid:</strong>
+              Background dots are {{ gridTailwindVisible() ? 'visible' : 'hidden' }}. Snapping
+              remains enabled.
+            </p>
+            <tng-button
+              type="button"
+              appearance="outline"
+              size="sm"
+              [attr.aria-pressed]="gridTailwindVisible()"
+              (click)="gridTailwindVisible.set(!gridTailwindVisible())"
+            >
+              {{ gridTailwindVisible() ? 'Hide grid' : 'Show grid' }}
+            </tng-button>
+          </header>
+
+          <tng-flow-editor
+            flowId="docs-grid-background-tailwind-css"
+            class="block h-[29rem] min-h-[24rem] max-[720px]:h-[26rem]"
+            style="
+              --tng-flow-grid-color: color-mix(
+                in srgb,
+                var(--tng-semantic-foreground-secondary, #475569) 55%,
+                transparent
+              );
+            "
+            ariaLabel="Grid background visibility example styled with Tailwind CSS"
+            [definition]="branchWorkflowDefinition"
+            [showBackground]="gridTailwindVisible()"
+            [snapToGrid]="true"
+            [gridSize]="24"
+          />
+        </div>
+      </ng-template>
+    </app-docs-example-tabs-section>
+  </section>
+
   <section id="connection-editing" class="docs-overview-block">
     <app-docs-example-tabs-section
       heading="Create, validate, and reconnect"

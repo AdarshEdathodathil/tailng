@@ -3,6 +3,14 @@
   min-height: 24rem;
 }
 
+.flow-editor-examples__canvas--visible-grid {
+  --tng-flow-grid-color: color-mix(
+    in srgb,
+    var(--tng-semantic-foreground-secondary, #475569) 55%,
+    transparent
+  );
+}
+
 .flow-editor-examples__controlled-shell {
   display: grid;
   gap: 0.75rem;
