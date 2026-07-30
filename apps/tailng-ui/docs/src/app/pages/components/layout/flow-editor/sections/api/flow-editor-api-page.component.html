@@ -217,8 +217,18 @@
             <td><code>number</code></td>
             <td><code>16</code></td>
             <td>
-              Horizontal and vertical grid cell size in pixels. Controls the dotted background
-              spacing and the snap interval when <code>snapToGrid</code> is enabled.
+              Base horizontal and vertical grid cell size in pixels. Controls the snap interval and
+              the base dotted-background spacing.
+            </td>
+          </tr>
+          <tr>
+            <td><code>backgroundGridMode</code></td>
+            <td><code>TngFlowBackgroundGridMode</code></td>
+            <td><code>'canvas'</code></td>
+            <td>
+              <code>'canvas'</code> displays every base-grid point. <code>'adaptive'</code> displays
+              a fixed on-screen dot density while zooming in or out without changing the
+              <code>gridSize</code> snap interval.
             </td>
           </tr>
           <tr>

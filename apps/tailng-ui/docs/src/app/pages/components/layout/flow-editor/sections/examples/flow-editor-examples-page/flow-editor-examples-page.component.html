@@ -137,7 +137,7 @@
   <section id="canvas-grid-visibility" class="docs-overview-block">
     <app-docs-example-tabs-section
       heading="Canvas grid visibility"
-      description="Toggle the canvas background grid independently from snap-to-grid. Scope --tng-flow-grid-color on the editor when the default token is too subtle for the surrounding canvas."
+      description="Toggle the canvas background grid independently from snap-to-grid. Adaptive density keeps the on-screen dot spacing fixed while zooming, and --tng-flow-grid-color controls their contrast."
       ariaLabel="Canvas grid visibility styling variants"
       tabListAriaLabel="Canvas grid visibility styles"
       defaultValue="plain-css"
@@ -154,7 +154,8 @@
           <header class="flow-editor-examples__feature-toolbar">
             <p>
               <strong>Grid:</strong> Background dots are
-              {{ gridPlainCssVisible() ? 'visible' : 'hidden' }}. Snapping remains enabled.
+              {{ gridPlainCssVisible() ? 'visible' : 'hidden' }}. Adaptive density and snapping
+              remain enabled.
             </p>
             <tng-button
               type="button"
@@ -175,6 +176,7 @@
             [showBackground]="gridPlainCssVisible()"
             [snapToGrid]="true"
             [gridSize]="24"
+            backgroundGridMode="adaptive"
           />
         </div>
       </ng-template>
@@ -192,8 +194,8 @@
           >
             <p class="m-0">
               <strong class="text-slate-950 dark:text-white">Grid:</strong>
-              Background dots are {{ gridTailwindVisible() ? 'visible' : 'hidden' }}. Snapping
-              remains enabled.
+              Background dots are {{ gridTailwindVisible() ? 'visible' : 'hidden' }}. Snapping and
+              adaptive density remain enabled.
             </p>
             <tng-button
               type="button"
@@ -221,6 +223,7 @@
             [showBackground]="gridTailwindVisible()"
             [snapToGrid]="true"
             [gridSize]="24"
+            backgroundGridMode="adaptive"
           />
         </div>
       </ng-template>

@@ -109,7 +109,11 @@
 
 /* Stable TailNG presentation tokens. Foblex selectors below remain an internal bridge. */
 tng-flow-editor {
-  --ff-background-dot-color: var(--tng-flow-grid-color, var(--ff-color-grid-strong));
+  --tng-flow-grid-dot-radius: 1px;
+  --ff-background-dot-color: var(
+    --tng-flow-grid-color,
+    color-mix(in srgb, var(--tng-semantic-foreground-primary, var(--ff-gray-800)) 26%, transparent)
+  );
   --tng-flow-connection-color: var(--tng-semantic-foreground-secondary, var(--ff-color-connection));
   --tng-flow-node-error-border: var(--tng-semantic-accent-danger, #dc2626);
   --tng-flow-node-warning-border: var(--tng-semantic-accent-warning, #d97706);
@@ -178,6 +182,10 @@ tng-flow-editor {
   --ff-minimap-node-selected-color: var(--tng-flow-minimap-node-selected);
   --ff-minimap-view-border-color: var(--tng-flow-minimap-viewport-border);
   --ff-minimap-view-color: var(--tng-flow-minimap-viewport-background);
+
+  f-flow .f-background circle {
+    r: var(--tng-flow-grid-dot-radius);
+  }
 
   .tng-flow-minimap__node--selected {
     fill: var(--tng-flow-minimap-node-selected);

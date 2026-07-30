@@ -87,6 +87,7 @@ export type {
 } from './lib/geometry/tng-flow-nearest-border';
 export type {
   TngFlowAttachmentLayout,
+  TngFlowBackgroundGridMode,
   TngFlowConnection,
   TngFlowConnectionCandidate,
   TngFlowConnectionCreateRequest,

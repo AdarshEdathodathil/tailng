@@ -33,6 +33,7 @@ export type TngFlowPortSide = 'bottom' | 'left' | 'right' | 'top';
  * `custom-points` shows a fixed 3-per-side border grid; the user picks start/end slots.
  */
 export type TngFlowAttachmentLayout = 'custom-points' | 'nearest-border' | 'static-ports';
+export type TngFlowBackgroundGridMode = 'adaptive' | 'canvas';
 export type TngFlowEditorMode = 'edit' | 'inspect' | 'readonly';
 export type TngFlowDeleteRequestSource = 'api' | 'context-menu' | 'keyboard';
 export type TngFlowNodeCreateSource = 'api' | 'keyboard' | 'pointer';

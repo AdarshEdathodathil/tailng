@@ -28,6 +28,7 @@ export class FlowEditorStylingPageComponent {
     '    var(--tng-semantic-foreground-secondary) 22%,',
     '    transparent',
     '  );',
+    '  --tng-flow-grid-dot-radius: 1px;',
     '  --tng-flow-smart-guide-color: var(--tng-semantic-accent-brand);',
     '  --tng-flow-smart-guide-spacing-fill: color-mix(',
     '    in srgb,',
