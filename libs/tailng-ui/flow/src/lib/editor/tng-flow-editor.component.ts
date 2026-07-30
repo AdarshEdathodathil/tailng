@@ -204,6 +204,7 @@ import { analyzeTngFlow } from '../validation/tng-flow-validation';
 import { TngFlowValidationBadgeComponent } from '../validation-badge/tng-flow-validation-badge.component';
 
 const EMPTY_ISSUES = Object.freeze([]) as readonly TngFlowValidationIssue[];
+const DEFAULT_TNG_FLOW_GRID_SIZE = 16;
 const emptyResolvedNodeView = Object.freeze({
   selected: false,
   disabled: false,
@@ -544,7 +545,7 @@ export class TngFlowEditorComponent<
   public readonly snapToGrid = input<boolean, boolean | string>(false, {
     transform: booleanAttribute,
   });
-  public readonly gridSize = input<number>(16);
+  public readonly gridSize = input<number>(DEFAULT_TNG_FLOW_GRID_SIZE);
   public readonly zoomMinimum = input<number>(0.35);
   public readonly zoomMaximum = input<number>(2);
   public readonly zoomStep = input<number>(0.15);
@@ -596,6 +597,10 @@ export class TngFlowEditorComponent<
   );
   protected readonly canEdit = computed(() => this.capabilities().move);
   protected readonly canSelect = computed(() => this.capabilities().select);
+  protected readonly backgroundGridSize = computed(() => {
+    const gridSize = this.gridSize();
+    return Number.isFinite(gridSize) && gridSize > 0 ? gridSize : DEFAULT_TNG_FLOW_GRID_SIZE;
+  });
   private readonly resolvedKeyboardOptions = computed<TngResolvedFlowKeyboardOptions>(() => {
     const options = this.keyboardOptions() ?? {};
     const gridSize = this.gridSize();

@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
   FCanvasComponent,
+  FCirclePatternComponent,
   FComponentsStore,
   FCreateConnectionEvent,
   FDeleteSelectedEvent,
@@ -281,6 +282,32 @@ class ControllableResizeObserver implements ResizeObserver {
 }
 
 describe('TngFlowEditorComponent', () => {
+  it('renders the background at the configured grid spacing and hides it independently of snap', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('gridSize', 24);
+    fixture.componentRef.setInput('snapToGrid', true);
+    fixture.detectChanges();
+
+    const findCirclePattern = (): FCirclePatternComponent | undefined =>
+      fixture.debugElement.query(
+        (debugElement) => debugElement.componentInstance instanceof FCirclePatternComponent,
+      )?.componentInstance as FCirclePatternComponent | undefined;
+
+    expect(findCirclePattern()?.radius()).toBe(24);
+
+    fixture.componentRef.setInput('gridSize', 0);
+    fixture.detectChanges();
+
+    expect(findCirclePattern()?.radius()).toBe(16);
+
+    fixture.componentRef.setInput('showBackground', false);
+    fixture.detectChanges();
+
+    expect(findCirclePattern()).toBeUndefined();
+    expect(fixture.componentInstance.snapToGrid()).toBe(true);
+  });
+
   it('refreshes connection geometry without changing or emitting the viewport', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('definition', definition);
@@ -1801,9 +1828,7 @@ describe('TngFlowEditorComponent', () => {
     const emitCanvasChange = vi.spyOn(canvas, 'emitCanvasChangeEvent');
     vi.spyOn(bridge, 'redrawCanvas').mockImplementation(() => undefined);
 
-    shell.dispatchEvent(
-      new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }),
-    );
+    shell.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 60 }));
     expect(setPosition).toHaveBeenLastCalledWith({ x: 330, y: 220 });
     const emittedAfterHover = emitCanvasChange.mock.calls.length;
 

@@ -202,6 +202,25 @@ class BrowserFormControlHost {
   protected readonly definition = definition;
 }
 
+@Component({
+  imports: [TngFlowEditorComponent],
+  template: `
+    <tng-flow-editor
+      style="--tng-flow-grid-color: rgb(255, 0, 0)"
+      [definition]="definition"
+      [fitOnInit]="false"
+      [showBackground]="showBackground()"
+      [showControls]="false"
+      [snapToGrid]="true"
+      [gridSize]="24"
+    />
+  `,
+})
+class BrowserGridHost {
+  protected readonly definition = definition;
+  public readonly showBackground = signal(true);
+}
+
 const connectionGeometries: readonly TngFlowConnectionType[] = [
   'adaptive-curve',
   'bezier',
@@ -803,6 +822,44 @@ const performanceScenarios = [
 ] as const;
 
 describe('TngFlowEditorComponent browser contracts', () => {
+  it('renders a visible background grid using its spacing and public color token', async () => {
+    const fixture = TestBed.createComponent(BrowserGridHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    const fixtureRoot = fixture.nativeElement as HTMLElement;
+    const editorHost = fixtureRoot.querySelector<HTMLElement>('tng-flow-editor');
+    const editor = fixture.debugElement.query(
+      (debugElement) => debugElement.componentInstance instanceof TngFlowEditorComponent,
+    )?.componentInstance as TngFlowEditorComponent | undefined;
+    if (editorHost === null || editor === undefined) {
+      throw new Error('Expected the flow editor to render.');
+    }
+    const pattern = editorHost.querySelector<SVGPatternElement>('f-background pattern');
+    const circle = editorHost.querySelector<SVGCircleElement>('f-background circle');
+    if (pattern === null || circle === null) {
+      throw new Error('Expected the dotted background pattern to render.');
+    }
+
+    expect(Number(pattern.getAttribute('width'))).toBeCloseTo(24);
+    expect(Number(pattern.getAttribute('height'))).toBeCloseTo(24);
+    expect(getComputedStyle(circle).fill).toBe('rgb(255, 0, 0)');
+
+    fixture.componentInstance.showBackground.set(false);
+    fixture.detectChanges();
+    await nextPaint();
+
+    expect(editorHost.querySelector('f-background')).toBeNull();
+    expect(editor.snapToGrid()).toBe(true);
+
+    fixture.componentInstance.showBackground.set(true);
+    fixture.detectChanges();
+    await nextPaint();
+
+    expect(editorHost.querySelector('f-background circle')).not.toBeNull();
+  });
+
   it.each([
     { animated: false, resizeMode: 'immediate' },
     { animated: true, resizeMode: 'animated' },
