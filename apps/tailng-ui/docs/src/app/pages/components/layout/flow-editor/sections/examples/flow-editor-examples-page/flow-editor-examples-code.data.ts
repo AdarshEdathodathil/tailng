@@ -364,7 +364,7 @@ const gridBackgroundPlainMarkup = [
   '    <p>',
   '      <strong>Grid:</strong>',
   "      Background dots are {{ showGrid() ? 'visible' : 'hidden' }}.",
-  '      Snapping remains enabled.',
+  '      Adaptive density and snapping remain enabled.',
   '    </p>',
   '    <tng-button',
   '      type="button"',
@@ -385,6 +385,7 @@ const gridBackgroundPlainMarkup = [
   '    [showBackground]="showGrid()"',
   '    [snapToGrid]="true"',
   '    [gridSize]="24"',
+  '    backgroundGridMode="adaptive"',
   '  />',
   '</div>',
 ].join('\n');
@@ -397,7 +398,7 @@ const gridBackgroundTailwindMarkup = [
   '    <p class="m-0">',
   '      <strong class="text-slate-950 dark:text-white">Grid:</strong>',
   "      Background dots are {{ showGrid() ? 'visible' : 'hidden' }}.",
-  '      Snapping remains enabled.',
+  '      Adaptive density and snapping remain enabled.',
   '    </p>',
   '    <tng-button',
   '      type="button"',
@@ -419,6 +420,7 @@ const gridBackgroundTailwindMarkup = [
   '    [showBackground]="showGrid()"',
   '    [snapToGrid]="true"',
   '    [gridSize]="24"',
+  '    backgroundGridMode="adaptive"',
   '  />',
   '</div>',
 ].join('\n');

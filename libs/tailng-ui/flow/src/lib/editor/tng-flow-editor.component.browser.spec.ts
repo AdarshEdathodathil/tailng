@@ -206,19 +206,28 @@ class BrowserFormControlHost {
   imports: [TngFlowEditorComponent],
   template: `
     <tng-flow-editor
-      style="--tng-flow-grid-color: rgb(255, 0, 0)"
+      style="--tng-semantic-foreground-primary: rgb(40, 80, 120)"
+      [style.--tng-flow-grid-color]="gridColor()"
       [definition]="definition"
       [fitOnInit]="false"
       [showBackground]="showBackground()"
       [showControls]="false"
       [snapToGrid]="true"
       [gridSize]="24"
+      backgroundGridMode="adaptive"
+      [viewport]="viewport()"
+      [zoomMinimum]="0.18"
     />
   `,
 })
 class BrowserGridHost {
   protected readonly definition = definition;
   public readonly showBackground = signal(true);
+  public readonly gridColor = signal<string | null>(null);
+  public readonly viewport = signal<TngFlowViewport>({
+    position: { x: 0, y: 0 },
+    scale: 1,
+  });
 }
 
 const connectionGeometries: readonly TngFlowConnectionType[] = [
@@ -822,7 +831,7 @@ const performanceScenarios = [
 ] as const;
 
 describe('TngFlowEditorComponent browser contracts', () => {
-  it('renders a visible background grid using its spacing and public color token', async () => {
+  it('renders a fixed-radius background grid using its spacing, default color, and public token', async () => {
     const fixture = TestBed.createComponent(BrowserGridHost);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -844,7 +853,34 @@ describe('TngFlowEditorComponent browser contracts', () => {
 
     expect(Number(pattern.getAttribute('width'))).toBeCloseTo(24);
     expect(Number(pattern.getAttribute('height'))).toBeCloseTo(24);
+
+    const colorProbe = document.createElement('span');
+    colorProbe.style.color = 'color-mix(in srgb, rgb(40, 80, 120) 26%, transparent)';
+    editorHost.append(colorProbe);
+    const expectedDefaultColor = getComputedStyle(colorProbe).color;
+    colorProbe.remove();
+
+    expect(getComputedStyle(circle).fill).toBe(expectedDefaultColor);
+
+    fixture.componentInstance.gridColor.set('rgb(255, 0, 0)');
+    fixture.detectChanges();
+    await nextPaint();
+
     expect(getComputedStyle(circle).fill).toBe('rgb(255, 0, 0)');
+
+    for (const scale of [0.18, 0.35, 1, 2]) {
+      fixture.componentInstance.viewport.set({
+        position: { x: 0, y: 0 },
+        scale,
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await nextPaint();
+
+      expect(Number(pattern.getAttribute('width'))).toBeCloseTo(24);
+      expect(Number(pattern.getAttribute('height'))).toBeCloseTo(24);
+      expect(getComputedStyle(circle).getPropertyValue('r')).toBe('1px');
+    }
 
     fixture.componentInstance.showBackground.set(false);
     fixture.detectChanges();

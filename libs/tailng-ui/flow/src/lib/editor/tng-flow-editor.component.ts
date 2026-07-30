@@ -164,6 +164,7 @@ import {
 } from '../types/tng-flow-validation.types';
 import type {
   TngFlowAttachmentLayout,
+  TngFlowBackgroundGridMode,
   TngFlowConnection,
   TngFlowConnectionCandidate,
   TngFlowConnectionCreatedEvent,
@@ -546,6 +547,7 @@ export class TngFlowEditorComponent<
     transform: booleanAttribute,
   });
   public readonly gridSize = input<number>(DEFAULT_TNG_FLOW_GRID_SIZE);
+  public readonly backgroundGridMode = input<TngFlowBackgroundGridMode>('canvas');
   public readonly zoomMinimum = input<number>(0.35);
   public readonly zoomMaximum = input<number>(2);
   public readonly zoomStep = input<number>(0.15);
@@ -597,9 +599,20 @@ export class TngFlowEditorComponent<
   );
   protected readonly canEdit = computed(() => this.capabilities().move);
   protected readonly canSelect = computed(() => this.capabilities().select);
+  private readonly effectiveCanvasScale = computed(() => {
+    const controlledScale = this.viewport()?.scale;
+    return controlledScale !== undefined && Number.isFinite(controlledScale) && controlledScale > 0
+      ? controlledScale
+      : this.currentCanvasScale();
+  });
   protected readonly backgroundGridSize = computed(() => {
     const gridSize = this.gridSize();
-    return Number.isFinite(gridSize) && gridSize > 0 ? gridSize : DEFAULT_TNG_FLOW_GRID_SIZE;
+    const baseGridSize =
+      Number.isFinite(gridSize) && gridSize > 0 ? gridSize : DEFAULT_TNG_FLOW_GRID_SIZE;
+    if (this.backgroundGridMode() !== 'adaptive') {
+      return baseGridSize;
+    }
+    return baseGridSize / Math.max(0.01, this.effectiveCanvasScale());
   });
   private readonly resolvedKeyboardOptions = computed<TngResolvedFlowKeyboardOptions>(() => {
     const options = this.keyboardOptions() ?? {};
@@ -646,12 +659,6 @@ export class TngFlowEditorComponent<
           ? DEFAULT_TNG_FLOW_MINIMAP_OPTIONS.ariaLabel
           : requestedAriaLabel,
     };
-  });
-  private readonly effectiveCanvasScale = computed(() => {
-    const controlledScale = this.viewport()?.scale;
-    return controlledScale !== undefined && Number.isFinite(controlledScale) && controlledScale > 0
-      ? controlledScale
-      : this.currentCanvasScale();
   });
   protected readonly resolvedSmartGuidesOptions = computed<ResolvedSmartGuidesOptions>(() => {
     const options = this.smartGuides() ?? {};

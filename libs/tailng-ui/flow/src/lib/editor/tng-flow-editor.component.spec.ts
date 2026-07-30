@@ -308,6 +308,56 @@ describe('TngFlowEditorComponent', () => {
     expect(fixture.componentInstance.snapToGrid()).toBe(true);
   });
 
+  it('keeps adaptive visual grid density fixed across controlled and runtime zoom changes', () => {
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.componentRef.setInput('gridSize', 24);
+    fixture.componentRef.setInput('snapToGrid', true);
+    fixture.componentRef.setInput('backgroundGridMode', 'adaptive');
+    fixture.componentRef.setInput('viewport', {
+      position: { x: 0, y: 0 },
+      scale: 0.35,
+    });
+    fixture.detectChanges();
+
+    const findCirclePattern = (): FCirclePatternComponent | undefined =>
+      fixture.debugElement.query(
+        (debugElement) => debugElement.componentInstance instanceof FCirclePatternComponent,
+      )?.componentInstance as FCirclePatternComponent | undefined;
+
+    expect(findCirclePattern()?.radius()).toBeCloseTo(24 / 0.35);
+
+    fixture.componentRef.setInput('viewport', {
+      position: { x: 0, y: 0 },
+      scale: 0.18,
+    });
+    fixture.detectChanges();
+
+    expect(findCirclePattern()?.radius()).toBeCloseTo(24 / 0.18);
+
+    fixture.componentRef.setInput('viewport', {
+      position: { x: 0, y: 0 },
+      scale: 1,
+    });
+    fixture.detectChanges();
+
+    expect(findCirclePattern()?.radius()).toBe(24);
+
+    fixture.componentRef.setInput('viewport', null);
+    fixture.detectChanges();
+    (
+      fixture.componentInstance as unknown as Pick<EditorEventHarness, 'onViewportChange'>
+    ).onViewportChange({
+      position: { x: 0, y: 0 },
+      scale: 0.35,
+    });
+    fixture.detectChanges();
+
+    expect(findCirclePattern()?.radius()).toBeCloseTo(24 / 0.35);
+    expect(fixture.componentInstance.gridSize()).toBe(24);
+    expect(fixture.componentInstance.snapToGrid()).toBe(true);
+  });
+
   it('refreshes connection geometry without changing or emitting the viewport', () => {
     const fixture = TestBed.createComponent(TngFlowEditorComponent);
     fixture.componentRef.setInput('definition', definition);
