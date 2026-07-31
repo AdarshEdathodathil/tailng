@@ -266,6 +266,27 @@ describe('tng-dialog component behavior', () => {
     expect(document.activeElement).toBe(last);
   });
 
+  it.each([
+    ['Enter', 'Enter'],
+    ['Space', ' '],
+  ])('does not intercept %s on the last focusable control', async (_name, key) => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ManagedDialogHostComponent],
+    }).createComponent(ManagedDialogHostComponent);
+    fixture.componentInstance.open.set(true);
+
+    await settle(fixture);
+
+    const last = getByTestId<HTMLButtonElement>(fixture, 'inside-last');
+    last.focus();
+
+    const event = keydown(last, key);
+    await settle(fixture);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(last);
+  });
+
   it('isolates nested background content while open', async () => {
     const fixture = TestBed.configureTestingModule({
       imports: [ManagedDialogHostComponent],
@@ -322,6 +343,24 @@ describe('tng-dialog component behavior', () => {
     await settle(fixture);
     expect(tabBackward.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(last);
+  });
+
+  it('does not redirect focus for non-Tab document keys when focus is outside the panel', async () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [ManagedDialogHostComponent],
+    }).createComponent(ManagedDialogHostComponent);
+    fixture.componentInstance.open.set(true);
+
+    await settle(fixture);
+
+    const after = getByTestId<HTMLButtonElement>(fixture, 'after');
+    after.focus();
+
+    const event = keydown(document, 'ArrowDown');
+    await settle(fixture);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(after);
   });
 
   it('controlled mode emits close events but stays open until host updates input', async () => {

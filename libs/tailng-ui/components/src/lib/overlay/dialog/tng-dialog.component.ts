@@ -48,6 +48,11 @@ function readKeyboardEvent(event: unknown): KeyboardEvent | null {
   return event instanceof KeyboardEvent ? event : null;
 }
 
+function readTabKeyboardEvent(event: unknown): KeyboardEvent | null {
+  const keyboardEvent = readKeyboardEvent(event);
+  return keyboardEvent?.key === 'Tab' ? keyboardEvent : null;
+}
+
 function resolveActiveElement(documentRef: unknown): HTMLElement | null {
   if (!(documentRef instanceof Document)) {
     return null;
@@ -428,8 +433,17 @@ export class TngDialogComponent implements OnDestroy {
     }
   }
 
+  private isFocusTrapActive(): boolean {
+    return this.isActive && tngOverlayRuntime.isTopLayer(this.instanceId);
+  }
+
   private trapTabNavigation(event: unknown): void {
-    if (!this.isActive || !tngOverlayRuntime.isTopLayer(this.instanceId)) {
+    const keyboardEvent = readTabKeyboardEvent(event);
+    if (keyboardEvent === null) {
+      return;
+    }
+
+    if (!this.isFocusTrapActive()) {
       return;
     }
 
@@ -440,15 +454,15 @@ export class TngDialogComponent implements OnDestroy {
 
     const focusState = this.resolveFocusTrapState(panel);
     if (focusState === null) {
-      this.preventAndFocus(event, panel);
+      this.preventAndFocus(keyboardEvent, panel);
       return;
     }
 
-    if (this.focusEdgeWhenOutsidePanel(event, focusState)) {
+    if (this.focusEdgeWhenOutsidePanel(keyboardEvent, focusState)) {
       return;
     }
 
-    this.wrapTabAtEdges(event, focusState);
+    this.wrapTabAtEdges(keyboardEvent, focusState);
   }
 }
 export { TngDialogComponent as TngDialog };
