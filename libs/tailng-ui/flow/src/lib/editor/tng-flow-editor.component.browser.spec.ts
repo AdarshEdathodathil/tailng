@@ -1620,6 +1620,117 @@ describe('TngFlowEditorComponent browser contracts', () => {
     },
   );
 
+  it('Delete removes a selected node and its incident connections after the controlled update', async () => {
+    const nodeId = 'start';
+    const fixture = TestBed.createComponent(TngFlowEditorComponent);
+    fixture.componentRef.setInput('definition', definition);
+    fixture.componentRef.setInput('fitOnInit', false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    const deleted = vi.fn();
+    fixture.componentInstance.nodesDeleteRequested.subscribe(deleted);
+    const host = fixture.nativeElement as HTMLElement;
+    const flow = host.querySelector<HTMLElement>('f-flow');
+    if (flow === null) {
+      throw new Error('Expected the flow host to render.');
+    }
+    expect(host.querySelector(`[data-node-id="${nodeId}"]`)).not.toBeNull();
+    expect(host.querySelector('[data-connection-id="start-to-finish"]')).not.toBeNull();
+
+    fixture.componentRef.setInput('selection', {
+      nodeIds: new Set([nodeId]),
+      connectionIds: new Set<string>(),
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+    expect(
+      host
+        .querySelector(`[data-node-id="${nodeId}"]`)
+        ?.classList.contains('tng-flow-editor__node--selected'),
+    ).toBe(true);
+
+    flow.focus();
+    dispatchKey(flow, 'Delete');
+    await fixture.whenStable();
+
+    expect(deleted).toHaveBeenCalledOnce();
+    expect(deleted).toHaveBeenCalledWith({ nodeIds: [nodeId], source: 'keyboard' });
+
+    fixture.componentRef.setInput('definition', {
+      ...definition,
+      nodes: definition.nodes.filter((node) => node.id !== nodeId),
+      connections: definition.connections.filter(
+        (connection) => connection.source.nodeId !== nodeId && connection.target.nodeId !== nodeId,
+      ),
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await nextPaint();
+
+    expect(host.querySelector(`[data-node-id="${nodeId}"]`)).toBeNull();
+    expect(host.querySelector('[data-connection-id="start-to-finish"]')).toBeNull();
+  });
+
+  it.each(connectionGeometries)(
+    'Delete removes a selected %s connection after the controlled update',
+    async (geometry) => {
+      const connectionId = `${geometry}-connection`;
+      const connectionDefinition = createConnectionGeometryDefinition();
+      const fixture = TestBed.createComponent(TngFlowEditorComponent);
+      fixture.componentRef.setInput('definition', connectionDefinition);
+      fixture.componentRef.setInput('fitOnInit', false);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await nextPaint();
+
+      const deleted = vi.fn();
+      fixture.componentInstance.connectionsDeleteRequested.subscribe(deleted);
+      const host = fixture.nativeElement as HTMLElement;
+      const flow = host.querySelector<HTMLElement>('f-flow');
+      if (flow === null) {
+        throw new Error('Expected the flow host to render.');
+      }
+      expect(host.querySelector(`[data-connection-id="${connectionId}"]`)).not.toBeNull();
+      await waitForRenderedConnectionPaths(host);
+
+      fixture.componentRef.setInput('selection', {
+        nodeIds: new Set<string>(),
+        connectionIds: new Set([connectionId]),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await nextPaint();
+      expect(
+        host.querySelector(`[data-connection-id="${connectionId}"]`)?.hasAttribute('data-selected'),
+      ).toBe(true);
+
+      flow.focus();
+      dispatchKey(flow, 'Delete');
+      await fixture.whenStable();
+
+      expect(deleted).toHaveBeenCalledOnce();
+      expect(deleted).toHaveBeenCalledWith({
+        connectionIds: [connectionId],
+        source: 'keyboard',
+      });
+
+      fixture.componentRef.setInput('definition', {
+        ...connectionDefinition,
+        connections: connectionDefinition.connections.filter(
+          (connection) => connection.id !== connectionId,
+        ),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await nextPaint();
+
+      expect(host.querySelector(`[data-connection-id="${connectionId}"]`)).toBeNull();
+    },
+  );
+
   it('measures rendered geometry and emits one controlled layout request', async () => {
     let measuredGraph: TngFlowLayoutGraph | undefined;
     const calculate = vi.fn<TngFlowLayoutEngine['calculate']>((graph) => {
